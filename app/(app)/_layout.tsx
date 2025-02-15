@@ -53,6 +53,24 @@ export default function AppLayout() {
 				}}
 			/>
 			<Stack.Screen
+				name="report"
+				options={{
+					presentation: "modal",
+					headerShown: false,
+					headerStyle: {
+						backgroundColor:
+							colorScheme === "dark"
+								? colors.dark.background
+								: colors.light.background,
+					},
+					headerTintColor:
+						colorScheme === "dark"
+							? colors.dark.foreground
+							: colors.light.foreground,
+					gestureEnabled: true,
+				}}
+			/>
+			<Stack.Screen
 				name="modal"
 				options={{
 					presentation: "modal",

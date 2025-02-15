@@ -1,23 +1,10 @@
-export type RootStackParamList = {
-  WELCOME_SCREEN: undefined
-  INFO_SCREEN: undefined
-  CONTINUE_SCREEN: undefined
-  PLAYER_SCREEN: { oldPlan: number; isStartGame: boolean }
-  PLAYER_EDIT_SCREEN: {
-    fullName: string
-    avatar: string
-    email: string
-    intention: string
-    oldPlan: number
-    isStartGame: boolean
-  }
-  GAME_SCREEN: undefined
-  PLANS_SCREEN: undefined
-  PLAN_SCREEN: { key: string; currentPlan: number }
-  REPORTS_SCREEN: { report: Report }
-  REPORT_SCREEN: { report: Report }
-  UI_KIT_SCREEN: undefined
-  SEED_SCREEN: undefined
+export type GameStep = {
+  loka: number
+  is_finished: boolean
+  consecutive_sixes: number
+  previous_loka: number
+  position_before_three_sixes: number
+  direction: string
 }
 
 export interface GemT {

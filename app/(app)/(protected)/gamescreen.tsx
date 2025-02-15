@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 
 import { Display, Dice, GameBoard, Space, Background } from '@components/ui/index'
+import { router } from 'expo-router'
 // import { useTranslation } from 'react-i18next'
 // import { useAccount } from 'store'
 
@@ -28,6 +29,7 @@ const GameScreen: React.FC = () => {
     rollDice: () => {
       const roll = Math.floor(Math.random() * 6) + 1
       setLastRoll(roll)
+      router.push("/(app)/report")
       return roll
     },
     message: 'Good day!',

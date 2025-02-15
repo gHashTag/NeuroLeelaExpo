@@ -13,6 +13,7 @@
 			"@styles/*": ["./styles/*"],
 			"@constants/*": ["./constants/*"],
 			"@types/*": ["./types/*"],
+			"@services/*": ["./services/*"],
 		},
 	},
 	"include": [
