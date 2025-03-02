@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { sendAIResponse } from '@/services/sendAIResponse'
+import { View } from 'react-native';
 
 const AIChat = () => {
   const [messages, setMessages] = useState<{ user: string; ai: string }[]>([])
@@ -23,7 +24,10 @@ const AIChat = () => {
     // Обновляем чат с ответом AI
     setMessages((prevMessages) =>
       prevMessages.map((msg, index) =>
-        index === prevMessages.length - 1 ? { ...msg, ai: response?.ai_response || 'Ошибка AI' } : msg
+        index === prevMessages.length - 1 ? { ...msg, ai:
+          //  response?.ai_response || 'Ошибка AI'
+          "Hi"
+           } : msg
       )
     )
 
@@ -32,15 +36,15 @@ const AIChat = () => {
   }
 
   return (
-    <div>
-      <div>
+    <View>
+      <View>
         {messages.map((msg, index) => (
-          <div key={index}>
+          <View key={index}>
             <p><strong>Вы:</strong> {msg.user}</p>
             <p><strong>AI:</strong> {msg.ai}</p>
-          </div>
+          </View>
         ))}
-      </div>
+      </View>
       <input
         type="text"
         value={input}
@@ -48,7 +52,7 @@ const AIChat = () => {
         placeholder="Введите ваше сообщение"
       />
       <button onClick={handleSend}>Отправить</button>
-    </div>
+    </View>
   )
 }
 

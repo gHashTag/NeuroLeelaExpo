@@ -36,6 +36,15 @@ export default function ProtectedLayout() {
 				}}
 			/>
 			<Tabs.Screen
+				name="aichat"
+				options={{
+					title: "AI Chat",
+					tabBarIcon: ({ color, size }) => (
+						<MaterialCommunityIcons name="chat" color={color} size={size} />
+					),
+				}}
+			/>
+			<Tabs.Screen
 				name="settings"
 				options={{
 					title: "Settings",
