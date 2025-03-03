@@ -6,11 +6,16 @@ import {
 	TouchableOpacity, 
 	KeyboardAvoidingView, 
 	Platform,
-	ActivityIndicator
+	ActivityIndicator,
+	Image,
+	ImageBackground
 } from "react-native";
 import { Text } from "@/components/ui/text";
-import { H1 } from "@/components/ui/typography";
 import { useSupabase } from "@/context/supabase-provider";
+import { format } from "date-fns";
+import Icon from '@expo/vector-icons/MaterialCommunityIcons';
+import { ChatMessage } from "@/components/chat/ChatMessage";
+import { Header } from "@/components/layout/Header";
 
 interface Message {
 	id: string;
@@ -21,7 +26,15 @@ interface Message {
 
 export default function AIChat() {
 	const { session } = useSupabase();
-	const [messages, setMessages] = useState<Message[]>([]);
+	const [messages, setMessages] = useState<Message[]>([
+		// Начальное сообщение от Leela
+		{
+			id: "initial",
+			content: "Namaste!\nMy name is Leela.\nMy job is to guide you through the game to cosmic consciousness.\nHow can I help you?",
+			isUser: false,
+			timestamp: new Date()
+		}
+	]);
 	const [inputText, setInputText] = useState("");
 	const [isLoading, setIsLoading] = useState(false);
 	const scrollViewRef = useRef<ScrollView>(null);
@@ -58,7 +71,7 @@ export default function AIChat() {
 			setTimeout(() => {
 				const aiResponse: Message = {
 					id: (Date.now() + 1).toString(),
-					content: "Это пример ответа AI. Здесь будет интегрирован ваш реальный AI ответ с сервера.",
+					content: "Я помогу вам достичь космического сознания через игру Лила. Задавайте любые вопросы о вашем духовном пути.",
 					isUser: false,
 					timestamp: new Date()
 				};
@@ -107,79 +120,82 @@ export default function AIChat() {
 		}
 	};
 
+	// Форматирование времени
+	const formatTime = (date: Date) => {
+		return format(date, "h:mm a");
+	};
+
+	// Форматирование даты
+	const formatDate = (date: Date) => {
+		return format(date, "MMM d, yyyy");
+	};
+
 	return (
-		<KeyboardAvoidingView 
-			behavior={Platform.OS === "ios" ? "padding" : "height"}
-			className="flex-1 bg-background"
+		<ImageBackground 
+			source={require('@/assets/icons/BG.png')} 
+			style={{ flex: 1, width: '100%' }}
+			resizeMode="cover"
+			className="flex-1"
 		>
-			<View className="flex-1 p-4">
-				<H1 className="text-center mb-4">LEELA AI</H1>
+			<View className="flex-1 w-full">
+				<Header 
+					title="AI Chat"
+					onInfoPress={() => {}}
+					onBookPress={() => {}}
+				/>
 				
-				<ScrollView 
-					ref={scrollViewRef}
-					className="flex-1 mb-4"
-					contentContainerStyle={{ paddingBottom: 10 }}
+				<KeyboardAvoidingView 
+					behavior={Platform.OS === "ios" ? "padding" : "height"}
+					className="flex-1"
+					keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
 				>
-					{messages.length === 0 ? (
-						<View className="flex-1 items-center justify-center py-10">
-							<Text className="text-muted-foreground text-center">
-								Начните разговор с AI, отправив сообщение ниже.
-							</Text>
-						</View>
-					) : (
-						messages.map((msg) => (
-							<View 
-								key={msg.id} 
-								className={`p-3 rounded-lg mb-2 max-w-[80%] ${
-									msg.isUser 
-										? "bg-primary self-end" 
-										: "bg-secondary self-start"
-								}`}
-								style={{ alignSelf: msg.isUser ? 'flex-end' : 'flex-start' }}
-							>
-								<Text className={msg.isUser ? "text-primary-foreground" : "text-secondary-foreground"}>
-									{msg.content}
-								</Text>
-								<Text className="text-xs opacity-70 mt-1">
-									{msg.timestamp.toLocaleTimeString()}
-								</Text>
-							</View>
-						))
-					)}
-					
-					{isLoading && (
-						<View className="p-3 rounded-lg mb-2 bg-secondary self-start">
-							<ActivityIndicator size="small" color="#666" />
-						</View>
-					)}
-				</ScrollView>
-				
-				<View className="flex-row items-center border border-input rounded-lg overflow-hidden max-h-[80px]">
-					<TextInput
-						className="flex-1 px-3 py-2 bg-background text-foreground min-h-[40px] max-h-[80px]"
-						value={inputText}
-						onChangeText={setInputText}
-						placeholder="Введите сообщение..."
-						placeholderTextColor="#666"
-						multiline
-						editable={!isLoading}
-						style={{ textAlignVertical: 'center' }}
-					/>
-					<TouchableOpacity 
-						onPress={sendMessage}
-						disabled={isLoading || !inputText.trim()}
-						className={`px-3 h-full justify-center ${
-							isLoading || !inputText.trim() ? "bg-muted" : "bg-primary"
-						}`}
+					<ScrollView 
+						ref={scrollViewRef}
+						className="flex-1 px-4"
+						onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+						showsVerticalScrollIndicator={false}
+						contentContainerStyle={{ paddingVertical: 20 }}
 					>
-						<Text className={`font-medium ${
-							isLoading || !inputText.trim() ? "text-muted-foreground" : "text-primary-foreground"
-						}`}>
-							Отправить
-						</Text>
-					</TouchableOpacity>
-				</View>
+						{messages.map((msg) => (
+							<ChatMessage
+								key={msg.id}
+								content={msg.content}
+								timestamp={formatTime(msg.timestamp)}
+								isUser={msg.isUser}
+							/>
+						))}
+						
+						{isLoading && (
+							<ChatMessage
+								content=""
+								timestamp=""
+								isUser={false}
+								loading={true}
+							/>
+						)}
+					</ScrollView>
+					
+					{/* Поле ввода */}
+					<View className="p-4 border-t border-gray-200 bg-white bg-opacity-90">
+						<View className="flex-row items-center bg-gray-100 rounded-full px-4 py-2">
+							<TextInput
+								value={inputText}
+								onChangeText={setInputText}
+								placeholder="Type your message..."
+								className="flex-1 mr-2"
+								multiline
+							/>
+							<TouchableOpacity onPress={sendMessage} disabled={isLoading}>
+								<Icon 
+									name="send" 
+									size={24} 
+									color={inputText.trim() ? '#6A0DAD' : '#9CA3AF'} 
+								/>
+							</TouchableOpacity>
+						</View>
+					</View>
+				</KeyboardAvoidingView>
 			</View>
-		</KeyboardAvoidingView>
+		</ImageBackground>
 	);
 }
