@@ -21,7 +21,6 @@ export default function Settings() {
 	const [activeTab, setActiveTab] = useState("Reports");
 
 	const avatarUrl = userData?.pinata_avatar_id ? getAvatarUrl(userData.pinata_avatar_id) : null;
-	console.log(avatarUrl);
 	// Пример данных для отображения
 	const reportsPosts: Post[] = [
 		{
@@ -50,17 +49,6 @@ export default function Settings() {
 			date: "2 months ago",
 			likes: 3,
 			comments: 2
-		}
-	];
-	
-	const intentionPosts = [
-		{
-			id: "4",
-			number: "21",
-			content: "Ваши намерения и цели в духовном путешествии",
-			date: "3 months ago",
-			likes: 5,
-			comments: 0
 		}
 	];
 
