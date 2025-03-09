@@ -117,3 +117,16 @@ export interface PlayerInput {
   intention: string
   action: Action
 }
+
+export type AppRoutes = {
+  "/(auth)/sign-in": undefined;
+  "/(auth)/sign-up": undefined;
+  "/(app)/welcome": undefined;
+  "/(app)/username": undefined;
+  "/(app)/avatar": undefined;
+  "/(app)/designation": undefined;
+  "/(app)/(protected)/gamescreen": undefined;
+  "/(app)/(protected)/settings": undefined;
+  "/(app)/(protected)/reports": undefined;
+  "/(app)/(protected)/aichat": undefined;
+};

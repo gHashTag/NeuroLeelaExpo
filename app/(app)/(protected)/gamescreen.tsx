@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { View, ImageBackground } from 'react-native'
 import { Display, Dice, GameBoard, Space } from '@components/ui/index'
 import { router } from 'expo-router'
+import { useSupabase } from "@/context/supabase-provider";
 // import { useTranslation } from 'react-i18next'
 // import { useAccount } from 'store'
 
@@ -10,13 +11,14 @@ const GameScreen: React.FC = () => {
   // const { t } = useTranslation()
   // const [account] = useAccount()
   const [lastRoll, setLastRoll] = useState(1)
+  const { userData, getAvatarUrl } = useSupabase();
 
   const { currentPlayer, rollDice, message } = {
     currentPlayer: {
       id: '1',
       fullName: 'Player One',
       plan: 1,
-      avatar: 'https://via.placeholder.com/150',
+      avatar: userData?.pinata_avatar_id ? getAvatarUrl(userData.pinata_avatar_id) : require('@/assets/defaultImage/defaultProfileImage.png'),
       intention: 'Win the game',
       previousPlan: 0,
       isStart: true,
@@ -29,10 +31,10 @@ const GameScreen: React.FC = () => {
     rollDice: () => {
       const roll = Math.floor(Math.random() * 6) + 1
       setLastRoll(roll)
-      router.push("/(app)/(protected)/reports")
+      router.push("/(app)/report")
       return roll
     },
-    message: 'Good day!',
+    message: userData?.designation || '',
   }
 
   return (

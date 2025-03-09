@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter, Stack } from "expo-router";
 import { useForm } from "react-hook-form";
 import { ActivityIndicator, View } from "react-native";
 import * as z from "zod";
@@ -40,7 +41,8 @@ const formSchema = z
 
 export default function SignUp() {
 	const { signUp } = useSupabase();
-	const [message, setMessage] = useState("");
+	const router = useRouter();
+	const [isLoading, setIsLoading] = useState(false);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
@@ -52,17 +54,21 @@ export default function SignUp() {
 	});
 
 	async function onSubmit(data: z.infer<typeof formSchema>) {
+		setIsLoading(true);
 		try {
 			await signUp(data.email, data.password);
-			setMessage("Please check your email to confirm your registration.");
 			form.reset();
+			router.replace("/(app)/sign-in");
 		} catch (error: Error | any) {
 			console.log(error.message);
+		} finally {
+			setIsLoading(false);
 		}
 	}
 
 	return (
 		<SafeAreaView className="flex-1 bg-background p-4" edges={["bottom"]}>
+			<Stack.Screen options={{ headerShown: false }} />
 			<View className="flex-1 gap-4 web:m-4">
 				<H1 className="self-start">Sign Up</H1>
 				<Form {...form}>
@@ -117,16 +123,15 @@ export default function SignUp() {
 				size="default"
 				variant="default"
 				onPress={form.handleSubmit(onSubmit)}
-				disabled={form.formState.isSubmitting}
+				disabled={isLoading}
 				className="web:m-4"
 			>
-				{form.formState.isSubmitting ? (
-					<ActivityIndicator size="small" />
+				{isLoading ? (
+					<ActivityIndicator size="small" color="white" />
 				) : (
 					<Text>Sign Up</Text>
 				)}
 			</Button>
-			{message && <Text className="text-center">{message}</Text>}
 		</SafeAreaView>
 	);
 }

@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import React from "react";
-import { ImageBackground, View } from "react-native";
+import { ImageBackground } from "react-native";
 
 import { colors } from "@/constants/colors";
 import { useColorScheme } from "@core/useColorScheme";
