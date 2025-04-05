@@ -2,11 +2,10 @@ import { Session, User } from "@supabase/supabase-js";
 import { useRouter, useSegments, SplashScreen } from "expo-router";
 import { createContext, useContext, useEffect, useState } from "react";
 import * as FileSystem from "expo-file-system";
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { PINATA_JWT, PINATA_GATEWAY_URL } from '@/constants';
 
 import { supabase } from "@/config/supabase";
-
-const PINATA_JWT = process.env.EXPO_PUBLIC_PINATA_JWT;
-const PINATA_GATEWAY_URL = process.env.EXPO_PUBLIC_PINATA_GATEWAY_URL;
 
 SplashScreen.preventAutoHideAsync();
 
@@ -15,6 +14,8 @@ type UserData = {
   username: string | null;
   pinata_avatar_id: string | null;
   designation: string | null;
+  avatar_url?: string;
+  updated_at?: string;
 };
 
 type SupabaseContextProps = {
@@ -93,14 +94,22 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
 
   const uploadAvatar = async (imageUri: string): Promise<string> => {
     try {
-      const formData = new FormData();
+      console.log('🚀 Начинаем загрузку аватара в Pinata...');
+      console.log('📸 URI изображения:', imageUri);
 
+      // Создаем FormData для загрузки
+      const formData = new FormData();
+      const timestamp = Date.now();
+      
       formData.append("file", {
         uri: imageUri,
         type: "image/jpeg",
-        name: "avatar.jpg",
+        name: `avatar-${timestamp}.jpg`,
       } as any);
 
+      console.log('📦 Отправляем файл в IPFS через Pinata...');
+
+      // Загружаем файл в IPFS через Pinata
       const response = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
         method: "POST",
         headers: {
@@ -109,17 +118,32 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
         body: formData,
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ Ошибка ответа от Pinata:', errorData);
+        throw new Error('Ошибка при загрузке файла в Pinata');
+      }
+
       const data = await response.json();
+      console.log('📥 Получен ответ от Pinata:', data);
+      
       if (data.IpfsHash) {
+        console.log('🔗 IPFS хеш получен:', data.IpfsHash);
+        console.log('💾 Обновляем профиль пользователя...');
+        
         await updateUserData({
           pinata_avatar_id: data.IpfsHash,
+          avatar_url: `${PINATA_GATEWAY_URL}${data.IpfsHash}`,
+          updated_at: new Date().toISOString(),
         });
 
+        console.log('✅ Аватар успешно загружен в IPFS!');
         return data.IpfsHash;
       }
-      throw new Error("Failed to upload to IPFS");
+
+      throw new Error("❌ Не удалось получить IPFS хеш от Pinata");
     } catch (error) {
-      console.error("Error uploading to Pinata:", error);
+      console.error("❌ Ошибка загрузки в Pinata:", error);
       throw error;
     }
   };
