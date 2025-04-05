@@ -29,6 +29,7 @@ type SupabaseContextProps = {
 	uploadAvatar: (imageUri: string) => Promise<string>;
 	updateUserData: (data: Partial<UserData>) => Promise<void>;
 	getAvatarUrl: (pinataId: string | null) => string | null;
+	resendConfirmationEmail: (email: string) => Promise<void>;
 };
 
 type SupabaseProviderProps = {
@@ -47,6 +48,7 @@ const defaultContext: SupabaseContextProps = {
 	uploadAvatar: async () => '',
 	updateUserData: async () => {},
 	getAvatarUrl: () => null,
+	resendConfirmationEmail: async () => {},
 };
 
 export const SupabaseContext = createContext<SupabaseContextProps>(defaultContext);
@@ -237,6 +239,16 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
 		await signOut();
 	};
 
+	const resendConfirmationEmail = async (email: string) => {
+		const { error } = await supabase.auth.resend({
+			type: 'signup',
+			email: email,
+		});
+		if (error) {
+			throw error;
+		}
+	};
+
 	useEffect(() => {
 		const { data: { subscription } } = supabase.auth.onAuthStateChange(
 			async (event, currentSession) => {
@@ -308,6 +320,7 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
 				uploadAvatar,
 				updateUserData,
 				getAvatarUrl,
+				resendConfirmationEmail,
 			}}
 		>
 			{children}

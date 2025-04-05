@@ -11,6 +11,7 @@ import { Form, FormField, FormInput } from "@/components/ui/form";
 import { Text } from "@/components/ui/text";
 import { H1, Muted } from "@/components/ui/typography";
 import { useSupabase } from "@/context/supabase-provider";
+import { IS_DEVELOPMENT, DEV_CREDENTIALS } from "@/constants/env";
 
 const formSchema = z.object({
 	email: z.string().email("Пожалуйста, введите корректный email адрес."),
@@ -18,18 +19,25 @@ const formSchema = z.object({
 });
 
 export default function SignIn() {
-	const { signInWithPassword } = useSupabase();
+	const { signInWithPassword, resendConfirmationEmail } = useSupabase();
 	const router = useRouter();
 	const { verifyEmail } = useLocalSearchParams();
 	const [isLoading, setIsLoading] = useState(false);
+	const [isResending, setIsResending] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [resendSuccess, setResendSuccess] = useState(false);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
-		defaultValues: {
-			email: "",
-			password: "",
-		},
+		defaultValues: IS_DEVELOPMENT 
+      ? {
+          email: DEV_CREDENTIALS.email,
+          password: DEV_CREDENTIALS.password,
+        }
+      : {
+          email: "",
+          password: "",
+        },
 	});
 
 	async function onSubmit(data: z.infer<typeof formSchema>) {
@@ -42,11 +50,28 @@ export default function SignIn() {
 			console.log(error.message);
 			if (error.message === "Email not confirmed") {
 				setError("Пожалуйста, подтвердите ваш email адрес. Проверьте почту и перейдите по ссылке для подтверждения.");
+			} else if (error.message === "Invalid login credentials") {
+				setError("Неверный email или пароль.");
+			} else {
+				setError("Произошла ошибка при входе. Пожалуйста, попробуйте позже.");
 			}
 		} finally {
 			setIsLoading(false);
 		}
 	}
+
+	const handleResendConfirmation = async () => {
+		setIsResending(true);
+		try {
+			await resendConfirmationEmail(form.getValues("email"));
+			setResendSuccess(true);
+			setTimeout(() => setResendSuccess(false), 5000);
+		} catch (error) {
+			console.error("Error resending confirmation:", error);
+		} finally {
+			setIsResending(false);
+		}
+	};
 
 	return (
 		<SafeAreaView className="flex-1 bg-background p-4" edges={["bottom"]}>
@@ -59,12 +84,43 @@ export default function SignIn() {
 							Пожалуйста, подтвердите ваш email адрес перед входом.
 							Проверьте вашу почту и перейдите по ссылке для подтверждения.
 						</Text>
+						<Button
+							size="sm"
+							variant="ghost"
+							onPress={handleResendConfirmation}
+							disabled={isResending}
+							className="mt-2"
+						>
+							<Text className="text-yellow-500">
+								{isResending ? "Отправка..." : "Отправить письмо повторно"}
+							</Text>
+						</Button>
 					</View>
 				)}
 				{error && (
-					<View className="bg-yellow-500/20 p-4 rounded-lg">
-						<Text className="text-yellow-500 font-medium">
+					<View className="bg-red-500/20 p-4 rounded-lg">
+						<Text className="text-red-500 font-medium">
 							{error}
+						</Text>
+						{error.includes("подтвердите ваш email") && (
+							<Button
+								size="sm"
+								variant="ghost"
+								onPress={handleResendConfirmation}
+								disabled={isResending}
+								className="mt-2"
+							>
+								<Text className="text-red-500">
+									{isResending ? "Отправка..." : "Отправить письмо повторно"}
+								</Text>
+							</Button>
+						)}
+					</View>
+				)}
+				{resendSuccess && (
+					<View className="bg-green-500/20 p-4 rounded-lg">
+						<Text className="text-green-500 font-medium">
+							Письмо с подтверждением успешно отправлено! Пожалуйста, проверьте вашу почту.
 						</Text>
 					</View>
 				)}

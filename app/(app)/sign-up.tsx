@@ -9,33 +9,34 @@ import { SafeAreaView } from "@/components/safe-area-view";
 import { Button } from "@/components/ui/button";
 import { Form, FormField, FormInput } from "@/components/ui/form";
 import { Text } from "@/components/ui/text";
-import { H1 } from "@/components/ui/typography";
+import { H1, Muted } from "@/components/ui/typography";
 import { useSupabase } from "@/context/supabase-provider";
+import { IS_DEVELOPMENT, DEV_CREDENTIALS } from "@/constants/env";
 
 const formSchema = z
 	.object({
-		email: z.string().email("Please enter a valid email address."),
+		email: z.string().email("Пожалуйста, введите корректный email адрес."),
 		password: z
 			.string()
-			.min(8, "Please enter at least 8 characters.")
-			.max(64, "Please enter fewer than 64 characters.")
+			.min(8, "Пожалуйста, введите минимум 8 символов.")
+			.max(64, "Пожалуйста, введите меньше 64 символов.")
 			.regex(
 				/^(?=.*[a-z])/,
-				"Your password must have at least one lowercase letter.",
+				"Пароль должен содержать хотя бы одну строчную букву.",
 			)
 			.regex(
 				/^(?=.*[A-Z])/,
-				"Your password must have at least one uppercase letter.",
+				"Пароль должен содержать хотя бы одну заглавную букву.",
 			)
-			.regex(/^(?=.*[0-9])/, "Your password must have at least one number.")
+			.regex(/^(?=.*[0-9])/, "Пароль должен содержать хотя бы одну цифру.")
 			.regex(
 				/^(?=.*[!@#$%^&*])/,
-				"Your password must have at least one special character.",
+				"Пароль должен содержать хотя бы один специальный символ.",
 			),
-		confirmPassword: z.string().min(8, "Please enter at least 8 characters."),
+		confirmPassword: z.string().min(8, "Пожалуйста, введите минимум 8 символов."),
 	})
 	.refine((data) => data.password === data.confirmPassword, {
-		message: "Your passwords do not match.",
+		message: "Пароли не совпадают.",
 		path: ["confirmPassword"],
 	});
 
@@ -43,24 +44,41 @@ export default function SignUp() {
 	const { signUp } = useSupabase();
 	const router = useRouter();
 	const [isLoading, setIsLoading] = useState(false);
+	const [success, setSuccess] = useState(false);
+	const [error, setError] = useState<string | null>(null);
 
 	const form = useForm<z.infer<typeof formSchema>>({
 		resolver: zodResolver(formSchema),
-		defaultValues: {
-			email: "",
-			password: "",
-			confirmPassword: "",
-		},
+		defaultValues: IS_DEVELOPMENT 
+      ? {
+          email: DEV_CREDENTIALS.email,
+          password: DEV_CREDENTIALS.password,
+          confirmPassword: DEV_CREDENTIALS.password,
+        }
+      : {
+          email: "",
+          password: "",
+          confirmPassword: "",
+        },
 	});
 
 	async function onSubmit(data: z.infer<typeof formSchema>) {
 		setIsLoading(true);
+		setError(null);
 		try {
 			await signUp(data.email, data.password);
 			form.reset();
-			router.replace("/(app)/sign-in");
+			setSuccess(true);
+			setTimeout(() => {
+				router.replace("/(app)/sign-in?verifyEmail=true");
+			}, 3000);
 		} catch (error: Error | any) {
 			console.log(error.message);
+			if (error.message.includes("User already registered")) {
+				setError("Пользователь с таким email уже зарегистрирован.");
+			} else {
+				setError("Произошла ошибка при регистрации. Пожалуйста, попробуйте позже.");
+			}
 		} finally {
 			setIsLoading(false);
 		}
@@ -70,7 +88,22 @@ export default function SignUp() {
 		<SafeAreaView className="flex-1 bg-background p-4" edges={["bottom"]}>
 			<Stack.Screen options={{ headerShown: false }} />
 			<View className="flex-1 gap-4 web:m-4">
-				<H1 className="self-start">Sign Up</H1>
+				<H1 className="self-start">Регистрация</H1>
+				{success && (
+					<View className="bg-green-500/20 p-4 rounded-lg">
+						<Text className="text-green-500 font-medium">
+							Регистрация успешна! Мы отправили письмо с подтверждением на ваш email.
+							Пожалуйста, проверьте почту и перейдите по ссылке для подтверждения аккаунта.
+						</Text>
+					</View>
+				)}
+				{error && (
+					<View className="bg-red-500/20 p-4 rounded-lg">
+						<Text className="text-red-500 font-medium">
+							{error}
+						</Text>
+					</View>
+				)}
 				<Form {...form}>
 					<View className="gap-4">
 						<FormField
@@ -93,8 +126,8 @@ export default function SignUp() {
 							name="password"
 							render={({ field }) => (
 								<FormInput
-									label="Password"
-									placeholder="Password"
+									label="Пароль"
+									placeholder="Пароль"
 									autoCapitalize="none"
 									autoCorrect={false}
 									secureTextEntry
@@ -107,8 +140,8 @@ export default function SignUp() {
 							name="confirmPassword"
 							render={({ field }) => (
 								<FormInput
-									label="Confirm Password"
-									placeholder="Confirm password"
+									label="Подтверждение пароля"
+									placeholder="Подтвердите пароль"
 									autoCapitalize="none"
 									autoCorrect={false}
 									secureTextEntry
@@ -129,7 +162,7 @@ export default function SignUp() {
 				{isLoading ? (
 					<ActivityIndicator size="small" color="white" />
 				) : (
-					<Text>Sign Up</Text>
+					<Text>Зарегистрироваться</Text>
 				)}
 			</Button>
 		</SafeAreaView>

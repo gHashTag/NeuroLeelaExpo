@@ -18,10 +18,12 @@ export default function WelcomeScreen() {
 					source={require("@/assets/icon.png")}
 					className="w-48 h-48 rounded-xl"
 				/>
-				<H1 className="text-center">Welcome to Leela Chakra!</H1>
-				<Muted className="text-center">
-				Embark on the ancient journey of self-discovery with the mysteries of Leela Chakra.
-				</Muted>
+				<View className="w-[80%] max-w-[300px]">
+					<H1 className="text-center">Welcome to Leela Chakra!</H1>
+					<Muted className="text-center mt-2">
+						Embark on the ancient journey of self-discovery with the mysteries of Leela Chakra.
+					</Muted>
+				</View>
 			</View>
 			<View className="flex flex-col gap-y-4 web:m-4">
 				<Button
