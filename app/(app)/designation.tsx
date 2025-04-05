@@ -35,7 +35,7 @@ export default function Designation() {
     setIsLoading(true);
     try {
       await updateUserData({
-        designation: data.designation
+        designation: data.designation,
       });
       router.replace("/(app)/(protected)/gamescreen");
     } catch (error) {
@@ -51,8 +51,8 @@ export default function Designation() {
       <View className="flex-1 gap-4 web:m-4">
         <H1 className="self-start">Ваши намерения</H1>
         <Muted className="mb-4">
-          Расскажите, что привело вас к нам? Это поможет нам лучше понять ваши цели
-          и сделать ваш опыт более персонализированным.
+          Расскажите, что привело вас к нам? Это поможет нам лучше понять ваши цели и сделать ваш
+          опыт более персонализированным.
         </Muted>
 
         <Form {...form}>
@@ -89,13 +89,9 @@ export default function Designation() {
           disabled={isLoading}
           className="flex-1"
         >
-          {isLoading ? (
-            <ActivityIndicator size="small" />
-          ) : (
-            <Text>Продолжить</Text>
-          )}
+          {isLoading ? <ActivityIndicator size="small" /> : <Text>Продолжить</Text>}
         </Button>
       </View>
     </SafeAreaView>
   );
-} 
+}

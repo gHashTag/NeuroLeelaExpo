@@ -1,5 +1,4 @@
-import axios, { isAxiosError } from 'axios'
-
+import axios, { isAxiosError } from "axios";
 
 export async function sendAIResponse(
   telegram_id: string,
@@ -9,7 +8,7 @@ export async function sendAIResponse(
   full_name: string
 ): Promise<{ ai_response: string } | null> {
   try {
-    const url = `${process.env.EXPO_PUBLIC_ELESTIO_URL}/ai-assistant/ai-response`
+    const url = `${process.env.EXPO_PUBLIC_ELESTIO_URL}/ai-assistant/ai-response`;
 
     const { data } = await axios.post(
       url,
@@ -22,20 +21,20 @@ export async function sendAIResponse(
       },
       {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       }
-    )
-    console.log('sendAIResponse data', data)
+    );
+    console.log("sendAIResponse data", data);
     return {
       ai_response: data.ai_response,
-    }
+    };
   } catch (error) {
     if (isAxiosError(error)) {
-      console.error('API Error:', error.response?.data || error.message)
+      console.error("API Error:", error.response?.data || error.message);
     } else {
-      console.error('Error sending AI response:', error)
+      console.error("Error sending AI response:", error);
     }
-    return null
+    return null;
   }
 }

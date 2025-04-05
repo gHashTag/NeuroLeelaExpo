@@ -1,8 +1,8 @@
 import { useRouter, Stack } from "expo-router";
 import React, { useState } from "react";
 import { View, Image, TouchableOpacity, ActivityIndicator } from "react-native";
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
+import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 
 import { SafeAreaView } from "@/components/safe-area-view";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ export default function Avatar() {
         [{ resize: { width: 400, height: 400 } }],
         { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
       );
-      
+
       setImage(optimizedImage.uri);
     }
   };
@@ -56,21 +56,17 @@ export default function Avatar() {
       <View className="flex-1 gap-4 web:m-4">
         <H1 className="self-start">Выберите аватар</H1>
         <Muted className="mb-4">
-          Добавьте фотографию профиля, чтобы другие пользователи могли узнать вас.
-          Вы можете пропустить этот шаг и добавить фото позже.
+          Добавьте фотографию профиля, чтобы другие пользователи могли узнать вас. Вы можете
+          пропустить этот шаг и добавить фото позже.
         </Muted>
 
         <View className="items-center justify-center py-8">
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={pickImage}
             className="w-32 h-32 rounded-full bg-gray-100 items-center justify-center overflow-hidden"
           >
             {image ? (
-              <Image 
-                source={{ uri: image }} 
-                className="w-full h-full"
-                resizeMode="cover"
-              />
+              <Image source={{ uri: image }} className="w-full h-full" resizeMode="cover" />
             ) : (
               <Text className="text-gray-400">Нажмите, чтобы выбрать</Text>
             )}
@@ -94,13 +90,9 @@ export default function Avatar() {
           disabled={!image || isLoading}
           className="flex-1"
         >
-          {isLoading ? (
-            <ActivityIndicator size="small" />
-          ) : (
-            <Text>Продолжить</Text>
-          )}
+          {isLoading ? <ActivityIndicator size="small" /> : <Text>Продолжить</Text>}
         </Button>
       </View>
     </SafeAreaView>
   );
-} 
+}

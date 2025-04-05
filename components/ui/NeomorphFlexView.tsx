@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, ViewStyle, StyleSheet } from 'react-native';
-import { useTheme } from '@react-navigation/native';
-import { black, lightGray } from '@constants/colors';
+import React from "react";
+import { View, ViewStyle, StyleSheet } from "react-native";
+import { useTheme } from "@react-navigation/native";
+import { black, lightGray } from "@constants/colors";
 
 interface NeomorphFlexViewProps {
   children: React.ReactNode;
@@ -32,7 +32,7 @@ const NeomorphFlexView: React.FC<NeomorphFlexViewProps> = ({
       <View style={{ ...viewStyle, borderRadius }}>{children}</View>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {

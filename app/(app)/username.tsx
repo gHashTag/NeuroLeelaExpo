@@ -17,14 +17,17 @@ const formSchema = z.object({
     .string()
     .min(3, "Username должен быть не менее 3 символов.")
     .max(20, "Username должен быть не более 20 символов.")
-    .regex(/^[a-zA-Z0-9_]+$/, "Username может содержать только буквы, цифры и нижнее подчеркивание."),
+    .regex(
+      /^[a-zA-Z0-9_]+$/,
+      "Username может содержать только буквы, цифры и нижнее подчеркивание."
+    ),
 });
 
 export default function Username() {
   const router = useRouter();
   const { updateUserData } = useSupabase();
   const [error, setError] = useState<string | null>(null);
-  
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -53,15 +56,13 @@ export default function Username() {
         <Muted className="mb-4">
           Выберите username для вашего аккаунта. Вы сможете изменить его позже.
         </Muted>
-        
+
         {error && (
           <View className="bg-yellow-500/20 p-4 rounded-lg">
-            <Text className="text-yellow-500 font-medium">
-              {error}
-            </Text>
+            <Text className="text-yellow-500 font-medium">{error}</Text>
           </View>
         )}
-        
+
         <Form {...form}>
           <View className="gap-4">
             <FormField
@@ -96,4 +97,4 @@ export default function Username() {
       </Button>
     </SafeAreaView>
   );
-} 
+}

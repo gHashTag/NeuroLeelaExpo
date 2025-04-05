@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState } from "react";
 
 type RegistrationData = {
   username: string;
@@ -14,9 +14,9 @@ type RegistrationContextType = {
 };
 
 const defaultRegistrationData: RegistrationData = {
-  username: '',
-  photo_url: '',
-  designation: '',
+  username: "",
+  photo_url: "",
+  designation: "",
 };
 
 export const RegistrationContext = createContext<RegistrationContextType>({
@@ -29,18 +29,19 @@ export const RegistrationContext = createContext<RegistrationContextType>({
 export const useRegistration = () => useContext(RegistrationContext);
 
 export const RegistrationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [registrationData, setRegistrationData] = useState<RegistrationData>(defaultRegistrationData);
+  const [registrationData, setRegistrationData] =
+    useState<RegistrationData>(defaultRegistrationData);
 
   const setUsername = (username: string) => {
-    setRegistrationData(prev => ({ ...prev, username }));
+    setRegistrationData((prev) => ({ ...prev, username }));
   };
 
   const setPhotoUrl = (photo_url: string) => {
-    setRegistrationData(prev => ({ ...prev, photo_url }));
+    setRegistrationData((prev) => ({ ...prev, photo_url }));
   };
 
   const setDesignation = (designation: string) => {
-    setRegistrationData(prev => ({ ...prev, designation }));
+    setRegistrationData((prev) => ({ ...prev, designation }));
   };
 
   return (
@@ -55,4 +56,4 @@ export const RegistrationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       {children}
     </RegistrationContext.Provider>
   );
-}; 
+};

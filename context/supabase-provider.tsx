@@ -1,7 +1,7 @@
 import { Session, User } from "@supabase/supabase-js";
 import { useRouter, useSegments, SplashScreen } from "expo-router";
 import { createContext, useContext, useEffect, useState } from "react";
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from "expo-file-system";
 
 import { supabase } from "@/config/supabase";
 
@@ -11,44 +11,44 @@ const PINATA_GATEWAY_URL = process.env.EXPO_PUBLIC_PINATA_GATEWAY_URL;
 SplashScreen.preventAutoHideAsync();
 
 type UserData = {
-	user_id: string;
-	username: string | null;
-	pinata_avatar_id: string | null;
-	designation: string | null;
+  user_id: string;
+  username: string | null;
+  pinata_avatar_id: string | null;
+  designation: string | null;
 };
 
 type SupabaseContextProps = {
-	user: User | null;
-	session: Session | null;
-	userData: UserData | null;
-	initialized?: boolean;
-	signUp: (email: string, password: string) => Promise<void>;
-	signInWithPassword: (email: string, password: string) => Promise<void>;
-	signOut: () => Promise<void>;
-	deleteAccount: () => Promise<void>;
-	uploadAvatar: (imageUri: string) => Promise<string>;
-	updateUserData: (data: Partial<UserData>) => Promise<void>;
-	getAvatarUrl: (pinataId: string | null) => string | null;
-	resendConfirmationEmail: (email: string) => Promise<void>;
+  user: User | null;
+  session: Session | null;
+  userData: UserData | null;
+  initialized?: boolean;
+  signUp: (email: string, password: string) => Promise<void>;
+  signInWithPassword: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
+  uploadAvatar: (imageUri: string) => Promise<string>;
+  updateUserData: (data: Partial<UserData>) => Promise<void>;
+  getAvatarUrl: (pinataId: string | null) => string | null;
+  resendConfirmationEmail: (email: string) => Promise<void>;
 };
 
 type SupabaseProviderProps = {
-	children: React.ReactNode;
+  children: React.ReactNode;
 };
 
 const defaultContext: SupabaseContextProps = {
-	user: null,
-	session: null,
-	userData: null,
-	initialized: false,
-	signUp: async () => {},
-	signInWithPassword: async () => {},
-	signOut: async () => {},
-	deleteAccount: async () => {},
-	uploadAvatar: async () => '',
-	updateUserData: async () => {},
-	getAvatarUrl: () => null,
-	resendConfirmationEmail: async () => {},
+  user: null,
+  session: null,
+  userData: null,
+  initialized: false,
+  signUp: async () => {},
+  signInWithPassword: async () => {},
+  signOut: async () => {},
+  deleteAccount: async () => {},
+  uploadAvatar: async () => "",
+  updateUserData: async () => {},
+  getAvatarUrl: () => null,
+  resendConfirmationEmail: async () => {},
 };
 
 export const SupabaseContext = createContext<SupabaseContextProps>(defaultContext);
@@ -56,274 +56,281 @@ export const SupabaseContext = createContext<SupabaseContextProps>(defaultContex
 export const useSupabase = () => useContext(SupabaseContext);
 
 export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
-	const router = useRouter();
-	const segments = useSegments();
-	const [user, setUser] = useState<User | null>(null);
-	const [session, setSession] = useState<Session | null>(null);
-	const [userData, setUserData] = useState<UserData | null>(null);
-	const [initialized, setInitialized] = useState<boolean>(false);
+  const router = useRouter();
+  const segments = useSegments();
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [initialized, setInitialized] = useState<boolean>(false);
 
-	const createUserRecord = async (userId: string) => {
-		const { error } = await supabase
-			.from('users')
-			.insert([{ user_id: userId }]);
+  const createUserRecord = async (userId: string) => {
+    const { error } = await supabase.from("users").insert([{ user_id: userId }]);
 
-		if (error) {
-			console.error('Error creating user record:', error);
-		}
-	};
+    if (error) {
+      console.error("Error creating user record:", error);
+    }
+  };
 
-	const checkUserData = async (userId: string) => {
-		const { data, error } = await supabase
-			.from('users')
-			.select('user_id, username, pinata_avatar_id, designation')
-			.eq('user_id', userId)
-			.single();
+  const checkUserData = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("users")
+      .select("user_id, username, pinata_avatar_id, designation")
+      .eq("user_id", userId)
+      .single();
 
-		if (error) {
-			if (error.code === 'PGRST116') {
-				await supabase.auth.signOut();
-				router.replace("/(app)/welcome");
-				return null;
-			}
-			console.error('Error fetching user data:', error);
-			return null;
-		}
+    if (error) {
+      if (error.code === "PGRST116") {
+        await supabase.auth.signOut();
+        router.replace("/(app)/welcome");
+        return null;
+      }
+      console.error("Error fetching user data:", error);
+      return null;
+    }
 
-		return data as UserData;
-	};
+    return data as UserData;
+  };
 
-	const uploadAvatar = async (imageUri: string): Promise<string> => {
-		try {
-			const formData = new FormData();
-			
-			formData.append('file', {
-				uri: imageUri,
-				type: 'image/jpeg',
-				name: 'avatar.jpg'
-			} as any);
+  const uploadAvatar = async (imageUri: string): Promise<string> => {
+    try {
+      const formData = new FormData();
 
-			const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
-				method: 'POST',
-				headers: {
-					'Authorization': `Bearer ${PINATA_JWT}`
-				},
-				body: formData
-			});
+      formData.append("file", {
+        uri: imageUri,
+        type: "image/jpeg",
+        name: "avatar.jpg",
+      } as any);
 
-			const data = await response.json();
-			if (data.IpfsHash) {
-				await updateUserData({
-					pinata_avatar_id: data.IpfsHash
-				});
+      const response = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${PINATA_JWT}`,
+        },
+        body: formData,
+      });
 
-				return data.IpfsHash;
-			}
-			throw new Error('Failed to upload to IPFS');
-		} catch (error) {
-			console.error('Error uploading to Pinata:', error);
-			throw error;
-		}
-	};
+      const data = await response.json();
+      if (data.IpfsHash) {
+        await updateUserData({
+          pinata_avatar_id: data.IpfsHash,
+        });
 
-	const getAvatarUrl = (pinataId: string | null): string | null => {
-		if (!pinataId || !PINATA_GATEWAY_URL) return null;
-		return `https://${PINATA_GATEWAY_URL}/ipfs/${pinataId}`;
-	};
+        return data.IpfsHash;
+      }
+      throw new Error("Failed to upload to IPFS");
+    } catch (error) {
+      console.error("Error uploading to Pinata:", error);
+      throw error;
+    }
+  };
 
-	const updateUserData = async (data: Partial<UserData>) => {
-		if (!session?.user?.id) return;
+  const getAvatarUrl = (pinataId: string | null): string | null => {
+    if (!pinataId || !PINATA_GATEWAY_URL) return null;
+    return `https://${PINATA_GATEWAY_URL}/ipfs/${pinataId}`;
+  };
 
-		// Проверяем, если обновляется username
-		if (data.username) {
-			// Проверяем, не занят ли username другим пользователем
-			const { data: existingUser, error: checkError } = await supabase
-				.from('users')
-				.select('user_id')
-				.eq('username', data.username)
-				.neq('user_id', session.user.id)
-				.single();
+  const updateUserData = async (data: Partial<UserData>) => {
+    if (!session?.user?.id) return;
 
-			if (checkError && checkError.code !== 'PGRST116') {
-				console.error('Error checking username:', checkError);
-				throw new Error('Ошибка при проверке username');
-			}
+    // Проверяем, если обновляется username
+    if (data.username) {
+      // Проверяем, не занят ли username другим пользователем
+      const { data: existingUser, error: checkError } = await supabase
+        .from("users")
+        .select("user_id")
+        .eq("username", data.username)
+        .neq("user_id", session.user.id)
+        .single();
 
-			if (existingUser) {
-				throw new Error('Этот username уже занят');
-			}
-		}
+      if (checkError && checkError.code !== "PGRST116") {
+        console.error("Error checking username:", checkError);
+        throw new Error("Ошибка при проверке username");
+      }
 
-		const { error } = await supabase
-			.from('users')
-			.update(data)
-			.eq('user_id', session.user.id);
+      if (existingUser) {
+        throw new Error("Этот username уже занят");
+      }
+    }
 
-		if (error) {
-			console.error('Error updating user data:', error);
-			throw error;
-		}
+    const { error } = await supabase.from("users").update(data).eq("user_id", session.user.id);
 
-		// Обновляем локальное состояние
-		const updatedUserData = await checkUserData(session.user.id);
-		setUserData(updatedUserData);
-	};
+    if (error) {
+      console.error("Error updating user data:", error);
+      throw error;
+    }
 
-	const signUp = async (email: string, password: string) => {
-		const { data, error } = await supabase.auth.signUp({
-			email,
-			password,
-		});
-		if (error) {
-			throw error;
-		}
-		if (data.user) {
-			await createUserRecord(data.user.id);
-		}
-		router.replace("/(app)/sign-in?verifyEmail=true");
-	};
+    // Обновляем локальное состояние
+    const updatedUserData = await checkUserData(session.user.id);
+    setUserData(updatedUserData);
+  };
 
-	const signInWithPassword = async (email: string, password: string) => {
-		const { data, error } = await supabase.auth.signInWithPassword({
-			email,
-			password,
-		});
-		
-		if (error) {
-			throw error;
-		}
+  const signUp = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    if (error) {
+      throw error;
+    }
+    if (data.user) {
+      await createUserRecord(data.user.id);
+    }
+    router.replace("/(app)/sign-in?verifyEmail=true");
+  };
 
-		if (data.user) {
-			const userData = await checkUserData(data.user.id);
-			if (!userData?.username) {
-				router.replace("/(app)/username");
-			} else {
-				router.replace("/(app)/(protected)/gamescreen");
-			}
-		}
-	};
+  const signInWithPassword = async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-	const signOut = async () => {
-		const { error } = await supabase.auth.signOut();
-		if (error) {
-			throw error;
-		}
-		router.replace("/(app)/welcome");
-	};
+    if (error) {
+      throw error;
+    }
 
-	const deleteAccount = async () => {
-		if (!session?.user?.id) return;
+    if (data.user) {
+      const userData = await checkUserData(data.user.id);
+      if (!userData?.username) {
+        router.replace("/(app)/username");
+      } else {
+        router.replace("/(app)/(protected)/gamescreen");
+      }
+    }
+  };
 
-		// Сначала удаляем запись из таблицы users
-		const { error: deleteError } = await supabase
-			.from('users')
-			.delete()
-			.eq('user_id', session.user.id);
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      throw error;
+    }
+    router.replace("/(app)/welcome");
+  };
 
-		if (deleteError) {
-			console.error('Error deleting user data:', deleteError);
-			throw deleteError;
-		}
+  const deleteAccount = async () => {
+    if (!session?.user?.id) return;
 
-		// Затем удаляем аккаунт из auth
-		const { error: authError } = await supabase.auth.admin.deleteUser(
-			session.user.id
-		);
+    // Сначала удаляем запись из таблицы users
+    const { error: deleteError } = await supabase
+      .from("users")
+      .delete()
+      .eq("user_id", session.user.id);
 
-		if (authError) {
-			console.error('Error deleting auth user:', authError);
-			throw authError;
-		}
+    if (deleteError) {
+      console.error("Error deleting user data:", deleteError);
+      throw deleteError;
+    }
 
-		// Выходим из системы
-		await signOut();
-	};
+    // Затем удаляем аккаунт из auth
+    const { error: authError } = await supabase.auth.admin.deleteUser(session.user.id);
 
-	const resendConfirmationEmail = async (email: string) => {
-		const { error } = await supabase.auth.resend({
-			type: 'signup',
-			email: email,
-		});
-		if (error) {
-			throw error;
-		}
-	};
+    if (authError) {
+      console.error("Error deleting auth user:", authError);
+      throw authError;
+    }
 
-	useEffect(() => {
-		const { data: { subscription } } = supabase.auth.onAuthStateChange(
-			async (event, currentSession) => {
-				setSession(currentSession);
-				setUser(currentSession?.user ?? null);
+    // Выходим из системы
+    await signOut();
+  };
 
-				if (currentSession?.user) {
-					const userData = await checkUserData(currentSession.user.id);
-					setUserData(userData);
-				}
+  const resendConfirmationEmail = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email,
+    });
+    if (error) {
+      throw error;
+    }
+  };
 
-				setInitialized(true);
-				await SplashScreen.hideAsync();
-			}
-		);
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
 
-		return () => {
-			subscription.unsubscribe();
-		};
-	}, []);
+      if (currentSession?.user) {
+        const userData = await checkUserData(currentSession.user.id);
+        setUserData(userData);
+      }
 
-	useEffect(() => {
-		if (!initialized) return;
+      setInitialized(true);
+      await SplashScreen.hideAsync();
+    });
 
-		const currentSegment = segments[segments.length - 1];
-		const inProtectedGroup = segments[1] === "(protected)";
-		const inAuthGroup = ["sign-in", "sign-up", "welcome"].includes(segments[segments.length - 1] || "");
-		const inRegistrationFlow = ["username", "avatar", "designation"].includes(segments[segments.length - 1] || "");
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
-		if (session) {
-			if (!userData?.username && currentSegment !== "username") {
-				router.replace("/(app)/username");
-				return;
-			}
-			
-			if (userData?.username && !userData?.pinata_avatar_id && currentSegment !== "avatar") {
-				router.replace("/(app)/avatar");
-				return;
-			}
-			
-			if (userData?.username && userData?.pinata_avatar_id && !userData?.designation && currentSegment !== "designation") {
-				router.replace("/(app)/designation");
-				return;
-			}
-			
-			if (userData?.username && userData?.pinata_avatar_id && userData?.designation && !inProtectedGroup) {
-				router.replace("/(app)/(protected)/gamescreen");
-			}
-		} else if (!inAuthGroup) {
-			router.replace("/(app)/welcome");
-		}
+  useEffect(() => {
+    if (!initialized) return;
 
-		setTimeout(() => {
-			SplashScreen.hideAsync();
-		}, 500);
-	}, [initialized, session, userData]);
+    const currentSegment = segments[segments.length - 1];
+    const inProtectedGroup = segments[1] === "(protected)";
+    const inAuthGroup = ["sign-in", "sign-up", "welcome"].includes(
+      segments[segments.length - 1] || ""
+    );
+    const inRegistrationFlow = ["username", "avatar", "designation"].includes(
+      segments[segments.length - 1] || ""
+    );
 
-	return (
-		<SupabaseContext.Provider
-			value={{
-				user,
-				session,
-				userData,
-				initialized,
-				signUp,
-				signInWithPassword,
-				signOut,
-				deleteAccount,
-				uploadAvatar,
-				updateUserData,
-				getAvatarUrl,
-				resendConfirmationEmail,
-			}}
-		>
-			{children}
-		</SupabaseContext.Provider>
-	);
+    if (session) {
+      if (!userData?.username && currentSegment !== "username") {
+        router.replace("/(app)/username");
+        return;
+      }
+
+      if (userData?.username && !userData?.pinata_avatar_id && currentSegment !== "avatar") {
+        router.replace("/(app)/avatar");
+        return;
+      }
+
+      if (
+        userData?.username &&
+        userData?.pinata_avatar_id &&
+        !userData?.designation &&
+        currentSegment !== "designation"
+      ) {
+        router.replace("/(app)/designation");
+        return;
+      }
+
+      if (
+        userData?.username &&
+        userData?.pinata_avatar_id &&
+        userData?.designation &&
+        !inProtectedGroup
+      ) {
+        router.replace("/(app)/(protected)/gamescreen");
+      }
+    } else if (!inAuthGroup) {
+      router.replace("/(app)/welcome");
+    }
+
+    setTimeout(() => {
+      SplashScreen.hideAsync();
+    }, 500);
+  }, [initialized, session, userData]);
+
+  return (
+    <SupabaseContext.Provider
+      value={{
+        user,
+        session,
+        userData,
+        initialized,
+        signUp,
+        signInWithPassword,
+        signOut,
+        deleteAccount,
+        uploadAvatar,
+        updateUserData,
+        getAvatarUrl,
+        resendConfirmationEmail,
+      }}
+    >
+      {children}
+    </SupabaseContext.Provider>
+  );
 };

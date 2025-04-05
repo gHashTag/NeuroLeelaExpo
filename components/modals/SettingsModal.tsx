@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Modal, View, TouchableOpacity } from 'react-native';
-import { Text } from '@/components/ui/text';
-import { useSupabase } from '@/context/supabase-provider';
+import React, { useState } from "react";
+import { Modal, View, TouchableOpacity } from "react-native";
+import { Text } from "@/components/ui/text";
+import { useSupabase } from "@/context/supabase-provider";
 
 interface SettingsModalProps {
   isVisible: boolean;
@@ -16,27 +16,23 @@ interface ConfirmationModalProps {
   message: string;
 }
 
-const ConfirmationModal = ({ isVisible, onClose, onConfirm, title, message }: ConfirmationModalProps) => (
-  <Modal
-    visible={isVisible}
-    transparent
-    animationType="fade"
-  >
+const ConfirmationModal = ({
+  isVisible,
+  onClose,
+  onConfirm,
+  title,
+  message,
+}: ConfirmationModalProps) => (
+  <Modal visible={isVisible} transparent animationType="fade">
     <View className="flex-1 justify-center items-center bg-black/50">
       <View className="bg-white rounded-2xl p-8 w-[95%] max-w-md">
         <Text className="text-xl font-bold mb-2">{title}</Text>
         <Text className="text-gray-600 mb-8">{message}</Text>
         <View className="flex-row justify-end gap-8">
-          <TouchableOpacity
-            onPress={onClose}
-            className="bg-gray-100 px-8 py-3 rounded-xl"
-          >
+          <TouchableOpacity onPress={onClose} className="bg-gray-100 px-8 py-3 rounded-xl">
             <Text className="text-gray-800 font-medium text-base">Нет</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={onConfirm}
-            className="bg-gray-800 px-8 py-3 rounded-xl"
-          >
+          <TouchableOpacity onPress={onConfirm} className="bg-gray-800 px-8 py-3 rounded-xl">
             <Text className="text-white font-medium text-base">Да</Text>
           </TouchableOpacity>
         </View>
@@ -62,11 +58,7 @@ export const SettingsModal = ({ isVisible, onClose }: SettingsModalProps) => {
 
   return (
     <>
-      <Modal
-        visible={isVisible}
-        transparent
-        animationType="fade"
-      >
+      <Modal visible={isVisible} transparent animationType="fade">
         <View className="flex-1 justify-center items-center bg-black/50">
           <View className="bg-white rounded-2xl p-8 w-[95%] max-w-md">
             <Text className="text-2xl font-bold mb-8 text-center">Настройки</Text>
@@ -81,12 +73,11 @@ export const SettingsModal = ({ isVisible, onClose }: SettingsModalProps) => {
                 onPress={() => setShowLogoutModal(true)}
                 className="bg-gray-800 px-6 py-3 rounded-xl mb-2"
               >
-                <Text className="text-white text-center font-medium text-lg">Выйти из аккаунта</Text>
+                <Text className="text-white text-center font-medium text-lg">
+                  Выйти из аккаунта
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={onClose}
-                className="px-6 py-3 rounded-xl mb-2"
-              >
+              <TouchableOpacity onPress={onClose} className="px-6 py-3 rounded-xl mb-2">
                 <Text className="text-gray-800 text-center font-medium text-lg">Отмена</Text>
               </TouchableOpacity>
             </View>
@@ -111,4 +102,4 @@ export const SettingsModal = ({ isVisible, onClose }: SettingsModalProps) => {
       />
     </>
   );
-}; 
+};

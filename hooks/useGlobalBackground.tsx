@@ -1,13 +1,13 @@
-import { black, lightGray } from '@constants/colors'
-import { useColorScheme } from 'react-native'
+import { black, lightGray } from "@constants/colors";
+import { useColorScheme } from "react-native";
 
 const useGlobalBackground = () => {
-  const isDarkMode = useColorScheme() === 'dark'
-  const backgroundColor = isDarkMode ? black : lightGray
+  const isDarkMode = useColorScheme() === "dark";
+  const backgroundColor = isDarkMode ? black : lightGray;
 
-  const backgroundStyle = [{ backgroundColor }]
+  const backgroundStyle = [{ backgroundColor }];
 
-  return backgroundStyle
-}
+  return backgroundStyle;
+};
 
-export { useGlobalBackground }
+export { useGlobalBackground };

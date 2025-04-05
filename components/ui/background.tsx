@@ -1,14 +1,14 @@
-import React, { ReactNode } from 'react'
+import React, { ReactNode } from "react";
 
-import { ScrollView, StyleSheet, View } from 'react-native'
+import { ScrollView, StyleSheet, View } from "react-native";
 
-import { W } from '@constants/dimensions'
-import { useGlobalBackground } from '@hooks/useGlobalBackground'
+import { W } from "@constants/dimensions";
+import { useGlobalBackground } from "@hooks/useGlobalBackground";
 
 interface BackgroundProps {
-  children: ReactNode
-  isScrollView?: boolean
-  isFlatList?: boolean
+  children: ReactNode;
+  isScrollView?: boolean;
+  isFlatList?: boolean;
 }
 
 const Background: React.FC<BackgroundProps> = ({
@@ -16,7 +16,7 @@ const Background: React.FC<BackgroundProps> = ({
   isScrollView = false,
   isFlatList = false,
 }) => {
-  const backgroundStyle = useGlobalBackground()
+  const backgroundStyle = useGlobalBackground();
 
   if (isScrollView) {
     return (
@@ -28,33 +28,31 @@ const Background: React.FC<BackgroundProps> = ({
           {children}
         </ScrollView>
       </View>
-    )
+    );
   }
 
   if (isFlatList) {
-    return (
-      <View style={[backgroundStyle, styles.flatlistStyle]}>{children}</View>
-    )
+    return <View style={[backgroundStyle, styles.flatlistStyle]}>{children}</View>;
   }
 
-  return <View style={[backgroundStyle, styles.container]}>{children}</View>
-}
+  return <View style={[backgroundStyle, styles.container]}>{children}</View>;
+};
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    alignItems: "center",
     flex: 1,
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
   flatlistStyle: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   scrollViewContent: {
-    alignItems: 'center',
+    alignItems: "center",
     flexGrow: 1,
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
     width: W,
   },
-})
+});
 
-export { Background }
+export { Background };

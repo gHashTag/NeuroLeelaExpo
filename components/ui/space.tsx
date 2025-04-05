@@ -1,13 +1,13 @@
-import React, { memo } from 'react'
+import React, { memo } from "react";
 
-import { View } from 'react-native'
+import { View } from "react-native";
 
-import { s } from 'react-native-size-matters'
+import { s } from "react-native-size-matters";
 
 interface SpaceT {
-  height?: number | string
-  width?: number | string
-  backgroundColor?: string
+  height?: number | string;
+  width?: number | string;
+  backgroundColor?: string;
 }
 
 const Space = memo<SpaceT>(({ height, width, backgroundColor }) => {
@@ -20,7 +20,7 @@ const Space = memo<SpaceT>(({ height, width, backgroundColor }) => {
         width: s(Number(width)) || 0,
       }}
     />
-  )
-})
+  );
+});
 
-export { Space }
+export { Space };

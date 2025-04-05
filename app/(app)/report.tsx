@@ -1,25 +1,25 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import React, { useState } from "react";
+import { View, Text, TextInput, StyleSheet } from "react-native";
 
 import { H1, Muted } from "@/components/ui/typography";
 import { MarkdownText } from "@/components/ui";
 import { Button, buttonTextVariants } from "@/components/ui/button";
-import { router } from 'expo-router';
+import { router } from "expo-router";
 
 export default function Report() {
-	const [text, setText] = useState('');
-	const [error, setError] = useState('');
+  const [text, setText] = useState("");
+  const [error, setError] = useState("");
 
-	const handleTextChange = (input: string) => {
-		setText(input);
-		if (input.length < 50 || input.length > 300) {
-			setError('Текст должен содержать от 50 до 300 символов.');
-		} else {
-			setError('');
-		}
-	};
+  const handleTextChange = (input: string) => {
+    setText(input);
+    if (input.length < 50 || input.length > 300) {
+      setError("Текст должен содержать от 50 до 300 символов.");
+    } else {
+      setError("");
+    }
+  };
 
-	const markdownContent = `
+  const markdownContent = `
    # Plan 1. Birth (janma)
 
    ---
@@ -33,57 +33,55 @@ export default function Report() {
    The unit is the root of all creation. Like all odd numbers, it belongs to the family of the Sun. The unit has a special relationship with the Sun, since it was it that gave birth to our planet. The unit symbolizes an independent person, an independent decision, an independent life, the search for something new, unusual, original.
    `;
 
-   const onSubmit = () => {
-		console.log("Текст отправлен:", text);
-		router.push("/gamescreen");
-	}
+  const onSubmit = () => {
+    console.log("Текст отправлен:", text);
+    router.push("/gamescreen");
+  };
 
-	return (
-		<View style={styles.container}>
-			<MarkdownText text={markdownContent} />
-			<TextInput
-				style={styles.textInput}
-				placeholder="Введите текст"
-				onChangeText={handleTextChange}
-				value={text}
-				multiline
-				maxLength={300}
-			/>
-			{!!error && <Text style={styles.errorText}>{error}</Text>}
-			<Button
-				size="default"
-				variant="default"
-				onPress={onSubmit}
-				disabled={!!error || text.length < 50 || text.length > 300}
-				className="web:m-4"
-			>
-				<Text className={buttonTextVariants({ variant: "default" })}>
-					Отправить
-				</Text>
-			</Button>
-		</View>
-	);
+  return (
+    <View style={styles.container}>
+      <MarkdownText text={markdownContent} />
+      <TextInput
+        style={styles.textInput}
+        placeholder="Введите текст"
+        onChangeText={handleTextChange}
+        value={text}
+        multiline
+        maxLength={300}
+      />
+      {!!error && <Text style={styles.errorText}>{error}</Text>}
+      <Button
+        size="default"
+        variant="default"
+        onPress={onSubmit}
+        disabled={!!error || text.length < 50 || text.length > 300}
+        className="web:m-4"
+      >
+        <Text className={buttonTextVariants({ variant: "default" })}>Отправить</Text>
+      </Button>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		alignItems: 'center',
-		justifyContent: 'center',
-		backgroundColor: 'background',
-		padding: 4,
-		gap: 4,
-		paddingBottom: 20,
-	},
-	textInput: {
-		height: 40,
-		borderColor: 'gray',
-		borderWidth: 1,
-		padding: 10,
-		width: '100%',
-		borderRadius: 5,
-	},
-	errorText: {
-		color: 'red',
-	},
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "background",
+    padding: 4,
+    gap: 4,
+    paddingBottom: 20,
+  },
+  textInput: {
+    height: 40,
+    borderColor: "gray",
+    borderWidth: 1,
+    padding: 10,
+    width: "100%",
+    borderRadius: 5,
+  },
+  errorText: {
+    color: "red",
+  },
 });
