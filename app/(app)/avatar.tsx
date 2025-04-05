@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { H1 } from "@/components/ui/typography";
 import { useSupabase } from "@/context/supabase-provider";
+import { Toast } from "@/components/ui/toast";
 
 export default function Avatar() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function Avatar() {
   const isMobile = width < 768;
   const { session, uploadAvatar } = useSupabase();
   const [image, setImage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -73,9 +74,16 @@ export default function Avatar() {
     ]).start();
   };
 
+  const showError = (message: string) => {
+    setError(message);
+    setTimeout(() => setError(null), 3000); // Скрываем ошибку через 3 секунды
+  };
+
   const pickImage = async () => {
     try {
       animateAvatar();
+      setIsLoading(true);
+      setError(null);
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -136,16 +144,17 @@ export default function Avatar() {
         });
 
         setImage(optimizedImage.uri);
-        setError(null);
       }
     } catch (err: any) {
       console.error('❌ Ошибка при выборе изображения:', err);
-      setError('❌ Не удалось загрузить изображение. Пожалуйста, попробуйте другое фото.');
+      showError('❌ Не удалось загрузить изображение. Пожалуйста, попробуйте другое фото.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleContinue = async () => {
-    setLoading(true);
+    setIsLoading(true);
     animateButton();
     try {
       if (image) {
@@ -154,9 +163,9 @@ export default function Avatar() {
       router.replace("/(app)/designation");
     } catch (err: any) {
       console.error('❌ Ошибка при загрузке аватара:', err);
-      setError('❌ Не удалось сохранить аватар. Пожалуйста, попробуйте позже.');
+      showError('❌ Не удалось сохранить аватар. Пожалуйста, попробуйте позже.');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -272,8 +281,13 @@ export default function Avatar() {
                 </Text>
 
                 {error && (
-                  <View className="bg-red-500/10 p-4 rounded-xl mb-4">
-                    <Text className="text-red-500 text-center">{error}</Text>
+                  <View className="absolute top-4 left-4 right-4 z-50">
+                    <Toast 
+                      variant="error"
+                      title={error}
+                      className="w-full bg-red-50 border border-red-200 shadow-lg"
+                      titleClassName="text-red-700 font-medium text-center"
+                    />
                   </View>
                 )}
 
@@ -305,11 +319,11 @@ export default function Avatar() {
                     size={isMobile ? "default" : "lg"}
                     variant="default"
                     onPress={handleContinue}
-                    disabled={loading || !image}
+                    disabled={isLoading || !image}
                     className={`
                       w-full
                       min-w-[280px]
-                      ${loading ? 'opacity-70' : ''}
+                      ${isLoading ? 'opacity-70' : ''}
                       bg-neutral-900/90 
                       hover:bg-neutral-800 
                       transform 
@@ -334,7 +348,7 @@ export default function Avatar() {
                         text-center
                         min-w-[200px]
                       `}>
-                        {loading ? 'СОХРАНЕНИЕ...' : 'ПРОДОЛЖИТЬ'}
+                        {isLoading ? 'СОХРАНЕНИЕ...' : 'ПРОДОЛЖИТЬ'}
                       </Text>
                     </View>
                   </Button>
