@@ -323,28 +323,6 @@ const GameScreen: React.FC = () => {
             <ChatBot />
           </View>
         </View>
-        
-        {/* Центрированная нижняя навигация */}
-        <View className="py-4 flex-row justify-center items-center border-t border-gray-200 bg-white">
-          <View className="flex-row max-w-md mx-auto space-x-8">
-            <TouchableOpacity className="items-center">
-              <Ionicons name="home-outline" size={24} color="#6A0DAD" />
-              <Text className="text-xs text-purple-900 mt-1">Главная</Text>
-            </TouchableOpacity>
-            <TouchableOpacity className="items-center">
-              <Ionicons name="game-controller-outline" size={24} color="#6A0DAD" />
-              <Text className="text-xs text-purple-900 mt-1">Игра</Text>
-            </TouchableOpacity>
-            <TouchableOpacity className="items-center">
-              <Ionicons name="book-outline" size={24} color="#6A0DAD" />
-              <Text className="text-xs text-purple-900 mt-1">Правила</Text>
-            </TouchableOpacity>
-            <TouchableOpacity className="items-center">
-              <Ionicons name="person-outline" size={24} color="#6A0DAD" />
-              <Text className="text-xs text-purple-900 mt-1">Профиль</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
       </View>
     );
   }
