@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     position: 'relative',
-    backgroundColor: '#f5f5f7', // Светлый фон по умолчанию
+    backgroundColor: '#f0f0f5', // Чуть более насыщенный фон
   },
   backgroundContainer: {
     position: 'absolute',
@@ -113,6 +113,6 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
-    opacity: 0.8, // Немного прозрачный, чтобы не отвлекал от контента
+    opacity: 0.95, // Почти непрозрачный фон
   }
 });

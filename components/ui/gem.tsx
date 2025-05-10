@@ -130,6 +130,8 @@ const styles = StyleSheet.create({
   webNumber: {
     fontWeight: '800',
     textShadowRadius: 5,
+    color: '#333',
+    textShadowColor: 'rgba(255, 255, 255, 1)',
   }
 });
 

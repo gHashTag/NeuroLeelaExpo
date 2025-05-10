@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     borderRadius: 16,
-    opacity: 0.7,
+    opacity: 0.85,
   },
   boardOverlay: {
     position: 'absolute',
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderRadius: 16,
   },
   imageContainer: {
@@ -176,9 +176,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   activeCell: {
-    backgroundColor: 'rgba(142, 36, 170, 0.15)',
-    borderWidth: 2.5,
-    borderColor: 'rgba(142, 36, 170, 0.85)',
+    backgroundColor: 'rgba(142, 36, 170, 0.25)',
+    borderWidth: 3,
+    borderColor: 'rgba(142, 36, 170, 0.9)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
