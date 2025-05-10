@@ -4,7 +4,7 @@ import { GameBoardProps, GemT } from "../../types/index";
 import { GameBoardImage } from "@/assets/gameboard/index";
 import { Gem } from "@components/ui/gem";
 
-function GameBoard({ players }: GameBoardProps) {
+function GameBoard({ players, customScale }: GameBoardProps & { customScale?: number }) {
   // Используем размер окна для адаптивности
   const { width: windowWidth } = useWindowDimensions();
   
@@ -29,6 +29,9 @@ function GameBoard({ players }: GameBoardProps) {
   // Финальные размеры контейнера
   const curImageWidth = boardWidth + 20;
   const curImageHeight = boardHeight + 20;
+
+  // Применяем пользовательское масштабирование, если оно предоставлено
+  const scale = customScale || 1;
 
   // Force light theme
   const scheme = "light";
@@ -75,7 +78,10 @@ function GameBoard({ players }: GameBoardProps) {
       <View 
         style={[
           styles.imageContainer, 
-          { width: curImageWidth, height: curImageHeight },
+          { 
+            width: curImageWidth * scale, 
+            height: curImageHeight * scale 
+          },
           isWeb && styles.webImageContainer
         ]}
       >
@@ -85,7 +91,7 @@ function GameBoard({ players }: GameBoardProps) {
           resizeMode="cover"
         />
         
-        <View style={styles.boardWrapper}>
+        <View style={[styles.boardWrapper, { transform: scale !== 1 ? [{ scale }] : [] }]}>
           {rows.map((a, i) => (
             <View style={[styles.row, { marginVertical: rowMargin / 2 }]} key={i}>
               {a.map((b, index) => {
