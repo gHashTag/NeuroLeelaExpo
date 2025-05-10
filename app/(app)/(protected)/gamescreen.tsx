@@ -239,10 +239,10 @@ const GameScreen: React.FC = () => {
                   </View>
                 </View>
                 
-                {/* Блок с кубиком */}
-                <View className="w-1/2 bg-white/80 rounded-xl p-3 items-center justify-center backdrop-blur-md">
-                  <Text className="text-xs text-center mb-1">Бросить кубик</Text>
-                  <Dice rollDice={rollDice} lastRoll={lastRoll} size="small" />
+                {/* Блок с кубиком по центру */}
+                <View className="bg-white/80 rounded-xl p-4 items-center justify-center backdrop-blur-md mb-4 mx-auto w-2/3">
+                  <Text className="text-sm text-center mb-2 font-semibold text-purple-900">Бросить кубик</Text>
+                  <Dice rollDice={rollDice} lastRoll={lastRoll} size="medium" />
                 </View>
               </View>
               
@@ -298,7 +298,7 @@ const GameScreen: React.FC = () => {
               </View>
             </View>
             
-            {/* Блок с кубиком */}
+            {/* Блок с кубиком по центру */}
             <View className={`bg-white rounded-xl shadow-md p-4 border border-purple-100 ${windowWidth < 768 ? 'flex-1' : 'mb-4 mt-auto'}`}>
               <Text className="text-base font-semibold text-purple-900 mb-3 text-center">Бросок кубика:</Text>
               <View className="items-center justify-center pt-2 pb-4">
@@ -349,22 +349,10 @@ const GameScreen: React.FC = () => {
             <GameBoard players={[currentPlayer]} />
           </View>
           
-          <View className="flex-row mb-4">
-            {/* Информационный блок */}
-            <View className="flex-1 bg-white/80 rounded-xl shadow-md p-3 mr-2 backdrop-blur-md">
-              <Text className="text-sm font-semibold text-purple-900 mb-2">Позиция:</Text>
-              <View className="flex-row items-center justify-center">
-                <View className="bg-purple-100 rounded-full w-12 h-12 items-center justify-center">
-                  <Text className="text-xl font-bold text-purple-800">{currentPlayer.plan}</Text>
-                </View>
-              </View>
-            </View>
-            
-            {/* Блок с кубиком */}
-            <View className="w-1/2 bg-white/80 rounded-xl p-3 items-center justify-center backdrop-blur-md">
-              <Text className="text-xs text-center mb-1">Бросить кубик</Text>
-              <Dice rollDice={rollDice} lastRoll={lastRoll} size="small" />
-            </View>
+          {/* Удалена информация о позиции, только кубик по центру */}
+          <View className="bg-white/80 rounded-xl p-4 items-center justify-center backdrop-blur-md mb-4 mx-auto w-full">
+            <Text className="text-sm text-center mb-2 font-semibold text-purple-900">Бросить кубик</Text>
+            <Dice rollDice={rollDice} lastRoll={lastRoll} size="medium" />
           </View>
           
           {/* Блок чат-бота */}
