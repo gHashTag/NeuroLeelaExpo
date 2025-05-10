@@ -15,7 +15,7 @@ const DEV_PASSWORD = '1234567890';
 
 export default function SignInScreen() {
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const isMobile = width < 768;
   const [email, setEmail] = useState(DEV_MODE ? DEV_EMAIL : "");
   const [password, setPassword] = useState(DEV_MODE ? DEV_PASSWORD : "");
@@ -92,69 +92,59 @@ export default function SignInScreen() {
   `.trim();
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      <SafeAreaView className="flex flex-1 w-full items-center justify-center">
-        <View className="flex flex-1 w-full items-center justify-center px-4 web:px-0">
-          <View className="flex flex-col items-center justify-center w-full max-w-md space-y-8 py-12 mx-auto">
-            <Image
-              source={require("@/assets/icons/512.png")}
-              style={{ width: 80, height: 80, marginBottom: 8 }}
-              resizeMode="contain"
+    <View style={{ minHeight: height, backgroundColor: '#fff' }} className="flex flex-col min-h-screen justify-center items-center">
+      <SafeAreaView className="flex flex-1 w-full justify-center items-center">
+        <View className="w-full max-w-sm mx-auto flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-none border border-neutral-100">
+          <Image
+            source={require("@/assets/icons/512.png")}
+            style={{ width: 80, height: 80, marginBottom: 16 }}
+            resizeMode="contain"
+          />
+          <H1 className="text-center text-2xl font-light tracking-wide text-neutral-800 mb-6">Вход</H1>
+          <View className="space-y-4 w-full mb-4">
+            <TextInput
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              className={inputClassName}
             />
-            <H1 className={`text-center ${isMobile ? 'text-2xl' : 'text-3xl'} font-light tracking-wide text-neutral-800 mb-4`}>
-              Вход
-            </H1>
-            <View className="space-y-6 w-full">
-              <TextInput
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                className={inputClassName}
-              />
-              <TextInput
-                placeholder="Пароль"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                className={inputClassName}
-              />
-            </View>
-            <View className="w-full space-y-4 mt-4">
-              {error && (
-                <Text className="text-red-500 text-center mb-2">{error}</Text>
-              )}
-              {successMessage && (
-                <Text className="text-green-600 text-center mb-2">{successMessage}</Text>
-              )}
-              <Button
-                size={isMobile ? "default" : "lg"}
-                variant="default"
-                className={`w-full min-w-[280px] ${loading ? 'opacity-70' : ''} bg-neutral-900 hover:bg-neutral-800 transition-all duration-300 shadow-lg rounded-xl border border-neutral-200 relative overflow-hidden`}
-                onPress={handleSignIn}
-                disabled={loading}
-              >
-                <View className="w-full flex items-center justify-center">
-                  <Text className={`${isMobile ? 'text-sm' : 'text-base'} font-light tracking-widest text-neutral-100 text-center min-w-[200px]`}>
-                    {loading ? 'ВХОД...' : 'ВОЙТИ'}
-                  </Text>
-                </View>
-              </Button>
-              <Button
-                size={isMobile ? "default" : "lg"}
-                variant="secondary"
-                className={`w-full min-w-[280px] bg-white hover:bg-neutral-100 transition-all duration-300 rounded-xl border border-neutral-200 relative overflow-hidden`}
-                onPress={() => router.push("/sign-up")}
-              >
-                <View className="w-full flex items-center justify-center">
-                  <Text className={`${isMobile ? 'text-sm' : 'text-base'} font-light tracking-widest text-neutral-700 text-center min-w-[200px]`}>
-                    РЕГИСТРАЦИЯ
-                  </Text>
-                </View>
-              </Button>
-            </View>
+            <TextInput
+              placeholder="Пароль"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              className={inputClassName}
+            />
           </View>
+          {error && (
+            <Text className="text-red-500 text-center mb-2">{error}</Text>
+          )}
+          {successMessage && (
+            <Text className="text-green-600 text-center mb-2">{successMessage}</Text>
+          )}
+          <Button
+            size={isMobile ? "default" : "lg"}
+            variant="default"
+            className="w-full min-w-[200px] bg-neutral-900 hover:bg-neutral-800 transition-all duration-300 shadow rounded-xl border border-neutral-200 mb-2"
+            onPress={handleSignIn}
+            disabled={loading}
+          >
+            <Text className="text-base font-light tracking-widest text-neutral-100 text-center">
+              {loading ? 'ВХОД...' : 'ВОЙТИ'}
+            </Text>
+          </Button>
+          <Button
+            size={isMobile ? "default" : "lg"}
+            variant="secondary"
+            className="w-full min-w-[200px] bg-white hover:bg-neutral-100 transition-all duration-300 rounded-xl border border-neutral-200"
+            onPress={() => router.push("/sign-up")}
+          >
+            <Text className="text-base font-light tracking-widest text-neutral-700 text-center">
+              РЕГИСТРАЦИЯ
+            </Text>
+          </Button>
         </View>
       </SafeAreaView>
     </View>
