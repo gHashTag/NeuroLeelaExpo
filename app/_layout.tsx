@@ -1,26 +1,24 @@
-import "../global.css";
-
+import '../global.css';
 import { Slot } from "expo-router";
-import { useEffect } from "react";
-import { SplashScreen } from "expo-router";
+// Removed SplashScreen and useEffect imports
+// import { useEffect } from "react";
+// import { SplashScreen } from "expo-router";
 
 import { SupabaseProvider } from "@/context/supabase-provider";
-import { RegistrationProvider } from "@/context/registration-provider";
+// Keep SupabaseProvider and RegistrationProvider imports if needed later
+// import { RegistrationProvider } from "@/context/registration-provider";
 
 export { ErrorBoundary } from "expo-router";
 
-export const unstable_settings = {
-  initialRouteName: "/(app)/welcome",
-};
-
-SplashScreen.preventAutoHideAsync();
+// Removed unstable_settings
+// Removed SplashScreen.preventAutoHideAsync()
 
 export default function AppLayout() {
+  // Removed useEffect hook
+
   return (
     <SupabaseProvider>
-      <RegistrationProvider>
-        <Slot />
-      </RegistrationProvider>
+      <Slot />
     </SupabaseProvider>
   );
 }

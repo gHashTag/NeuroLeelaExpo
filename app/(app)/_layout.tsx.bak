@@ -16,4 +16,4 @@ export default function AppLayout() {
     // Replaced Stack navigator with Slot to render the current child route directly
     <Slot />
   );
-} 
+}

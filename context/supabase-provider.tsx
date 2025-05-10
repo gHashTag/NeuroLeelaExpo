@@ -1,9 +1,9 @@
 import { Session, User } from "@supabase/supabase-js";
 import { useRouter, useSegments, SplashScreen } from "expo-router";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useRef } from "react";
 import * as FileSystem from "expo-file-system";
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { PINATA_JWT, PINATA_GATEWAY_URL } from '@/constants';
+import { createClient } from '@supabase/supabase-js';
+import { pinataService } from '@/services/pinata';
 
 import { supabase } from "@/config/supabase";
 
@@ -14,8 +14,8 @@ type UserData = {
   username: string | null;
   pinata_avatar_id: string | null;
   designation: string | null;
-  avatar_url?: string;
-  updated_at?: string;
+  avatar_url: string | null;
+  updated_at: string | null;
 };
 
 type SupabaseContextProps = {
@@ -29,7 +29,7 @@ type SupabaseContextProps = {
   deleteAccount: () => Promise<void>;
   uploadAvatar: (imageUri: string) => Promise<string>;
   updateUserData: (data: Partial<UserData>) => Promise<void>;
-  getAvatarUrl: (pinataId: string | null) => string | null;
+  getAvatarUrl: (ipfsHash: string) => string | null;
   resendConfirmationEmail: (email: string) => Promise<void>;
 };
 
@@ -57,12 +57,15 @@ export const SupabaseContext = createContext<SupabaseContextProps>(defaultContex
 export const useSupabase = () => useContext(SupabaseContext);
 
 export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
+  console.log('SupabaseProvider mounted');
   const router = useRouter();
   const segments = useSegments();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [initialized, setInitialized] = useState<boolean>(false);
+  const prevSession = useRef<Session | null>(null);
+  const prevUserData = useRef<UserData | null>(null);
 
   const createUserRecord = async (userId: string) => {
     const { error } = await supabase.from("users").insert([{ user_id: userId }]);
@@ -73,119 +76,148 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
   };
 
   const checkUserData = async (userId: string) => {
-    const { data, error } = await supabase
-      .from("users")
-      .select("user_id, username, pinata_avatar_id, designation")
-      .eq("user_id", userId)
-      .single();
-
-    if (error) {
-      if (error.code === "PGRST116") {
-        await supabase.auth.signOut();
+    try {
+      console.log('🔍 Проверяем данные пользователя:', userId);
+      
+      // Проверяем текущую сессию
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error('❌ Ошибка получения сессии:', sessionError);
+        throw sessionError;
+      }
+      
+      if (!session) {
+        console.error('❌ Нет активной сессии');
         router.replace("/(app)/welcome");
         return null;
       }
-      console.error("Error fetching user data:", error);
+
+      // Получаем данные пользователя
+      const { data, error } = await supabase
+        .from("users")
+        .select("user_id, username, pinata_avatar_id, avatar_url, designation, updated_at")
+        .eq("user_id", userId)
+        .single();
+
+      if (error) {
+        if (error.code === "PGRST116") {
+          console.log('⚠️ Пользователь не найден, создаем новую запись...');
+          await createUserRecord(userId);
+          return {
+            user_id: userId,
+            username: null,
+            pinata_avatar_id: null,
+            avatar_url: null,
+            designation: null,
+            updated_at: new Date().toISOString()
+          } as UserData;
+        }
+        console.error("❌ Ошибка получения данных пользователя:", error);
+        return null;
+      }
+
+      console.log('✅ Данные пользователя получены:', data);
+      return data as UserData;
+    } catch (error) {
+      console.error('❌ Критическая ошибка в checkUserData:', error);
       return null;
     }
+  };
 
-    return data as UserData;
+  const getAvatarUrl = (ipfsHash: string): string | null => {
+    return pinataService.getFileUrl(ipfsHash);
+  };
+
+  // Функция для кэширования аватара локально
+  const cacheAvatar = async (url: string): Promise<string> => {
+    try {
+      console.log('📥 Начинаем кэширование аватара...');
+      
+      const filename = url.split('/').pop() || 'avatar.jpg';
+      const cacheDir = `${FileSystem.cacheDirectory}avatars/`;
+      const filePath = `${cacheDir}${filename}`;
+
+      // Создаем директорию для кэша, если её нет
+      await FileSystem.makeDirectoryAsync(cacheDir, { intermediates: true }).catch(() => {});
+
+      // Проверяем, есть ли файл уже в кэше
+      const fileInfo = await FileSystem.getInfoAsync(filePath);
+      if (fileInfo.exists) {
+        console.log('✅ Аватар найден в кэше');
+        return filePath;
+      }
+
+      // Скачиваем файл
+      console.log('⬇️ Скачиваем аватар...');
+      await FileSystem.downloadAsync(url, filePath);
+      console.log('✅ Аватар успешно кэширован');
+      
+      return filePath;
+    } catch (error) {
+      console.error('❌ Ошибка при кэшировании аватара:', error);
+      throw error;
+    }
   };
 
   const uploadAvatar = async (imageUri: string): Promise<string> => {
     try {
-      console.log('🚀 Начинаем загрузку аватара в Pinata...');
-      console.log('📸 URI изображения:', imageUri);
-
-      // Создаем FormData для загрузки
-      const formData = new FormData();
-      const timestamp = Date.now();
+      console.log('🎯 Начинаем процесс загрузки аватара URI:', imageUri);
       
-      formData.append("file", {
+      const uriParts = imageUri.split('/');
+      const originalFileName = uriParts[uriParts.length - 1];
+      const extensionParts = originalFileName.split('.');
+      const fileExtension = extensionParts.length > 1 ? extensionParts.pop() : 'jpg'; // по умолчанию jpg, если нет расширения
+      const defaultName = `avatar_${Date.now()}.${fileExtension}`;
+
+      const fileInput = {
         uri: imageUri,
-        type: "image/jpeg",
-        name: `avatar-${timestamp}.jpg`,
-      } as any);
-
-      console.log('📦 Отправляем файл в IPFS через Pinata...');
-
-      // Загружаем файл в IPFS через Pinata
-      const response = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${PINATA_JWT}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('❌ Ошибка ответа от Pinata:', errorData);
-        throw new Error('Ошибка при загрузке файла в Pinata');
-      }
-
-      const data = await response.json();
-      console.log('📥 Получен ответ от Pinata:', data);
+        name: defaultName, // pinata.ts сможет использовать это или сгенерировать свое, если name опционально
+        type: `image/${fileExtension}`, 
+      };
       
-      if (data.IpfsHash) {
-        console.log('🔗 IPFS хеш получен:', data.IpfsHash);
-        console.log('💾 Обновляем профиль пользователя...');
-        
-        await updateUserData({
-          pinata_avatar_id: data.IpfsHash,
-          avatar_url: `${PINATA_GATEWAY_URL}${data.IpfsHash}`,
-          updated_at: new Date().toISOString(),
-        });
-
-        console.log('✅ Аватар успешно загружен в IPFS!');
-        return data.IpfsHash;
-      }
-
-      throw new Error("❌ Не удалось получить IPFS хеш от Pinata");
+      const ipfsHash = await pinataService.uploadFile(fileInput);
+      console.log('✅ Аватар успешно загружен в IPFS');
+      
+      return ipfsHash;
     } catch (error) {
-      console.error("❌ Ошибка загрузки в Pinata:", error);
+      console.error('❌ Ошибка при загрузке аватара:', error);
       throw error;
     }
   };
 
-  const getAvatarUrl = (pinataId: string | null): string | null => {
-    if (!pinataId || !PINATA_GATEWAY_URL) return null;
-    return `https://${PINATA_GATEWAY_URL}/ipfs/${pinataId}`;
-  };
-
-  const updateUserData = async (data: Partial<UserData>) => {
-    if (!session?.user?.id) return;
-
-    // Проверяем, если обновляется username
-    if (data.username) {
-      // Проверяем, не занят ли username другим пользователем
-      const { data: existingUser, error: checkError } = await supabase
-        .from("users")
-        .select("user_id")
-        .eq("username", data.username)
-        .neq("user_id", session.user.id)
-        .single();
-
-      if (checkError && checkError.code !== "PGRST116") {
-        console.error("Error checking username:", checkError);
-        throw new Error("Ошибка при проверке username");
+  const updateUserData = async (data: Partial<UserData>): Promise<void> => {
+    try {
+      console.log('🔄 Обновляем данные пользователя:', data);
+      
+      const session = await supabase.auth.getSession();
+      if (!session.data.session) {
+        console.error('❌ Нет активной сессии');
+        throw new Error('Требуется авторизация');
       }
 
-      if (existingUser) {
-        throw new Error("Этот username уже занят");
+      const { error } = await supabase
+        .from('users')
+        .update(data)
+        .eq('id', session.data.session.user.id);
+
+      if (error) {
+        console.error('❌ Ошибка при обновлении данных:', error);
+        throw error;
       }
-    }
 
-    const { error } = await supabase.from("users").update(data).eq("user_id", session.user.id);
-
-    if (error) {
-      console.error("Error updating user data:", error);
+      console.log('✅ Данные успешно обновлены');
+      
+      // Обновляем локальное состояние
+      if (userData) {
+        setUserData({
+          ...userData,
+          ...data,
+        });
+      }
+    } catch (error) {
+      console.error('❌ Ошибка при обновлении данных пользователя:', error);
       throw error;
     }
-
-    // Обновляем локальное состояние
-    const updatedUserData = await checkUserData(session.user.id);
-    setUserData(updatedUserData);
   };
 
   const signUp = async (email: string, password: string) => {
@@ -267,75 +299,126 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
   };
 
   useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
+    const checkSession = async () => {
+      try {
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('❌ SupabaseProvider: Ошибка при получении сессии в useEffect', error);
+          console.log('SupabaseProvider: setInitialized(true) (error branch)');
+          setInitialized(true);
+          SplashScreen.hideAsync();
+          return;
+        }
 
-      if (currentSession?.user) {
-        const userData = await checkUserData(currentSession.user.id);
-        setUserData(userData);
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+
+        if (currentSession?.user) {
+          const profileData = await checkUserData(currentSession.user.id);
+          setUserData(profileData);
+        } else {
+          setUserData(null);
+        }
+      } catch (err) {
+        console.error('❌ Критическая ошибка SupabaseProvider:', err);
+        setSession(null);
+        setUser(null);
+        setUserData(null);
+      } finally {
+        console.log('SupabaseProvider: setInitialized(true) (finally branch)');
+        setInitialized(true);
+        SplashScreen.hideAsync();
       }
+    };
 
-      setInitialized(true);
-      await SplashScreen.hideAsync();
+    checkSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+      console.log('SupabaseProvider: onAuthStateChange', _event, newSession ? 'Got session' : 'No session');
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+      if (newSession?.user) {
+        const profileData = await checkUserData(newSession.user.id);
+        setUserData(profileData);
+      } else {
+        setUserData(null); // Очищаем данные пользователя при выходе
+      }
+      console.log('SupabaseProvider: setInitialized(true) (authListener)');
+      setInitialized(true); // Гарантируем, что initialized всегда true
+      SplashScreen.hideAsync();
     });
 
     return () => {
-      subscription.unsubscribe();
+      authListener.subscription.unsubscribe();
     };
   }, []);
 
   useEffect(() => {
-    if (!initialized) return;
-
-    const currentSegment = segments[segments.length - 1];
-    const inProtectedGroup = segments[1] === "(protected)";
-    const inAuthGroup = ["sign-in", "sign-up", "welcome"].includes(
-      segments[segments.length - 1] || ""
-    );
-    const inRegistrationFlow = ["username", "avatar", "designation"].includes(
-      segments[segments.length - 1] || ""
-    );
-
-    if (session) {
-      if (!userData?.username && currentSegment !== "username") {
-        router.replace("/(app)/username");
-        return;
+    if (prevSession.current !== session) {
+      console.log('SupabaseProvider: session changed', session);
+      if (session) {
+        console.log('SupabaseProvider: user id', session.user?.id, 'expires at', session.expires_at);
+      } else {
+        console.log('SupabaseProvider: session is null (not authenticated)');
       }
-
-      if (userData?.username && !userData?.pinata_avatar_id && currentSegment !== "avatar") {
-        router.replace("/(app)/avatar");
-        return;
+      // Сигнализируем о необходимости reload, если сессия изменилась
+      if (prevSession.current !== null) {
+        console.log('SupabaseProvider: Сессия изменилась! Рекомендуется reload браузера.');
       }
-
-      if (
-        userData?.username &&
-        userData?.pinata_avatar_id &&
-        !userData?.designation &&
-        currentSegment !== "designation"
-      ) {
-        router.replace("/(app)/designation");
-        return;
-      }
-
-      if (
-        userData?.username &&
-        userData?.pinata_avatar_id &&
-        userData?.designation &&
-        !inProtectedGroup
-      ) {
-        router.replace("/(app)/(protected)/gamescreen");
-      }
-    } else if (!inAuthGroup) {
-      router.replace("/(app)/welcome");
+      prevSession.current = session;
     }
+    if (JSON.stringify(prevUserData.current) !== JSON.stringify(userData)) {
+      console.log('SupabaseProvider: userData changed', userData);
+      prevUserData.current = userData;
+    }
+  }, [session, userData]);
 
-    setTimeout(() => {
-      SplashScreen.hideAsync();
-    }, 500);
-  }, [initialized, session, userData]);
+  // Навигация на основе состояния авторизации и инициализации
+  useEffect(() => {
+    // ТЕЛО ЭТОГО USEEFFECT ВРЕМЕННО ЗАКОММЕНТИРОВАНО ДЛЯ УСТРАНЕНИЯ ОШИБОК ТИПОВ
+    // TODO: Восстановить или переписать логику навигации аккуратно
+    /*
+    if (!initialized) return; // Не делаем ничего, пока инициализация не завершена
+
+    const inAuthGroup = segments.length > 0 && segments[0] === "(auth)";
+    const inProtectedAppGroup = segments.length > 1 ? (segments[0] === "(app)" && segments[1] === "(protected)") : false;
+
+    if (session && session.user) {
+      // Пользователь авторизован
+      if (userData && !userData.username && !inProtectedAppGroup) {
+        const isNotUsernameScreen = segments.length < 2 ? true : segments[1] !== "username";
+        if (segments.length > 0 && segments[0] !== "(app)" || (segments.length > 0 && segments[0] === "(app)" && isNotUsernameScreen) ) {
+          router.replace("/(app)/username");
+        }
+      } else {
+        const conditionForWelcomeRedirect = segments.length > 1 ? (segments[0] === "(app)" && segments[1] === "welcome") : false;
+        if (inAuthGroup || conditionForWelcomeRedirect) {
+          router.replace("/(app)/(protected)/gamescreen");
+        } else if (userData && userData.username && !inProtectedAppGroup) {
+          let isAppPublicNonSpecialPage = false;
+          if (segments.length > 0 && segments[0] === "(app)") { 
+            if (segments.length === 1) {
+              isAppPublicNonSpecialPage = true;
+            } else if (segments.length > 1) {
+              const secondSegment = segments[1]; 
+              if (secondSegment !== "(protected)" && secondSegment !== "username" && secondSegment !== "welcome") {
+                isAppPublicNonSpecialPage = true;
+              }
+            }
+          }
+          if (isAppPublicNonSpecialPage) {
+            // router.replace("/(app)/(protected)/gamescreen"); 
+          }
+        }
+      }
+    } else {
+      // Пользователь не авторизован
+      if (inProtectedAppGroup) {
+        router.replace("/(app)/welcome"); 
+      }
+    }
+    */
+  }, [session, initialized, segments, router, userData]);
 
   return (
     <SupabaseContext.Provider

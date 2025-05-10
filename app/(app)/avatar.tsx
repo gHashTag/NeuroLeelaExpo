@@ -1,32 +1,31 @@
-import { useRouter, Stack } from "expo-router";
-import React, { useState, useRef, useEffect } from "react";
-import { View, Image, TouchableOpacity, Platform, useWindowDimensions, Animated } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import * as ImageManipulator from "expo-image-manipulator";
+import React, { useEffect, useState, useRef } from 'react';
+import { View, TouchableOpacity, ActivityIndicator, Platform, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { useSupabase } from '../../context/supabase-provider';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
-import { Ionicons } from "@expo/vector-icons";
-
 import { SafeAreaView } from "@/components/safe-area-view";
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
-import { H1 } from "@/components/ui/typography";
-import { useSupabase } from "@/context/supabase-provider";
-import { Toast } from "@/components/ui/toast";
+import { H1, Muted } from "@/components/ui/typography";
+import { Animated } from 'react-native';
 
 export default function Avatar() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isMobile = width < 768;
-  const { session, uploadAvatar } = useSupabase();
-  const [image, setImage] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const scaleAnim = React.useRef(new Animated.Value(0.95)).current;
   const buttonScale = useRef(new Animated.Value(1)).current;
-  const avatarScale = useRef(new Animated.Value(1)).current;
+  
+  const { uploadAvatar, userData, updateUserData, getAvatarUrl } = useSupabase();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
 
   useEffect(() => {
     Animated.parallel([
@@ -59,113 +58,72 @@ export default function Avatar() {
     ]).start();
   };
 
-  const animateAvatar = () => {
-    Animated.sequence([
-      Animated.timing(avatarScale, {
-        toValue: 0.95,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(avatarScale, {
-        toValue: 1,
-        duration: 100,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const showError = (message: string) => {
-    setError(message);
-    setTimeout(() => setError(null), 3000); // Скрываем ошибку через 3 секунды
-  };
-
   const pickImage = async () => {
     try {
-      animateAvatar();
-      setIsLoading(true);
+      setLoading(true);
       setError(null);
-
+      
+      console.log('🎯 Запускаем выбор изображения...');
+      
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 1,
-        allowsMultipleSelection: false,
-        base64: false,
+        quality: 0.8,
       });
 
-      if (!result.canceled) {
-        console.log('🖼️ Изображение выбрано:', result.assets[0]);
-        
-        // Определяем размер для финальной оптимизации
-        const finalSize = Platform.OS === 'web' ? 800 : 400;
-
-        // Сначала обрезаем до квадрата
-        const cropResult = await ImageManipulator.manipulateAsync(
-          result.assets[0].uri,
-          [
-            { 
-              crop: {
-                originX: 0,
-                originY: 0,
-                width: result.assets[0].width,
-                height: result.assets[0].width,
-              }
-            }
-          ],
-          { 
-            compress: 1,
-            format: ImageManipulator.SaveFormat.JPEG
-          }
-        );
-
-        console.log('✂️ Изображение обрезано до квадрата');
-
-        // Затем оптимизируем размер
-        const optimizedImage = await ImageManipulator.manipulateAsync(
-          cropResult.uri,
-          [
-            { resize: { 
-              width: finalSize,
-              height: finalSize 
-            }}
-          ],
-          { 
-            compress: 0.9,
-            format: ImageManipulator.SaveFormat.JPEG,
-            base64: false
-          }
-        );
-
-        console.log('✨ Изображение оптимизировано:', {
-          width: finalSize,
-          height: finalSize,
-          uri: optimizedImage.uri
-        });
-
-        setImage(optimizedImage.uri);
+      if (result.canceled) {
+        console.log('❌ Выбор изображения отменен');
+        return;
       }
-    } catch (err: any) {
-      console.error('❌ Ошибка при выборе изображения:', err);
-      showError('❌ Не удалось загрузить изображение. Пожалуйста, попробуйте другое фото.');
+
+      const imageUri = result.assets[0].uri;
+      console.log('✅ Изображение выбрано:', imageUri);
+
+      console.log('🔄 Обрабатываем изображение...');
+      const processedImage = await ImageManipulator.manipulateAsync(
+        imageUri,
+        [{ resize: { width: Platform.OS === 'web' ? 800 : 400 } }],
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      
+      console.log('✅ Изображение обработано:', processedImage.uri);
+
+      const ipfsHash = await uploadAvatar(processedImage.uri);
+      if (!ipfsHash) {
+        throw new Error('Не удалось загрузить изображение. Пожалуйста, проверьте подключение и попробуйте снова.');
+      }
+      console.log('✅ Изображение загружено в IPFS:', ipfsHash);
+
+      const avatarUrl = getAvatarUrl(ipfsHash);
+      if (!avatarUrl) {
+        throw new Error('Не удалось сформировать URL аватара');
+      }
+
+      await updateUserData({
+        pinata_avatar_id: ipfsHash,
+        avatar_url: avatarUrl,
+        updated_at: new Date().toISOString(),
+      });
+
+      console.log('✅ Профиль успешно обновлен');
+      setAvatarUri(avatarUrl);
+      animateButton();
+    } catch (error: any) {
+      console.error('❌ Ошибка при обновлении аватара:', error);
+      if (error.message.includes('401')) {
+        setError('Ошибка авторизации при загрузке изображения. Пожалуйста, попробуйте позже.');
+      } else {
+        setError(error.message || 'Произошла ошибка при обновлении аватара');
+      }
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handleContinue = async () => {
-    setIsLoading(true);
-    animateButton();
-    try {
-      if (image) {
-        await uploadAvatar(image);
-      }
-      router.replace("/(app)/designation");
-    } catch (err: any) {
-      console.error('❌ Ошибка при загрузке аватара:', err);
-      showError('❌ Не удалось сохранить аватар. Пожалуйста, попробуйте позже.');
-    } finally {
-      setIsLoading(false);
+  const handleContinue = () => {
+    if (avatarUri) {
+      router.push('/(app)/designation');
     }
   };
 
@@ -173,29 +131,29 @@ export default function Avatar() {
     const containerClass = `
       w-full max-w-md 
       ${Platform.OS === 'web' ? 'web:max-w-xl' : ''} 
-      bg-white/20 
-      backdrop-blur-md 
-      ${isMobile ? 'rounded-2xl' : 'rounded-3xl'} 
-      p-6 
-      web:p-12 
-      shadow-2xl 
-      border 
-      border-white/30
+      bg-white/10
+      backdrop-blur-xl
+      ${isMobile ? 'rounded-3xl' : 'rounded-[2.5rem]'}
+      p-8
+      web:p-12
+      shadow-2xl
+      border
+      border-white/20
       relative
       overflow-hidden
     `.trim();
 
     const decorativeElements = Platform.OS === 'web' && (
       <>
-        <div className="absolute -top-32 -right-32 w-64 h-64 bg-blue-50/30 rounded-full blur-3xl" />
-        <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-purple-50/30 rounded-full blur-3xl" />
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-200/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-200/20 rounded-full blur-3xl animate-pulse" />
       </>
     );
 
     if (Platform.OS === 'web') {
       return (
         <BlurView
-          intensity={10}
+          intensity={20}
           tint="light"
           className={containerClass}
         >
@@ -212,43 +170,14 @@ export default function Avatar() {
     );
   };
 
-  const renderAvatarContent = () => {
-    if (image) {
-      return (
-        <Image 
-          source={{ uri: image }} 
-          className="w-full h-full" 
-          resizeMode="cover" 
-        />
-      );
-    }
-
-    return (
-      <View className="flex items-center justify-center w-full h-full bg-white/30">
-        <Ionicons 
-          name="camera-outline" 
-          size={32} 
-          color="#666"
-          style={{ marginBottom: 8 }}
-        />
-        <View className="px-4">
-          <Text className="text-neutral-600 font-medium text-center">
-            Выбрать фото
-          </Text>
-        </View>
-      </View>
-    );
-  };
-
   return (
     <LinearGradient
-      colors={["#f8f9fa", "#f1f3f5", "#e9ecef"]}
+      colors={["#f1f5f9", "#e2e8f0", "#cbd5e1"]}
       className="flex-1 items-center justify-center"
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
-      <Stack.Screen options={{ headerShown: false }} />
-      <SafeAreaView className="flex-1 w-full items-center justify-center">
+      <SafeAreaView className="flex flex-1 w-full items-center justify-center">
         <Animated.View 
           className="flex flex-1 w-full items-center justify-center px-4 web:px-0"
           style={{
@@ -261,55 +190,80 @@ export default function Avatar() {
               <View className="space-y-2 w-full">
                 <H1 className={`
                   text-center 
-                  ${isMobile ? 'text-2xl' : 'text-3xl'} 
-                  font-light 
-                  tracking-wide 
+                  ${isMobile ? 'text-3xl' : 'text-4xl'} 
+                  font-extralight
+                  tracking-wider
                   text-neutral-800
-                  mb-4
+                  mb-6
                 `}>
-                  Выберите аватар
+                  Добавьте фото профиля
                 </H1>
 
-                <Text className={`
-                  text-center
-                  ${isMobile ? 'text-sm' : 'text-base'}
-                  text-neutral-600
+                <Muted className={`
+                  text-center 
+                  ${isMobile ? 'text-base' : 'text-lg'} 
+                  text-neutral-600 
+                  leading-relaxed 
+                  max-w-sm 
+                  mx-auto 
+                  font-light 
+                  tracking-wide
                   mb-8
                 `}>
-                  Добавьте фотографию профиля, чтобы другие пользователи могли узнать вас. Вы можете
-                  пропустить этот шаг и добавить фото позже.
-                </Text>
+                  Загрузите фотографию, которая будет отображаться в вашем профиле
+                </Muted>
 
-                {error && (
-                  <View className="absolute top-4 left-4 right-4 z-50">
-                    <Toast 
-                      variant="error"
-                      title={error}
-                      className="w-full bg-red-50 border border-red-200 shadow-lg"
-                      titleClassName="text-red-700 font-medium text-center"
-                    />
-                  </View>
-                )}
+                <View className="items-center space-y-8">
+                  <TouchableOpacity 
+                    onPress={pickImage}
+                    disabled={loading}
+                    className={`
+                      relative rounded-full 
+                      overflow-hidden 
+                      bg-gradient-to-br from-white/60 to-white/40
+                      border-4 border-white/60 
+                      shadow-2xl
+                      transform transition-transform duration-300
+                      hover:scale-105
+                      active:scale-95
+                    `}
+                    style={{ width: isMobile ? 180 : 220, height: isMobile ? 180 : 220 }}
+                  >
+                    {avatarUri ? (
+                      <Image
+                        source={{ uri: avatarUri }}
+                        style={{ width: '100%', height: '100%' }}
+                        className="rounded-full"
+                        contentFit="cover"
+                        transition={300}
+                      />
+                    ) : (
+                      <View className="w-full h-full items-center justify-center">
+                        <MaterialIcons 
+                          name="add-a-photo" 
+                          size={isMobile ? 56 : 72} 
+                          color="rgba(0,0,0,0.3)" 
+                        />
+                        <Text className="mt-3 text-base text-neutral-500 font-light tracking-wide">
+                          Нажмите для выбора
+                        </Text>
+                      </View>
+                    )}
+                    
+                    {loading && (
+                      <View className="absolute inset-0 bg-black/40 backdrop-blur-sm items-center justify-center">
+                        <ActivityIndicator size="large" color="#fff" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
 
-                <View className="items-center justify-center py-8">
-                  <Animated.View style={{ transform: [{ scale: avatarScale }] }}>
-                    <TouchableOpacity
-                      onPress={pickImage}
-                      className={`
-                        w-32 h-32 
-                        rounded-full 
-                        bg-white/40
-                        border-2
-                        border-white/50
-                        items-center 
-                        justify-center 
-                        overflow-hidden
-                        shadow-lg
-                      `}
-                    >
-                      {renderAvatarContent()}
-                    </TouchableOpacity>
-                  </Animated.View>
+                  {error && (
+                    <View className="w-full p-6 bg-red-50/80 backdrop-blur-sm rounded-2xl border border-red-200/50">
+                      <Text className="text-center text-red-600 font-light tracking-wide">
+                        {error}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </View>
 
@@ -318,37 +272,38 @@ export default function Avatar() {
                   <Button
                     size={isMobile ? "default" : "lg"}
                     variant="default"
-                    onPress={handleContinue}
-                    disabled={isLoading || !image}
                     className={`
                       w-full
                       min-w-[280px]
-                      ${isLoading ? 'opacity-70' : ''}
-                      bg-neutral-900/90 
-                      hover:bg-neutral-800 
+                      ${loading ? 'opacity-70' : ''}
+                      bg-gradient-to-br from-neutral-900 to-neutral-800
+                      hover:from-neutral-800 hover:to-neutral-700
                       transform 
                       hover:translate-y-[-2px] 
                       transition-all 
                       duration-300 
-                      shadow-lg 
-                      ${isMobile ? 'rounded-xl' : 'rounded-2xl'} 
+                      shadow-xl
+                      ${isMobile ? 'rounded-2xl' : 'rounded-2xl'} 
                       border 
                       border-white/10
                       backdrop-blur-sm
                       relative
                       overflow-hidden
+                      py-6
                     `}
+                    onPress={handleContinue}
+                    disabled={!avatarUri || loading}
                   >
                     <View className="w-full flex items-center justify-center">
                       <Text className={`
-                        ${isMobile ? 'text-sm' : 'text-base'} 
+                        ${isMobile ? 'text-base' : 'text-lg'} 
                         font-light 
-                        tracking-widest 
+                        tracking-[0.2em]
                         text-neutral-100
                         text-center
                         min-w-[200px]
                       `}>
-                        {isLoading ? 'СОХРАНЕНИЕ...' : 'ПРОДОЛЖИТЬ'}
+                        {loading ? 'ЗАГРУЗКА...' : 'ПРОДОЛЖИТЬ'}
                       </Text>
                     </View>
                   </Button>
@@ -357,30 +312,32 @@ export default function Avatar() {
                 <Button
                   size={isMobile ? "default" : "lg"}
                   variant="secondary"
-                  onPress={() => router.replace("/(app)/designation")}
                   className={`
                     w-full
                     min-w-[280px]
-                    bg-white/40 
-                    hover:bg-white/60 
+                    bg-gradient-to-br from-white/50 to-white/30
+                    hover:from-white/60 hover:to-white/40
                     transform 
                     hover:translate-y-[-2px] 
                     transition-all 
                     duration-300 
-                    ${isMobile ? 'rounded-xl' : 'rounded-2xl'} 
+                    ${isMobile ? 'rounded-2xl' : 'rounded-2xl'} 
                     border 
-                    border-white/50
+                    border-white/40
                     backdrop-blur-sm
                     relative
                     overflow-hidden
+                    shadow-lg
+                    py-6
                   `}
+                  onPress={() => router.push('/(app)/designation')}
                 >
                   <View className="w-full flex items-center justify-center">
                     <Text className={`
-                      ${isMobile ? 'text-sm' : 'text-base'} 
+                      ${isMobile ? 'text-base' : 'text-lg'} 
                       font-light 
-                      tracking-widest 
-                      text-neutral-700
+                      tracking-[0.2em]
+                      text-neutral-600
                       text-center
                       min-w-[200px]
                     `}>

@@ -1,100 +1,146 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter, Stack } from "expo-router";
-import { useForm } from "react-hook-form";
-import { ActivityIndicator, View } from "react-native";
-import * as z from "zod";
 import { useState } from "react";
-
-import { SafeAreaView } from "@/components/safe-area-view";
-import { Button } from "@/components/ui/button";
-import { Form, FormField, FormInput } from "@/components/ui/form";
-import { Text } from "@/components/ui/text";
-import { H1, Muted } from "@/components/ui/typography";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import { useSupabase } from "@/context/supabase-provider";
-
-const formSchema = z.object({
-  username: z
-    .string()
-    .min(3, "Username должен быть не менее 3 символов.")
-    .max(20, "Username должен быть не более 20 символов.")
-    .regex(
-      /^[a-zA-Z0-9_]+$/,
-      "Username может содержать только буквы, цифры и нижнее подчеркивание."
-    ),
-});
+import { Stack } from "expo-router";
 
 export default function Username() {
-  const router = useRouter();
   const { updateUserData } = useSupabase();
+  const [username, setUsername] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      username: "",
-    },
-  });
+  const validateUsername = (value: string) => {
+    if (!value) return "Введите username";
+    if (value.length < 3) return "Username должен быть не менее 3 символов";
+    if (value.length > 20) return "Username должен быть не более 20 символов";
+    if (!/^[a-zA-Z0-9_]+$/.test(value)) return "Username может содержать только буквы, цифры и _";
+    return null;
+  };
 
-  async function onSubmit(data: z.infer<typeof formSchema>) {
-    setError(null);
+  const onSubmit = async () => {
     try {
-      await updateUserData({ username: data.username });
-      router.replace("/(app)/avatar");
-    } catch (error: Error | any) {
-      console.log(error.message);
-      if (error.message === "Этот username уже занят") {
-        setError("Этот username уже занят. Пожалуйста, выберите другой.");
+      setError(null);
+      setIsLoading(true);
+
+      const validationError = validateUsername(username);
+      if (validationError) {
+        setError(validationError);
+        return;
       }
+
+      console.log('🔍 Начинаем проверку username:', username);
+      await updateUserData({ username });
+      console.log('✅ Username успешно установлен:', username);
+    } catch (error: any) {
+      console.error('❌ Ошибка при установке username:', error);
+      setError(error.message || "Произошла ошибка при установке username");
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <SafeAreaView className="flex-1 bg-background p-4" edges={["bottom"]}>
+    <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View className="flex-1 gap-4 web:m-4">
-        <H1 className="self-start">Выберите Username</H1>
-        <Muted className="mb-4">
-          Выберите username для вашего аккаунта. Вы сможете изменить его позже.
-        </Muted>
+      
+      <Text style={styles.title}>Выберите Username</Text>
+      <Text style={styles.description}>
+        Выберите username для вашего аккаунта. Вы сможете изменить его позже.
+      </Text>
 
-        {error && (
-          <View className="bg-yellow-500/20 p-4 rounded-lg">
-            <Text className="text-yellow-500 font-medium">{error}</Text>
-          </View>
-        )}
+      {error && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorIcon}>❌</Text>
+          <Text style={styles.errorText}>Произошла ошибка.</Text>
+          <Text style={styles.errorDescription}>{error}</Text>
+        </View>
+      )}
 
-        <Form {...form}>
-          <View className="gap-4">
-            <FormField
-              control={form.control}
-              name="username"
-              render={({ field }) => (
-                <FormInput
-                  label="Username"
-                  placeholder="Введите username"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  {...field}
-                />
-              )}
-            />
-          </View>
-        </Form>
-      </View>
+      <TextInput
+        style={styles.input}
+        placeholder="Введите username"
+        value={username}
+        onChangeText={(text) => {
+          setUsername(text);
+          setError(null);
+        }}
+        autoCapitalize="none"
+        autoCorrect={false}
+        editable={!isLoading}
+      />
 
-      <Button
-        size="default"
-        variant="default"
-        onPress={form.handleSubmit(onSubmit)}
-        disabled={form.formState.isSubmitting}
-        className="web:m-4"
+      <TouchableOpacity
+        style={[styles.button, isLoading && styles.buttonDisabled]}
+        onPress={onSubmit}
+        disabled={isLoading}
       >
-        {form.formState.isSubmitting ? (
-          <ActivityIndicator size="small" color="white" />
-        ) : (
-          <Text>Продолжить</Text>
-        )}
-      </Button>
-    </SafeAreaView>
+        <Text style={styles.buttonText}>
+          {isLoading ? "Проверяем..." : "ПРОДОЛЖИТЬ"}
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: "#fff",
+    justifyContent: "center",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  description: {
+    fontSize: 16,
+    textAlign: "center",
+    color: "#666",
+    marginBottom: 30,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 15,
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  button: {
+    backgroundColor: "#000",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  buttonDisabled: {
+    backgroundColor: "#ccc",
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  errorContainer: {
+    backgroundColor: "#FEE2E2",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  errorIcon: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  errorText: {
+    color: "#DC2626",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  errorDescription: {
+    color: "#DC2626",
+    fontSize: 14,
+  },
+});

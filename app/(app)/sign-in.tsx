@@ -1,12 +1,11 @@
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { View, Platform, useWindowDimensions } from "react-native";
-import { Image } from "@/components/image";
-import { SafeAreaView } from "@/components/safe-area-view";
+import { View, Image, Platform, useWindowDimensions } from "react-native";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
 import { H1 } from "@/components/ui/typography";
-import { TextInput } from "@components/ui/text-input";
 import { supabase } from "@/lib/supabase";
 
 const DEV_MODE = process.env.NODE_ENV === 'development';
@@ -75,93 +74,58 @@ export default function SignInScreen() {
     }
   };
 
-  const inputClassName = `
-    w-full
-    bg-white
-    border
-    border-neutral-200
-    rounded-xl
-    px-4
-    py-3
-    text-neutral-800
-    placeholder:text-neutral-400
-    focus:border-blue-300
-    focus:bg-white
-    transition-all
-    duration-300
-  `.trim();
-
-  // Явное центрирование для web с корректными типами
-  const containerStyle = Platform.OS === 'web'
-    ? {
-        minHeight: typeof window !== 'undefined' ? window.innerHeight : height,
-        display: 'flex' as const,
-        alignItems: 'center' as const,
-        justifyContent: 'center' as const,
-        backgroundColor: '#fff',
-      }
-    : {
-        flex: 1,
-        minHeight: height,
-        backgroundColor: '#fff',
-      };
-
   return (
-    <View style={containerStyle} className="w-full">
-      <SafeAreaView className="flex flex-1 w-full justify-center items-center">
-        <View className="w-full max-w-sm mx-auto flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-none border border-neutral-100">
-          <Image
-            source={require("@/assets/icons/512.png")}
-            style={{ width: 80, height: 80, marginBottom: 16 }}
-            resizeMode="contain"
+    <View className="flex-1 items-center justify-center bg-background" style={{ minHeight: height }}>
+      <Card className="w-full max-w-sm mx-auto flex flex-col items-center justify-center gap-6 p-8">
+        <Image
+          source={require('@/assets/icon.jpg')}
+          style={{ width: 80, height: 80, borderRadius: 24, marginBottom: 8 }}
+          resizeMode="cover"
+        />
+        <H1 className="text-center text-2xl font-light tracking-wide text-foreground mb-2">Вход</H1>
+        <View className="space-y-4 w-full mb-2">
+          <Input
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
           />
-          <H1 className="text-center text-2xl font-light tracking-wide text-neutral-800 mb-6">Вход</H1>
-          <View className="space-y-4 w-full mb-4">
-            <TextInput
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              className={inputClassName}
-            />
-            <TextInput
-              placeholder="Пароль"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              className={inputClassName}
-            />
-          </View>
-          {error && (
-            <Text className="text-red-500 text-center mb-2">{error}</Text>
-          )}
-          {successMessage && (
-            <Text className="text-green-600 text-center mb-2">{successMessage}</Text>
-          )}
-          <Button
-            size={isMobile ? "default" : "lg"}
-            variant="default"
-            className="w-full min-w-[200px] bg-neutral-900 hover:bg-neutral-800 transition-all duration-300 shadow rounded-xl border border-neutral-200 mb-2"
-            onPress={handleSignIn}
-            disabled={loading}
-          >
-            <Text className="text-base font-light tracking-widest text-neutral-100 text-center">
-              {loading ? 'ВХОД...' : 'ВОЙТИ'}
-            </Text>
-          </Button>
-          <Button
-            size={isMobile ? "default" : "lg"}
-            variant="secondary"
-            className="w-full min-w-[200px] bg-white hover:bg-neutral-100 transition-all duration-300 rounded-xl border border-neutral-200"
-            onPress={() => router.push("/sign-up")}
-          >
-            <Text className="text-base font-light tracking-widest text-neutral-700 text-center">
-              РЕГИСТРАЦИЯ
-            </Text>
-          </Button>
+          <Input
+            placeholder="Пароль"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
         </View>
-      </SafeAreaView>
+        {error && (
+          <Text className="text-red-500 text-center mb-2">{error}</Text>
+        )}
+        {successMessage && (
+          <Text className="text-green-600 text-center mb-2">{successMessage}</Text>
+        )}
+        <Button
+          size={isMobile ? "default" : "lg"}
+          variant="default"
+          className="w-full min-w-[200px] bg-primary text-primary-foreground hover:opacity-90 transition-all duration-300 rounded-xl border border-border mb-2"
+          onPress={handleSignIn}
+          disabled={loading}
+        >
+          <Text className="text-base font-light tracking-widest text-primary-foreground text-center">
+            {loading ? 'ВХОД...' : 'ВОЙТИ'}
+          </Text>
+        </Button>
+        <Button
+          size={isMobile ? "default" : "lg"}
+          variant="secondary"
+          className="w-full min-w-[200px] bg-secondary text-secondary-foreground hover:bg-accent transition-all duration-300 rounded-xl border border-border"
+          onPress={() => router.push("/sign-up")}
+        >
+          <Text className="text-base font-light tracking-widest text-secondary-foreground text-center">
+            РЕГИСТРАЦИЯ
+          </Text>
+        </Button>
+      </Card>
     </View>
   );
 }
