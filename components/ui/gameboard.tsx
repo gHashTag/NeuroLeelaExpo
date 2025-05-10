@@ -1,60 +1,42 @@
 import React, { useMemo } from "react";
-import { Image, View, StyleSheet, Platform } from "react-native";
-import { H, W } from "@constants/dimensions";
+import { Image, View, StyleSheet, Platform, useWindowDimensions } from "react-native";
 import { GameBoardProps, GemT } from "../../types/index";
 import { GameBoardImage } from "@/assets/gameboard/index";
 import { Gem } from "@components/ui/gem";
 
-// Размеры игрового поля
-const cellSize = 44; // Увеличенный размер ячейки
-const cellMargin = 2.5; // Отступ между ячейками
-const rowMargin = 2.5; // Отступ между рядами
-
-// Рассчитываем полную ширину игрового поля
-const boardWidth = 9 * (cellSize + 2 * cellMargin);
-const boardHeight = 8 * (cellSize + 2 * rowMargin);
-
-// Финальные размеры контейнера
-const curImageWidth = boardWidth + 20; 
-const curImageHeight = boardHeight + 20;
-
-// Строки игрового поля
-const rows = [
-  [72, 71, 70, 69, 68, 67, 66, 65, 64],
-  [55, 56, 57, 58, 59, 60, 61, 62, 63],
-  [54, 53, 52, 51, 50, 49, 48, 47, 46],
-  [37, 38, 39, 40, 41, 42, 43, 44, 45],
-  [36, 35, 34, 33, 32, 31, 30, 29, 28],
-  [19, 20, 21, 22, 23, 24, 25, 26, 27],
-  [18, 17, 16, 15, 14, 13, 12, 11, 10],
-  [1, 2, 3, 4, 5, 6, 7, 8, 9],
-];
-
-// Функция для безопасного получения размеров изображения на разных платформах
-const getImageDimensions = (image: any) => {
-  const defaultDimensions = { width: 279, height: 248 };
-  
-  try {
-    if (Platform.OS === 'web') {
-      return defaultDimensions;
-    } else {
-      const dimensions = Image.resolveAssetSource(image);
-      return dimensions || defaultDimensions;
-    }
-  } catch (error) {
-    console.warn('Ошибка при определении размеров изображения:', error);
-    return defaultDimensions;
-  }
-};
-
 function GameBoard({ players }: GameBoardProps) {
+  // Используем размер окна для адаптивности
+  const { width: windowWidth } = useWindowDimensions();
+  
+  // Вычисляем размеры ячеек в зависимости от размера экрана
+  const getCellSize = () => {
+    if (windowWidth > 1400) return 44; // Большие экраны
+    if (windowWidth > 1024) return 40; // Средние экраны
+    if (windowWidth > 768) return 38;  // Маленькие экраны
+    if (windowWidth > 480) return 35;  // Планшеты
+    return 32;                          // Мобильные устройства
+  };
+  
+  // Устанавливаем размеры игрового поля
+  const cellSize = getCellSize();
+  const cellMargin = Math.max(2, cellSize * 0.05); // Масштабируем отступы согласно размеру ячейки
+  const rowMargin = cellMargin;
+  
+  // Рассчитываем полную ширину игрового поля
+  const boardWidth = 9 * (cellSize + 2 * cellMargin);
+  const boardHeight = 8 * (cellSize + 2 * rowMargin);
+  
+  // Финальные размеры контейнера
+  const curImageWidth = boardWidth + 20;
+  const curImageHeight = boardHeight + 20;
+
   // Force light theme
   const scheme = "light";
 
   const imgObj = useMemo(() => {
     const image = GameBoardImage.find((x) => x.title === scheme)?.path;
     if (image) {
-      const dimensions = getImageDimensions(image);
+      const dimensions = { width: 279, height: 248 };
       const aspect = dimensions.width / dimensions.height;
       return { image, aspect };
     } else {
@@ -73,6 +55,18 @@ function GameBoard({ players }: GameBoardProps) {
       : undefined;
   };
 
+  // Строки игрового поля
+  const rows = [
+    [72, 71, 70, 69, 68, 67, 66, 65, 64],
+    [55, 56, 57, 58, 59, 60, 61, 62, 63],
+    [54, 53, 52, 51, 50, 49, 48, 47, 46],
+    [37, 38, 39, 40, 41, 42, 43, 44, 45],
+    [36, 35, 34, 33, 32, 31, 30, 29, 28],
+    [19, 20, 21, 22, 23, 24, 25, 26, 27],
+    [18, 17, 16, 15, 14, 13, 12, 11, 10],
+    [1, 2, 3, 4, 5, 6, 7, 8, 9],
+  ];
+
   // Условия стилей для веб-версии
   const isWeb = Platform.OS === 'web';
 
@@ -81,7 +75,7 @@ function GameBoard({ players }: GameBoardProps) {
       <View 
         style={[
           styles.imageContainer, 
-          { width: curImageWidth },
+          { width: curImageWidth, height: curImageHeight },
           isWeb && styles.webImageContainer
         ]}
       >
@@ -95,7 +89,7 @@ function GameBoard({ players }: GameBoardProps) {
         
         <View style={styles.boardWrapper}>
           {rows.map((a, i) => (
-            <View style={styles.row} key={i}>
+            <View style={[styles.row, { marginVertical: rowMargin / 2 }]} key={i}>
               {a.map((b, index) => {
                 const player = getPlayer(b);
                 return (
@@ -103,11 +97,17 @@ function GameBoard({ players }: GameBoardProps) {
                     key={index} 
                     style={[
                       styles.cell, 
+                      { 
+                        width: cellSize, 
+                        height: cellSize, 
+                        borderRadius: cellSize / 2,
+                        marginHorizontal: cellMargin 
+                      },
                       player && styles.activeCell
                     ]} 
                     testID={`gem-${player?.id}`}
                   >
-                    <Gem player={player} planNumber={b} />
+                    <Gem player={player} planNumber={b} cellSize={cellSize} />
                   </View>
                 );
               })}
@@ -149,7 +149,6 @@ const styles = StyleSheet.create({
   imageContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: curImageHeight,
     position: 'relative',
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 20,
@@ -161,7 +160,6 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   boardWrapper: {
-    width: boardWidth,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 5,
@@ -170,13 +168,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginVertical: rowMargin / 2,
   },
   cell: {
-    width: cellSize,
-    height: cellSize,
-    borderRadius: cellSize / 2,
-    marginHorizontal: cellMargin,
     backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',

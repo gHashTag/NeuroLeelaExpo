@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, ImageBackground, Platform, Text, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, Dimensions } from "react-native";
+import { View, ImageBackground, Platform, Text, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, Dimensions, useWindowDimensions } from "react-native";
 import { Display, Dice, GameBoard } from "@components/ui/index";
 import { router } from "expo-router";
 import { useSupabase } from "@/context/supabase-provider";
@@ -92,54 +92,77 @@ const ChatBot = () => {
 
 const GameScreen: React.FC = () => {
   const [lastRoll, setLastRoll] = useState(1);
-  const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { userData, getAvatarUrl } = useSupabase();
   const isWeb = Platform.OS === 'web';
+  const isLandscape = windowWidth > windowHeight;
   
-  // Отслеживаем изменение размера окна для обеспечения адаптивности
-  useEffect(() => {
-    const handleResize = () => {
-      setWindowWidth(Dimensions.get('window').width);
-    };
-
-    if (isWeb) {
-      Dimensions.addEventListener('change', handleResize);
-    }
-    
-    return () => {
-      if (isWeb) {
-        // Правильное удаление слушателя
-        const subscriber = Dimensions.addEventListener('change', handleResize);
-        subscriber.remove();
-      }
-    };
-  }, [isWeb]);
-
   // Определяем макет в зависимости от ширины экрана
   const getLayout = () => {
-    if (windowWidth > 1200) {
+    // Extra large displays
+    if (windowWidth > 1600) {
+      return {
+        leftColumn: "w-1/5", 
+        centerColumn: "w-3/5", 
+        rightColumn: "w-1/5",
+        padding: "p-4",
+        gameBoardPadding: "p-3",
+        maxWidth: "max-w-[1600px]"
+      };
+    } 
+    // Large displays
+    else if (windowWidth > 1200) {
       return {
         leftColumn: "w-1/4", 
         centerColumn: "w-2/4", 
         rightColumn: "w-1/4",
-        padding: "p-2",
-        gameBoardPadding: "p-2"
+        padding: "p-3",
+        gameBoardPadding: "p-2",
+        maxWidth: "max-w-[1400px]"
       };
-    } else if (windowWidth > 992) {
+    } 
+    // Medium displays
+    else if (windowWidth > 992) {
       return {
         leftColumn: "w-1/5", 
         centerColumn: "w-3/5", 
         rightColumn: "w-1/5",
         padding: "p-2",
-        gameBoardPadding: "p-1"
+        gameBoardPadding: "p-1",
+        maxWidth: "max-w-[1200px]"
       };
-    } else {
+    } 
+    // Small displays
+    else if (windowWidth > 768) {
+      return {
+        leftColumn: "w-1/6", 
+        centerColumn: "w-4/6", 
+        rightColumn: "w-1/6",
+        padding: "p-2",
+        gameBoardPadding: "p-1",
+        maxWidth: "max-w-full"
+      };
+    }
+    // Tablets and mobile (landscape) 
+    else if (windowWidth > 640 || isLandscape) {
       return {
         leftColumn: "w-1/6", 
         centerColumn: "w-4/6", 
         rightColumn: "w-1/6",
         padding: "p-1",
-        gameBoardPadding: "p-1"
+        gameBoardPadding: "p-1",
+        maxWidth: "max-w-full"
+      };
+    }
+    // Mobile phone (portrait)
+    else {
+      return {
+        leftColumn: "w-full", 
+        centerColumn: "w-full", 
+        rightColumn: "w-full",
+        padding: "p-1",
+        gameBoardPadding: "p-1",
+        maxWidth: "max-w-full"
       };
     }
   };
@@ -186,22 +209,86 @@ const GameScreen: React.FC = () => {
 
   // Адаптивный макет для Web и Mobile
   if (isWeb) {
+    // Мобильный web в портретной ориентации - показываем мобильную версию интерфейса
+    if (windowWidth < 640 && !isLandscape) {
+      return (
+        <View className="flex-1 bg-gray-50">
+          <AppHeader />
+          
+          <View className="py-2 px-3 bg-purple-50">
+            <Text className="text-sm font-medium text-purple-800 italic text-center">
+              Игра Лила — древний путь к Космическому Сознанию
+            </Text>
+          </View>
+          
+          <ScrollView>
+            <View className="p-3 pb-6">
+              {/* Блок с игровым полем */}
+              <View className="bg-white/70 rounded-xl overflow-hidden shadow-lg mb-4 backdrop-blur-md p-1">
+                <GameBoard players={[currentPlayer]} />
+              </View>
+              
+              <View className="flex-row mb-4">
+                {/* Информационный блок */}
+                <View className="flex-1 bg-white/80 rounded-xl shadow-md p-3 mr-2 backdrop-blur-md">
+                  <Text className="text-sm font-semibold text-purple-900 mb-2">Позиция:</Text>
+                  <View className="flex-row items-center justify-center">
+                    <View className="bg-purple-100 rounded-full w-12 h-12 items-center justify-center">
+                      <Text className="text-xl font-bold text-purple-800">{currentPlayer.plan}</Text>
+                    </View>
+                  </View>
+                </View>
+                
+                {/* Блок с кубиком */}
+                <View className="w-1/2 bg-white/80 rounded-xl p-3 items-center justify-center backdrop-blur-md">
+                  <Text className="text-xs text-center mb-1">Бросить кубик</Text>
+                  <Dice rollDice={rollDice} lastRoll={lastRoll} size="small" />
+                </View>
+              </View>
+              
+              {/* Блок чат-бота */}
+              <View className="bg-white/80 rounded-xl shadow-md p-3 backdrop-blur-md mb-4">
+                <Text className="text-sm font-semibold text-purple-900 mb-3">Духовный помощник:</Text>
+                
+                <View className="bg-gray-100 rounded-lg p-3 mb-3">
+                  <Text className="text-xs text-gray-800">
+                    Здравствуйте! Я ваш духовный проводник в игре Лила. Чем могу помочь?
+                  </Text>
+                </View>
+                
+                <View className="flex-row">
+                  <TextInput
+                    placeholder="Задайте вопрос..."
+                    className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 mr-2 text-xs"
+                  />
+                  <TouchableOpacity className="bg-purple-600 rounded-lg p-2">
+                    <Ionicons name="send" size={16} color="white" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      );
+    }
+    
+    // Десктопная или ландшафтная мобильная версия
     return (
       <View className="flex-1 bg-gray-50">
         <AppHeader />
         
         <View className="py-3 px-4 bg-purple-50">
-          <View className="max-w-[1400px] mx-auto">
+          <View className={layout.maxWidth + " mx-auto"}>
             <Text className="text-base font-medium text-purple-800 italic text-center">
               Игра Лила — это древний путь самопознания, ведущий к Космическому Сознанию. Сформулируйте ваше духовное намерение, с которым вы вступаете в эту священную игру.
             </Text>
           </View>
         </View>
         
-        <View className={`flex-1 flex-row max-w-[1400px] mx-auto w-full ${layout.padding}`}>
+        <View className={`flex-1 ${windowWidth < 768 ? '' : 'flex-row'} ${layout.maxWidth} mx-auto w-full ${layout.padding}`}>
           {/* Левая панель с информацией */}
-          <View className={`${layout.leftColumn} pr-2 flex flex-col`}>
-            <View className="bg-white rounded-xl shadow-md p-4 mb-4 border border-purple-100">
+          <View className={`${windowWidth < 768 ? 'w-full mb-3' : layout.leftColumn} pr-2 flex ${windowWidth < 768 ? 'flex-row' : 'flex-col'}`}>
+            <View className={`bg-white rounded-xl shadow-md p-4 ${windowWidth < 768 ? 'flex-1 mr-2' : 'mb-4'} border border-purple-100`}>
               <Text className="text-base font-semibold text-purple-900 mb-2">Текущая позиция:</Text>
               <View className="flex-row items-center mb-3">
                 <View className="bg-purple-100 rounded-full w-10 h-10 items-center justify-center mr-3">
@@ -211,11 +298,11 @@ const GameScreen: React.FC = () => {
               </View>
             </View>
             
-            {/* Блок с кубиком - перенесен в левую колонку внизу */}
-            <View className="bg-white rounded-xl shadow-md p-4 mb-4 border border-purple-100 mt-auto">
+            {/* Блок с кубиком */}
+            <View className={`bg-white rounded-xl shadow-md p-4 border border-purple-100 ${windowWidth < 768 ? 'flex-1' : 'mb-4 mt-auto'}`}>
               <Text className="text-base font-semibold text-purple-900 mb-3 text-center">Бросок кубика:</Text>
               <View className="items-center justify-center pt-2 pb-4">
-                <Dice rollDice={rollDice} lastRoll={lastRoll} size="medium" />
+                <Dice rollDice={rollDice} lastRoll={lastRoll} size={windowWidth < 768 ? "small" : "medium"} />
               </View>
               
               <Text className="text-xs text-gray-500 text-center mt-2">
@@ -225,15 +312,37 @@ const GameScreen: React.FC = () => {
           </View>
           
           {/* Центральная панель с игровым полем - адаптивная */}
-          <View className={`${layout.centerColumn} px-2`}>
-            <View className={`bg-white/40 backdrop-blur-md rounded-xl overflow-hidden shadow-xl border border-purple-100 min-h-[550px] flex items-center justify-center ${layout.gameBoardPadding}`}>
+          <View className={`${windowWidth < 768 ? 'w-full mb-3' : layout.centerColumn} px-2`}>
+            <View className={`bg-white/40 backdrop-blur-md rounded-xl overflow-hidden shadow-xl border border-purple-100 ${windowWidth < 768 ? 'min-h-[450px]' : 'min-h-[550px]'} flex items-center justify-center ${layout.gameBoardPadding}`}>
               <GameBoard players={[currentPlayer]} />
             </View>
           </View>
           
           {/* Правая панель с чат-ботом - адаптивная */}
-          <View className={`${layout.rightColumn} pl-2`}>
+          <View className={`${windowWidth < 768 ? 'w-full' : layout.rightColumn} pl-2`}>
             <ChatBot />
+          </View>
+        </View>
+        
+        {/* Центрированная нижняя навигация */}
+        <View className="py-4 flex-row justify-center items-center border-t border-gray-200 bg-white">
+          <View className="flex-row max-w-md mx-auto space-x-8">
+            <TouchableOpacity className="items-center">
+              <Ionicons name="home-outline" size={24} color="#6A0DAD" />
+              <Text className="text-xs text-purple-900 mt-1">Главная</Text>
+            </TouchableOpacity>
+            <TouchableOpacity className="items-center">
+              <Ionicons name="game-controller-outline" size={24} color="#6A0DAD" />
+              <Text className="text-xs text-purple-900 mt-1">Игра</Text>
+            </TouchableOpacity>
+            <TouchableOpacity className="items-center">
+              <Ionicons name="book-outline" size={24} color="#6A0DAD" />
+              <Text className="text-xs text-purple-900 mt-1">Правила</Text>
+            </TouchableOpacity>
+            <TouchableOpacity className="items-center">
+              <Ionicons name="person-outline" size={24} color="#6A0DAD" />
+              <Text className="text-xs text-purple-900 mt-1">Профиль</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>

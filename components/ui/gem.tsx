@@ -1,6 +1,5 @@
 import React from "react";
 import { Text, StyleSheet, View, Image, Platform } from "react-native";
-import { s } from "react-native-size-matters";
 
 interface GemProps {
   player?: {
@@ -9,11 +8,16 @@ interface GemProps {
     avatar?: any;
   };
   planNumber: number;
+  cellSize?: number; // Добавляем опциональный параметр размера ячейки
   onPress?: () => void;
 }
 
-const Gem: React.FC<GemProps> = ({ player, planNumber, onPress }) => {
+const Gem: React.FC<GemProps> = ({ player, planNumber, cellSize = 44, onPress }) => {
   const isWeb = Platform.OS === 'web';
+  
+  // Вычисляем масштабированные размеры
+  const tokenSize = Math.max(30, cellSize * 0.75); // Токен должен быть примерно 75% от ячейки
+  const fontSize = planNumber > 9 ? cellSize * 0.4 : cellSize * 0.5; // Размер шрифта масштабируется от размера ячейки
   
   let source;
   if (player?.avatar) {
@@ -28,8 +32,12 @@ const Gem: React.FC<GemProps> = ({ player, planNumber, onPress }) => {
   if (player) {
     return (
       <View style={styles.container}>
-        <View style={[styles.playerTokenOuter, isWeb && styles.webPlayerTokenOuter]}>
-          <View style={styles.playerTokenInner}>
+        <View style={[
+          styles.playerTokenOuter, 
+          isWeb && styles.webPlayerTokenOuter,
+          { width: tokenSize, height: tokenSize, borderRadius: tokenSize / 2 }
+        ]}>
+          <View style={[styles.playerTokenInner, { borderRadius: tokenSize / 2 }]}>
             {source && (
               <Image 
                 source={source} 
@@ -49,6 +57,7 @@ const Gem: React.FC<GemProps> = ({ player, planNumber, onPress }) => {
       <Text 
         style={[
           styles.number, 
+          { fontSize },
           planNumber > 9 ? styles.twoDigitNumber : {},
           isWeb && styles.webNumber
         ]}
@@ -70,9 +79,6 @@ const styles = StyleSheet.create({
   
   // Стили для фишки игрока
   playerTokenOuter: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
     backgroundColor: '#8E24AA',
     borderColor: '#FFFFFF',
     borderWidth: 3,
@@ -85,15 +91,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   webPlayerTokenOuter: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
     borderWidth: 4,
   },
   playerTokenInner: {
     width: '100%',
     height: '100%',
-    borderRadius: 16,
     overflow: 'hidden',
   },
   playerImage: {
@@ -110,7 +112,6 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   number: {
-    fontSize: 22,
     fontWeight: 'bold',
     color: '#000',
     textAlign: 'center',
@@ -118,7 +119,6 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     padding: 0,
     margin: 0,
-    lineHeight: 26,
     textShadowColor: 'rgba(255, 255, 255, 0.9)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 4,
@@ -128,7 +128,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   webNumber: {
-    fontSize: 22,
     fontWeight: '800',
     textShadowRadius: 5,
   }
