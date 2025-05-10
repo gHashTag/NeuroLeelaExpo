@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Image, View, useColorScheme, StyleSheet } from "react-native";
+import { Image, View, useColorScheme, StyleSheet, Platform } from "react-native";
 import { NeomorphFlexView } from "@components/ui/NeomorphFlexView";
 import { H, W } from "@constants/dimensions";
 import { ms, mvs, s } from "react-native-size-matters";
@@ -9,14 +9,35 @@ import { Gem } from "@components/ui/gem";
 
 const marginTop = H - W > 350 ? 20 : 0;
 
+// Функция для безопасного получения размеров изображения на разных платформах
+const getImageDimensions = (image: any) => {
+  // Значения по умолчанию, если не удается определить размер
+  const defaultDimensions = { width: 279, height: 248 };
+  
+  try {
+    if (Platform.OS === 'web') {
+      // В веб-версии мы не можем использовать resolveAssetSource
+      // Используем фиксированные соотношения сторон для веб
+      return defaultDimensions;
+    } else {
+      // На нативных платформах используем стандартный метод
+      const dimensions = Image.resolveAssetSource(image);
+      return dimensions || defaultDimensions;
+    }
+  } catch (error) {
+    console.warn('Ошибка при определении размеров изображения:', error);
+    return defaultDimensions;
+  }
+};
+
 function GameBoard({ players }: GameBoardProps) {
   const scheme = useColorScheme();
 
   const imgObj = useMemo(() => {
     const image = GameBoardImage.find((x) => x.title === scheme)?.path;
     if (image) {
-      const { width, height } = Image.resolveAssetSource(image);
-      const aspect = width / height;
+      const dimensions = getImageDimensions(image);
+      const aspect = dimensions.width / dimensions.height;
       return { image, aspect };
     } else {
       return { image: "", aspect: 1 };
