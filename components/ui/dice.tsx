@@ -67,12 +67,12 @@ const Dice = ({
   const getSize = () => {
     switch (size) {
       case "small":
-        return vs(35);
+        return vs(40);
       case "large":
-        return vs(90);
+        return vs(95);
       case "medium":
       default:
-        return vs(65);
+        return vs(70);
     }
   };
   const getImage = (number: number) => {
@@ -116,11 +116,12 @@ const styles = StyleSheet.create({
   diceContainer: {
     alignItems: "center",
     alignSelf: "center",
-    marginVertical: vs(12),
+    marginTop: 10,
+    marginBottom: vs(12),
   },
   image: {
-    height: vs(75),
-    width: vs(75),
+    height: vs(80),
+    width: vs(80),
     borderRadius: 10,
   },
 });
