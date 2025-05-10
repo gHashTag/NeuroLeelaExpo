@@ -113,25 +113,26 @@ const styles = StyleSheet.create({
   },
   number: {
     fontWeight: 'bold',
-    color: '#000',
+    color: '#ffffff',
     textAlign: 'center',
     textAlignVertical: 'center',
     includeFontPadding: false,
     padding: 0,
     margin: 0,
-    textShadowColor: 'rgba(255, 255, 255, 0.9)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.9)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   twoDigitNumber: {
     fontSize: 18,
     lineHeight: 22,
   },
   webNumber: {
-    fontWeight: '800',
-    textShadowRadius: 5,
-    color: '#333',
-    textShadowColor: 'rgba(255, 255, 255, 1)',
+    fontWeight: '900',
+    textShadowRadius: 3,
+    color: '#ffffff',
+    textShadowColor: 'rgba(0, 0, 0, 1)',
+    textShadowOffset: { width: 1, height: 1 },
   }
 });
 

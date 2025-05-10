@@ -82,7 +82,7 @@ function GameBoard({ players }: GameBoardProps) {
         <Image 
           source={imgObj.image} 
           style={[styles.bgImage, isWeb && styles.webBgImage]} 
-          resizeMode="contain" 
+          resizeMode="cover"
         />
         
         <View style={styles.boardWrapper}>
@@ -99,7 +99,8 @@ function GameBoard({ players }: GameBoardProps) {
                         width: cellSize, 
                         height: cellSize, 
                         borderRadius: cellSize / 2,
-                        marginHorizontal: cellMargin 
+                        marginHorizontal: cellMargin,
+                        backgroundColor: player ? 'rgba(142, 36, 170, 0.5)' : 'rgba(0, 0, 0, 0.15)'
                       },
                       player && styles.activeCell
                     ]} 
@@ -133,18 +134,19 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     borderRadius: 16,
-    opacity: 1,
+    opacity: 0.7,
+    zIndex: -1,
   },
   imageContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
     borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -152,6 +154,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 5,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    borderRadius: 16,
   },
   row: {
     flexDirection: 'row',
@@ -159,18 +163,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cell: {
-    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   activeCell: {
-    backgroundColor: 'rgba(142, 36, 170, 0.25)',
-    borderWidth: 3,
-    borderColor: 'rgba(142, 36, 170, 0.9)',
+    backgroundColor: 'rgba(142, 36, 170, 0.7)',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.9)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.5,
     shadowRadius: 3,
     elevation: 4,
     zIndex: 2,
@@ -180,10 +185,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   webImageContainer: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
     borderRadius: 20,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 10,
   },
   webBgImage: {
