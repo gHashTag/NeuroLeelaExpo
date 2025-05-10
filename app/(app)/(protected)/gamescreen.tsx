@@ -223,13 +223,13 @@ const GameScreen: React.FC = () => {
           
           <ScrollView>
             <View className="p-3 pb-6">
-              {/* Блок с игровым полем */}
-              <View className="bg-white/70 rounded-xl overflow-hidden shadow-lg mb-4 backdrop-blur-md p-1">
+              {/* Блок с игровым полем - возвращаем нормальное поле без масштабирования */}
+              <View className="bg-white/70 rounded-xl overflow-hidden shadow-lg mb-0 backdrop-blur-md p-1">
                 <GameBoard players={[currentPlayer]} />
               </View>
               
-              {/* Только кубик по центру, блок с позицией удален */}
-              <View className="bg-white/80 rounded-xl p-4 items-center justify-center backdrop-blur-md mb-4 mx-auto w-full">
+              {/* Подтягиваем кубик к игровому полю (без отступа) */}
+              <View className="bg-white/80 rounded-xl p-1 items-center justify-center backdrop-blur-md mb-3 mx-auto w-full mt-0">
                 <Dice rollDice={rollDice} lastRoll={lastRoll} size="large" />
               </View>
               
@@ -330,14 +330,14 @@ const GameScreen: React.FC = () => {
       </View>
       
       <ScrollView>
-        <View className="p-3 pb-6">
-          {/* Блок с игровым полем - увеличен */}
-          <View className="bg-white/70 rounded-xl overflow-hidden shadow-lg mb-1 backdrop-blur-md p-1">
+        <View className="p-2 pb-4">
+          {/* Блок с игровым полем - возвращаем нормальное поле без масштабирования */}
+          <View className="bg-white/70 rounded-xl overflow-hidden shadow-lg mb-0 backdrop-blur-md p-1">
             <GameBoard players={[currentPlayer]} />
           </View>
           
-          {/* Удалена информация о позиции, только кубик по центру */}
-          <View className="bg-white/80 rounded-xl p-2 pt-1 items-center justify-center backdrop-blur-md mb-3 mx-auto w-full">
+          {/* Подтягиваем кубик к игровому полю (без отступа) */}
+          <View className="bg-white/80 rounded-xl p-1 items-center justify-center backdrop-blur-md mb-3 mx-auto w-full mt-0">
             <Dice rollDice={rollDice} lastRoll={lastRoll} size="large" />
           </View>
           

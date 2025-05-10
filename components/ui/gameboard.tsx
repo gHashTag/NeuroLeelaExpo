@@ -10,11 +10,11 @@ function GameBoard({ players, customScale }: GameBoardProps & { customScale?: nu
   
   // Вычисляем размеры ячеек в зависимости от размера экрана
   const getCellSize = () => {
-    if (windowWidth > 1400) return 44; // Большие экраны
-    if (windowWidth > 1024) return 40; // Средние экраны
-    if (windowWidth > 768) return 38;  // Маленькие экраны
-    if (windowWidth > 480) return 35;  // Планшеты
-    return 32;                          // Мобильные устройства
+    if (windowWidth > 1400) return 40; // Большие экраны - уменьшено с 44
+    if (windowWidth > 1024) return 36; // Средние экраны - уменьшено с 40
+    if (windowWidth > 768) return 32;  // Маленькие экраны - уменьшено с 38
+    if (windowWidth > 480) return 28;  // Планшеты - уменьшено с 35
+    return 26;                          // Мобильные устройства - уменьшено с 32
   };
   
   // Устанавливаем размеры игрового поля
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 5,
+    padding: 2,
   },
   bgImage: {
     height: '100%',
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   boardWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 5,
+    padding: 2,
     backgroundColor: 'transparent',
     borderRadius: 16,
   },
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
   },
   // Веб-специфичные стили
   webMainContainer: {
-    paddingVertical: 10,
+    paddingVertical: 5,
   },
   webImageContainer: {
     backgroundColor: 'transparent',
