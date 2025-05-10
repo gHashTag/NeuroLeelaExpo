@@ -198,7 +198,7 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
       const { error } = await supabase
         .from('users')
         .update(data)
-        .eq('id', session.data.session.user.id);
+        .eq('user_id', session.data.session.user.id);
 
       if (error) {
         console.error('❌ Ошибка при обновлении данных:', error);

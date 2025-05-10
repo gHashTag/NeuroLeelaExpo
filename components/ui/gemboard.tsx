@@ -1,0 +1,11 @@
+box: {
+  alignItems: "center",
+  borderRadius: s(28) / 2,
+  height: s(28),
+  justifyContent: "center",
+  marginHorizontal: s(0.5),
+  marginVertical: s(1),
+  maxHeight: ms(28, 0.5),
+  maxWidth: ms(28, 0.5),
+  width: s(28),
+}, 

@@ -67,12 +67,12 @@ const Dice = ({
   const getSize = () => {
     switch (size) {
       case "small":
-        return vs(50);
+        return vs(30);
       case "large":
-        return vs(120);
+        return vs(80);
       case "medium":
       default:
-        return vs(80);
+        return vs(55);
     }
   };
   const getImage = (number: number) => {

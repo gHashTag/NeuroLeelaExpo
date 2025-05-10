@@ -1,9 +1,10 @@
 import { useRouter, Stack } from "expo-router";
 import React, { useState } from "react";
-import { View, ActivityIndicator, useWindowDimensions } from "react-native";
+import { View, ActivityIndicator, useWindowDimensions, Alert, Pressable } from "react-native";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { MaterialIcons } from "@expo/vector-icons";
 
 import { SafeAreaView } from "@/components/safe-area-view";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,6 @@ const formSchema = z.object({
   designation: z
     .string()
     .min(2, "Ваше намерение должно содержать не менее 2 символов.")
-    .max(50, "Ваше намерение должно содержать не более 50 символов."),
 });
 
 export default function Designation() {
@@ -27,6 +27,7 @@ export default function Designation() {
   const { session, updateUserData } = useSupabase();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -35,21 +36,64 @@ export default function Designation() {
     },
   });
 
+  // Функция для очистки поля ввода
+  const clearInput = () => {
+    form.setValue("designation", "");
+    setError(null);
+  };
+  
+  // Функция для предотвращения слишком длинной вставки случайного текста
+  const handlePaste = (text: string) => {
+    const maxDisplayLength = 500; // Для предупреждения при визуальном отображении очень длинного текста
+    
+    if (text.length > maxDisplayLength) {
+      // Просто предупреждаем о длинном тексте, но не ограничиваем
+      console.log(`Вставлен длинный текст (${text.length} символов)`);
+    }
+    
+    return text; // Возвращаем текст без изменений
+  };
+
   async function onSubmit(data: z.infer<typeof formSchema>) {
+    console.log("Отправка формы с данными:", data);
+    console.log("Значение намерения:", data.designation, "Длина:", data.designation.length);
+    
     setIsLoading(true);
     setError(null);
+    setIsSubmitting(true);
+    
+    if (!data.designation || data.designation.trim().length < 2) {
+      setError("Ваше намерение слишком короткое. Должно быть не менее 2 символов.");
+      setIsLoading(false);
+      setIsSubmitting(false);
+      return;
+    }
+    
     try {
+      console.log("Сохраняем намерение в Supabase:", data.designation);
+      
       await updateUserData({
-        designation: data.designation,
+        designation: data.designation.trim(),
       });
+      
+      console.log("Намерение успешно сохранено, переходим на игровой экран");
       router.replace("/(app)/(protected)/gamescreen");
     } catch (error) {
-      console.error(error);
-      setError("❌ Не удалось сохранить ваше намерение. Пожалуйста, попробуйте позже.");
+      console.error("Ошибка при сохранении намерения:", error);
+      setError(`❌ Не удалось сохранить ваше намерение: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+      setIsSubmitting(false);
     } finally {
       setIsLoading(false);
     }
   }
+
+  const handleDebugPress = () => {
+    const currentValue = form.getValues().designation;
+    Alert.alert(
+      "Отладочная информация",
+      `Текущее значение: "${currentValue}"\nДлина: ${currentValue.length}\nОшибки формы: ${JSON.stringify(form.formState.errors)}`
+    );
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["bottom"]}>
@@ -65,7 +109,7 @@ export default function Designation() {
             </Muted>
 
             <Form {...form}>
-              <View className="gap-4">
+              <View className="gap-4 relative">
                 <FormField
                   control={form.control}
                   name="designation"
@@ -74,20 +118,48 @@ export default function Designation() {
                       label="Ваше духовное намерение"
                       autoCapitalize="sentences"
                       autoCorrect={false}
-                      className="min-h-[100px]"
+                      className="min-h-[100px] pr-10"
                       multiline
                       numberOfLines={4}
                       textAlignVertical="top"
                       placeholder="Например: «Обрести внутреннюю гармонию» или «Познать истинную природу своего Я»"
-                      {...field}
+                      name={field.name}
+                      value={field.value}
+                      onBlur={field.onBlur}
+                      onChange={field.onChange}
+                      onChangeText={(text) => {
+                        field.onChange(text);
+                      }}
+                      onPaste={(e) => {
+                        const pastedText = e.nativeEvent.data;
+                        if (pastedText) {
+                          const processedText = handlePaste(pastedText);
+                          field.onChange(processedText);
+                        }
+                      }}
                     />
                   )}
                 />
+                {form.watch("designation") && (
+                  <Pressable 
+                    onPress={clearInput}
+                    className="absolute right-3 top-11 z-10"
+                  >
+                    <MaterialIcons name="cancel" size={22} color="#757575" />
+                  </Pressable>
+                )}
               </View>
             </Form>
             
             {error && (
               <Text className="text-red-500 text-center mt-2">{error}</Text>
+            )}
+            
+            {/* Отладочная кнопка - только для разработки */}
+            {__DEV__ && (
+              <Button variant="outline" onPress={handleDebugPress} className="mt-2">
+                <Text>Проверить данные формы</Text>
+              </Button>
             )}
           </View>
 
@@ -106,11 +178,14 @@ export default function Designation() {
               size={isMobile ? "default" : "lg"}
               variant="default"
               onPress={form.handleSubmit(onSubmit)}
-              disabled={isLoading}
+              disabled={isLoading || isSubmitting}
               className="flex-1 bg-primary text-primary-foreground hover:opacity-90 transition-all duration-300 rounded-xl border border-border"
             >
-              {isLoading ? 
-                <ActivityIndicator size="small" color="white" /> : 
+              {isLoading || isSubmitting ? 
+                <View className="flex-row items-center">
+                  <ActivityIndicator size="small" color="white" style={{ marginRight: 8 }}/>
+                  <Text className="font-light tracking-wide text-primary-foreground text-center">Сохраняем...</Text>
+                </View> : 
                 <Text className="font-light tracking-wide text-primary-foreground text-center">
                   Начать путешествие
                 </Text>

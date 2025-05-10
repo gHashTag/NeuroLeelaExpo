@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { View, ImageBackground, Platform, Text, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, ImageBackground, Platform, Text, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, Dimensions } from "react-native";
 import { Display, Dice, GameBoard } from "@components/ui/index";
 import { router } from "expo-router";
 import { useSupabase } from "@/context/supabase-provider";
@@ -22,7 +22,7 @@ const AppLogo = () => (
   </View>
 );
 
-// Компонент чат-бота
+// Компонент чат-бота с адаптивной высотой
 const ChatBot = () => {
   const [message, setMessage] = useState("");
   const [chatHistory, setChatHistory] = useState([
@@ -91,13 +91,61 @@ const ChatBot = () => {
 };
 
 const GameScreen: React.FC = () => {
-  // const [isLoading, setLoading] = useState(false)
-  // const { t } = useTranslation()
-  // const [account] = useAccount()
   const [lastRoll, setLastRoll] = useState(1);
+  const [windowWidth, setWindowWidth] = useState(Dimensions.get('window').width);
   const { userData, getAvatarUrl } = useSupabase();
   const isWeb = Platform.OS === 'web';
+  
+  // Отслеживаем изменение размера окна для обеспечения адаптивности
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(Dimensions.get('window').width);
+    };
 
+    if (isWeb) {
+      Dimensions.addEventListener('change', handleResize);
+    }
+    
+    return () => {
+      if (isWeb) {
+        // Правильное удаление слушателя
+        const subscriber = Dimensions.addEventListener('change', handleResize);
+        subscriber.remove();
+      }
+    };
+  }, [isWeb]);
+
+  // Определяем макет в зависимости от ширины экрана
+  const getLayout = () => {
+    if (windowWidth > 1200) {
+      return {
+        leftColumn: "w-1/4", 
+        centerColumn: "w-2/4", 
+        rightColumn: "w-1/4",
+        padding: "p-2",
+        gameBoardPadding: "p-2"
+      };
+    } else if (windowWidth > 992) {
+      return {
+        leftColumn: "w-1/5", 
+        centerColumn: "w-3/5", 
+        rightColumn: "w-1/5",
+        padding: "p-2",
+        gameBoardPadding: "p-1"
+      };
+    } else {
+      return {
+        leftColumn: "w-1/6", 
+        centerColumn: "w-4/6", 
+        rightColumn: "w-1/6",
+        padding: "p-1",
+        gameBoardPadding: "p-1"
+      };
+    }
+  };
+
+  const layout = getLayout();
+  
   const { currentPlayer, rollDice, message } = {
     currentPlayer: {
       id: "1",
@@ -112,7 +160,6 @@ const GameScreen: React.FC = () => {
       positionBeforeThreeSixes: 0,
       message: "Ready to play",
     },
-    // lastRoll: 3,
     rollDice: () => {
       const roll = Math.floor(Math.random() * 6) + 1;
       setLastRoll(roll);
@@ -143,17 +190,17 @@ const GameScreen: React.FC = () => {
       <View className="flex-1 bg-gray-50">
         <AppHeader />
         
-        <View className="py-4 px-6 bg-purple-50">
-          <View className="max-w-7xl mx-auto">
+        <View className="py-3 px-4 bg-purple-50">
+          <View className="max-w-[1400px] mx-auto">
             <Text className="text-base font-medium text-purple-800 italic text-center">
               Игра Лила — это древний путь самопознания, ведущий к Космическому Сознанию. Сформулируйте ваше духовное намерение, с которым вы вступаете в эту священную игру.
             </Text>
           </View>
         </View>
         
-        <View className="flex-1 flex-row max-w-7xl mx-auto w-full p-4">
+        <View className={`flex-1 flex-row max-w-[1400px] mx-auto w-full ${layout.padding}`}>
           {/* Левая панель с информацией */}
-          <View className="w-1/5 pr-4 flex flex-col">
+          <View className={`${layout.leftColumn} pr-2 flex flex-col`}>
             <View className="bg-white rounded-xl shadow-md p-4 mb-4 border border-purple-100">
               <Text className="text-base font-semibold text-purple-900 mb-2">Текущая позиция:</Text>
               <View className="flex-row items-center mb-3">
@@ -177,15 +224,15 @@ const GameScreen: React.FC = () => {
             </View>
           </View>
           
-          {/* Центральная панель с игровым полем - увеличена */}
-          <View className="w-3/5 px-3">
-            <View className="bg-white/40 backdrop-blur-md rounded-xl overflow-hidden shadow-xl border border-purple-100 min-h-[550px] flex items-center justify-center p-6">
+          {/* Центральная панель с игровым полем - адаптивная */}
+          <View className={`${layout.centerColumn} px-2`}>
+            <View className={`bg-white/40 backdrop-blur-md rounded-xl overflow-hidden shadow-xl border border-purple-100 min-h-[550px] flex items-center justify-center ${layout.gameBoardPadding}`}>
               <GameBoard players={[currentPlayer]} />
             </View>
           </View>
           
-          {/* Правая панель с чат-ботом - уменьшена */}
-          <View className="w-1/5 pl-4">
+          {/* Правая панель с чат-ботом - адаптивная */}
+          <View className={`${layout.rightColumn} pl-2`}>
             <ChatBot />
           </View>
         </View>
@@ -211,7 +258,7 @@ const GameScreen: React.FC = () => {
       <ScrollView>
         <View className="p-3 pb-6">
           {/* Блок с игровым полем - увеличен */}
-          <View className="bg-white/70 rounded-xl overflow-hidden shadow-lg mb-4 backdrop-blur-md p-2">
+          <View className="bg-white/70 rounded-xl overflow-hidden shadow-lg mb-4 backdrop-blur-md p-1">
             <GameBoard players={[currentPlayer]} />
           </View>
           

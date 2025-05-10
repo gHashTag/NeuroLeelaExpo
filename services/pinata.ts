@@ -1,5 +1,6 @@
 import { PINATA } from '@/constants';
 import * as FileSystem from 'expo-file-system';
+import { Platform } from 'react-native';
 
 // Тип для объекта файла, который может принять FormData в React Native
 type ReactNativeFile = {
@@ -70,40 +71,100 @@ export class PinataService {
       throw new Error('Отсутствует JWT токен Pinata');
     }
 
+    console.log('🔑 JWT токен существует, длина:', PINATA.JWT.length);
+    console.log('🔍 Первые 20 символов JWT:', PINATA.JWT.substring(0, 20) + '...');
+
     const formData = new FormData();
     let fileName: string;
-    let fileToAppend: any; // FormData.append может принимать разные типы
 
     if (fileInput instanceof Blob) {
       console.log('📦 Обработка Blob файла');
       const blob = fileInput as Blob;
       // Пытаемся получить имя из Blob, если оно есть, иначе генерируем
       fileName = (blob as any).name || `avatar_blob_${Date.now()}.${blob.type.split('/')[1] || 'jpg'}`;
-      fileToAppend = blob;
+      
+      console.log('📦 Данные файла (Blob):', {
+        name: fileName,
+        type: blob.type,
+        size: blob.size
+      });
+      
+      // Прямое добавление Blob в FormData
+      formData.append('file', blob, fileName);
     } else if (fileInput && typeof fileInput.uri === 'string') {
       console.log('📦 Обработка ReactNativeFile (uri)');
       const reactNativeFile = fileInput as ReactNativeFile;
       const uriParts = reactNativeFile.uri.split('/');
       const originalNameFromUri = uriParts[uriParts.length - 1];
+      
       // Используем предоставленное имя или генерируем на основе URI
       fileName = reactNativeFile.name || `avatar_uri_${Date.now()}_${originalNameFromUri}`;
+      
       // Используем предоставленный тип или пытаемся определить из имени, иначе по умолчанию
       const fileExtension = originalNameFromUri.includes('.') ? originalNameFromUri.split('.').pop() : 'jpg';
       const fileMimeType = reactNativeFile.type || `image/${fileExtension}`;
 
-      fileToAppend = {
-        uri: reactNativeFile.uri,
+      console.log('📦 Данные файла (ReactNativeFile):', {
+        uri: reactNativeFile.uri.substring(0, 50) + '...',
         name: fileName,
-        type: fileMimeType,
-      };
+        type: fileMimeType
+      });
+
+      // В веб-окружении, нам нужно загрузить файл как блоб
+      if (Platform.OS === 'web') {
+        try {
+          console.log('🌐 Веб-окружение: загружаем файл как blob...');
+          
+          // Если URI - это base64, преобразуем его в Blob
+          if (reactNativeFile.uri.startsWith('data:')) {
+            console.log('📄 Обрабатываем base64 URI...');
+            const base64Data = reactNativeFile.uri.split(',')[1];
+            const mimeType = reactNativeFile.uri.split(';')[0].split(':')[1];
+            
+            // Создаем Blob из base64
+            const byteCharacters = atob(base64Data);
+            const byteArrays = [];
+            
+            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+              const slice = byteCharacters.slice(offset, offset + 512);
+              const byteNumbers = new Array(slice.length);
+              for (let i = 0; i < slice.length; i++) {
+                byteNumbers[i] = slice.charCodeAt(i);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              byteArrays.push(byteArray);
+            }
+            
+            const blob = new Blob(byteArrays, { type: mimeType });
+            console.log('✅ Blob создан из base64');
+            formData.append('file', blob, fileName);
+          } else {
+            // Если это URL, загружаем как Blob
+            console.log('📄 Загружаем файл по URL...');
+            const response = await fetch(reactNativeFile.uri);
+            const blob = await response.blob();
+            console.log('✅ Blob получен из URL');
+            formData.append('file', blob, fileName);
+          }
+        } catch (error) {
+          console.error('❌ Ошибка при обработке файла в веб-окружении:', error);
+          throw new Error(`Ошибка при обработке файла: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      } else {
+        // В нативном окружении используем обычный подход
+        console.log('📱 Нативное окружение: добавляем файл с URI...');
+        
+        // В нативной среде, мы должны добавить объект с uri, type и name
+        formData.append('file', {
+          uri: reactNativeFile.uri,
+          type: fileMimeType,
+          name: fileName
+        } as any);
+      }
     } else {
       console.error('❌ Неверный формат файла для загрузки:', fileInput);
       throw new Error('Неверный формат файла для загрузки');
     }
-    
-    console.log('📦 Информация о файле для FormData:', { fileToAppend, fileName });
-
-    formData.append('file', fileToAppend, fileName);
 
     // Добавляем метаданные
     const metadata = JSON.stringify({
@@ -121,46 +182,79 @@ export class PinataService {
     });
     formData.append('pinataOptions', options);
 
-    try {
-      console.log('📤 Отправка запроса в Pinata');
-      console.log('🔑 Используем JWT токен:', PINATA.JWT.substring(0, 50) + '...');
-      
-      const response = await fetch(`${this.baseUrl}/pinning/pinFileToIPFS`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${PINATA.JWT}`,
-        },
-        body: formData,
-      });
+    const maxRetries = 3;
+    let attempt = 0;
+    let lastError: Error | null = null;
 
-      const responseText = await response.text();
-      console.log('📥 Ответ от Pinata:', responseText);
-
-      if (!response.ok) {
-        console.error('❌ Ошибка от Pinata API:', response.status, responseText);
-        throw new Error(`Ошибка загрузки файла: ${response.status} ${responseText}`);
-      }
-
-      let data;
+    while (attempt < maxRetries) {
+      attempt++;
       try {
-        data = JSON.parse(responseText);
+        console.log(`📤 Попытка загрузки #${attempt} из ${maxRetries}`);
+        console.log('🔑 Используем JWT токен (первые 20 символов):', PINATA.JWT.substring(0, 20) + '...');
+        
+        const response = await fetch(`${this.baseUrl}/pinning/pinFileToIPFS`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${PINATA.JWT}`,
+          },
+          body: formData,
+        });
+
+        const responseText = await response.text();
+        console.log(`📥 Ответ от Pinata (статус ${response.status}):`, 
+          responseText.length > 200 ? responseText.substring(0, 200) + '...' : responseText
+        );
+
+        if (!response.ok) {
+          console.error(`❌ Ошибка от Pinata API (попытка ${attempt}):`, response.status, responseText);
+          
+          if (response.status === 401) {
+            throw new Error(`Ошибка авторизации: 401 Unauthorized`);
+          }
+          
+          // Если это последняя попытка, выбрасываем ошибку
+          if (attempt === maxRetries) {
+            throw new Error(`Ошибка загрузки файла: ${response.status} ${responseText}`);
+          }
+          
+          // Ждем перед повторной попыткой
+          console.log(`⏳ Ожидание перед повторной попыткой (${attempt} из ${maxRetries})...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue; // Переходим к следующей попытке
+        }
+
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (error) {
+          console.error('❌ Ошибка при парсинге ответа:', error);
+          throw new Error('Некорректный ответ от Pinata API');
+        }
+
+        console.log('✅ Файл успешно загружен в Pinata:', data);
+
+        if (!data.IpfsHash) {
+          console.error('❌ Отсутствует IPFS хеш в ответе');
+          throw new Error('Некорректный ответ от Pinata API');
+        }
+
+        return data.IpfsHash;
       } catch (error) {
-        console.error('❌ Ошибка при парсинге ответа:', error);
-        throw new Error('Некорректный ответ от Pinata API');
+        console.error(`❌ Ошибка при загрузке файла (попытка ${attempt}):`, error);
+        lastError = error instanceof Error ? error : new Error(String(error));
+        
+        // Если это последняя попытка или критическая ошибка, прекращаем
+        if (attempt === maxRetries || error instanceof Error && error.message.includes('401')) {
+          break;
+        }
+        
+        // Ждем перед повторной попыткой
+        console.log(`⏳ Ожидание перед повторной попыткой (${attempt} из ${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
       }
-
-      console.log('✅ Файл успешно загружен в Pinata:', data);
-
-      if (!data.IpfsHash) {
-        console.error('❌ Отсутствует IPFS хеш в ответе');
-        throw new Error('Некорректный ответ от Pinata API');
-      }
-
-      return data.IpfsHash;
-    } catch (error) {
-      console.error('❌ Ошибка при загрузке файла:', error);
-      throw error;
     }
+
+    throw lastError || new Error('Не удалось загрузить файл после нескольких попыток');
   }
 
   public getFileUrl(ipfsHash: string): string | null {

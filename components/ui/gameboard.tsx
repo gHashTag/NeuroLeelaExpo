@@ -7,16 +7,16 @@ import { Gem } from "@components/ui/gem";
 
 // Размеры игрового поля
 const cellSize = 44; // Увеличенный размер ячейки
-const cellMargin = 2.5; // Увеличенный отступ между ячейками
-const rowMargin = 2.5; // Увеличенный отступ между рядами
+const cellMargin = 2.5; // Отступ между ячейками
+const rowMargin = 2.5; // Отступ между рядами
 
 // Рассчитываем полную ширину игрового поля
 const boardWidth = 9 * (cellSize + 2 * cellMargin);
 const boardHeight = 8 * (cellSize + 2 * rowMargin);
 
 // Финальные размеры контейнера
-const curImageWidth = boardWidth + 40; 
-const curImageHeight = boardHeight + 40;
+const curImageWidth = boardWidth + 20; 
+const curImageHeight = boardHeight + 20;
 
 // Строки игрового поля
 const rows = [
