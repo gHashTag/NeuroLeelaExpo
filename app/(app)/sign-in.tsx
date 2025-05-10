@@ -91,8 +91,23 @@ export default function SignInScreen() {
     duration-300
   `.trim();
 
+  // Явное центрирование для web с корректными типами
+  const containerStyle = Platform.OS === 'web'
+    ? {
+        minHeight: typeof window !== 'undefined' ? window.innerHeight : height,
+        display: 'flex' as const,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        backgroundColor: '#fff',
+      }
+    : {
+        flex: 1,
+        minHeight: height,
+        backgroundColor: '#fff',
+      };
+
   return (
-    <View style={{ minHeight: height, backgroundColor: '#fff' }} className="flex flex-col min-h-screen justify-center items-center">
+    <View style={containerStyle} className="w-full">
       <SafeAreaView className="flex flex-1 w-full justify-center items-center">
         <View className="w-full max-w-sm mx-auto flex flex-col items-center justify-center p-6 bg-white rounded-2xl shadow-none border border-neutral-100">
           <Image
