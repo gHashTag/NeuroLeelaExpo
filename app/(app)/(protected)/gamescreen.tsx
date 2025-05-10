@@ -332,12 +332,12 @@ const GameScreen: React.FC = () => {
       <ScrollView>
         <View className="p-3 pb-6">
           {/* Блок с игровым полем - увеличен */}
-          <View className="bg-white/70 rounded-xl overflow-hidden shadow-lg mb-2 backdrop-blur-md p-1">
+          <View className="bg-white/70 rounded-xl overflow-hidden shadow-lg mb-1 backdrop-blur-md p-1">
             <GameBoard players={[currentPlayer]} />
           </View>
           
           {/* Удалена информация о позиции, только кубик по центру */}
-          <View className="bg-white/80 rounded-xl p-3 items-center justify-center backdrop-blur-md mb-3 mx-auto w-full">
+          <View className="bg-white/80 rounded-xl p-2 pt-1 items-center justify-center backdrop-blur-md mb-3 mx-auto w-full">
             <Dice rollDice={rollDice} lastRoll={lastRoll} size="large" />
           </View>
           
