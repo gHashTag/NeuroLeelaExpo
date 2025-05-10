@@ -58,7 +58,7 @@ const Gem: React.FC<GemProps> = ({ player, planNumber, cellSize = 44, onPress })
         style={[
           styles.number, 
           { fontSize },
-          planNumber > 9 ? styles.twoDigitNumber : {},
+          planNumber > 9 ? styles.twoDigitNumber : styles.singleDigitNumber,
           isWeb && styles.webNumber
         ]}
       >
@@ -126,6 +126,9 @@ const styles = StyleSheet.create({
   twoDigitNumber: {
     fontSize: 18,
     lineHeight: 22,
+  },
+  singleDigitNumber: {
+    fontWeight: '900',
   },
   webNumber: {
     fontWeight: '900',
