@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
   diceContainer: {
     alignItems: "center",
     alignSelf: "center",
-    marginTop: 10,
+    marginTop: 30,
     marginBottom: vs(12),
   },
   image: {
