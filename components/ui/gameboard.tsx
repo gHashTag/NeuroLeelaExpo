@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'transparent',
     borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   webImageContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'transparent',
     borderRadius: 20,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
