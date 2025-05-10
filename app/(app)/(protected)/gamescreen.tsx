@@ -228,8 +228,8 @@ const GameScreen: React.FC = () => {
                 <GameBoard players={[currentPlayer]} />
               </View>
               
-              {/* Подтягиваем кубик к игровому полю (без отступа) */}
-              <View className="bg-white/80 rounded-xl p-1 items-center justify-center backdrop-blur-md mb-3 mx-auto w-full mt-0">
+              {/* Кубик полностью без фона, внешне сзади элементов */}
+              <View className="items-center justify-center mb-3 mx-auto w-full">
                 <Dice rollDice={rollDice} lastRoll={lastRoll} size="large" />
               </View>
               
@@ -336,8 +336,8 @@ const GameScreen: React.FC = () => {
             <GameBoard players={[currentPlayer]} />
           </View>
           
-          {/* Подтягиваем кубик к игровому полю (без отступа) */}
-          <View className="bg-white/80 rounded-xl p-1 items-center justify-center backdrop-blur-md mb-3 mx-auto w-full mt-0">
+          {/* Кубик полностью без фона, внешне сзади элементов */}
+          <View className="items-center justify-center mb-3 mx-auto w-full">
             <Dice rollDice={rollDice} lastRoll={lastRoll} size="large" />
           </View>
           
