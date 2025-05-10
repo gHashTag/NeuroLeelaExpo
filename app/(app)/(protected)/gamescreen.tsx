@@ -1,16 +1,17 @@
 import React, { useState } from "react";
-import { View, ImageBackground, Platform, StyleSheet, Text, Image, Dimensions } from "react-native";
-import { Display, Dice, GameBoard, Space } from "@components/ui/index";
+import { View, ImageBackground, Platform, Text, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity } from "react-native";
+import { Display, Dice, GameBoard } from "@components/ui/index";
 import { router } from "expo-router";
 import { useSupabase } from "@/context/supabase-provider";
 import { BlurView } from "expo-blur";
+import { Ionicons } from '@expo/vector-icons';
 // import { useTranslation } from 'react-i18next'
 // import { useAccount } from 'store'
 
 // Logo component for the app
 const AppLogo = () => (
   <View className="flex-row items-center">
-    <View className="w-10 h-10 rounded-full overflow-hidden bg-purple-200 border-2 border-purple-300 shadow-sm">
+    <View className="w-10 h-10 rounded-full overflow-hidden bg-purple-100 border-2 border-purple-300 shadow-md">
       <Image 
         source={require('@/assets/icons/1024.png')} 
         className="w-full h-full"
@@ -21,6 +22,74 @@ const AppLogo = () => (
   </View>
 );
 
+// Компонент чат-бота
+const ChatBot = () => {
+  const [message, setMessage] = useState("");
+  const [chatHistory, setChatHistory] = useState([
+    { type: 'bot', text: 'Здравствуйте! Я ваш духовный проводник в игре Лила. Чем могу помочь?' },
+  ]);
+
+  const sendMessage = () => {
+    if (!message.trim()) return;
+    
+    // Добавляем сообщение пользователя в историю
+    setChatHistory([...chatHistory, { type: 'user', text: message }]);
+    
+    // Здесь будет логика обработки сообщения и ответа бота
+    setTimeout(() => {
+      setChatHistory(prev => [...prev, { 
+        type: 'bot', 
+        text: 'Я понимаю ваш духовный путь. Продолжайте двигаться вперед с осознанностью.' 
+      }]);
+    }, 1000);
+    
+    setMessage("");
+  };
+
+  return (
+    <View className="flex-1 bg-white rounded-xl shadow-md border border-purple-100 flex flex-col overflow-hidden">
+      <View className="bg-purple-50 p-3 border-b border-purple-100">
+        <Text className="text-base font-semibold text-purple-900">Духовный помощник</Text>
+      </View>
+      
+      <ScrollView className="flex-1 p-3">
+        {chatHistory.map((msg, index) => (
+          <View 
+            key={index} 
+            className={`mb-3 ${msg.type === 'user' ? 'items-end' : 'items-start'} flex flex-row`}
+          >
+            <View 
+              className={`rounded-2xl px-4 py-2 max-w-[85%] ${
+                msg.type === 'user' 
+                  ? 'bg-purple-600 ml-auto' 
+                  : 'bg-gray-100'
+              }`}
+            >
+              <Text 
+                className={msg.type === 'user' ? 'text-white' : 'text-gray-800'}
+              >
+                {msg.text}
+              </Text>
+            </View>
+          </View>
+        ))}
+      </ScrollView>
+      
+      <View className="border-t border-gray-200 p-2 flex-row items-center">
+        <TextInput
+          value={message}
+          onChangeText={setMessage}
+          placeholder="Задайте вопрос..."
+          className="flex-1 bg-gray-100 rounded-full px-4 py-2 mr-2"
+        />
+        <TouchableOpacity onPress={sendMessage} className="bg-purple-600 rounded-full p-2">
+          <Ionicons name="send" size={20} color="white" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
 const GameScreen: React.FC = () => {
   // const [isLoading, setLoading] = useState(false)
   // const { t } = useTranslation()
@@ -28,16 +97,13 @@ const GameScreen: React.FC = () => {
   const [lastRoll, setLastRoll] = useState(1);
   const { userData, getAvatarUrl } = useSupabase();
   const isWeb = Platform.OS === 'web';
-  const screenHeight = Dimensions.get('window').height;
 
   const { currentPlayer, rollDice, message } = {
     currentPlayer: {
       id: "1",
       fullName: "Player One",
-      plan: 1,
-      avatar: userData?.pinata_avatar_id
-        ? getAvatarUrl(userData.pinata_avatar_id)
-        : require("@/assets/defaultImage/defaultProfileImage.png"),
+      plan: 5,
+      avatar: require("@/assets/defaultImage/defaultProfileImage.png"),
       intention: "Win the game",
       previousPlan: 0,
       isStart: true,
@@ -59,42 +125,75 @@ const GameScreen: React.FC = () => {
   // Custom header component
   const AppHeader = () => (
     <BlurView intensity={60} tint="light" className="border-b border-gray-200/50 py-4 px-5">
-      <View className="flex-row items-center justify-center">
+      <View className="flex-row items-center justify-between">
         <AppLogo />
+        <View className="flex-row items-center">
+          <Text className="text-sm text-purple-700 mr-2">Уровень:</Text>
+          <View className="bg-purple-100 w-8 h-8 rounded-full items-center justify-center">
+            <Text className="font-bold text-purple-800">{currentPlayer.plan}</Text>
+          </View>
+        </View>
       </View>
     </BlurView>
   );
 
-  const MainContent = () => (
-    <View className={`flex-1 items-center ${isWeb ? 'py-8 px-4' : ''}`}>
-      {/* Intro message display */}
-      <View className={`w-full max-w-lg ${isWeb ? 'mb-8' : 'mb-4'}`}>
-        <Display title={message} />
-      </View>
-      
-      {/* Game board container with enhanced styling */}
-      <View className={`w-full ${isWeb ? 'max-w-2xl' : ''} bg-white/20 backdrop-blur-md rounded-xl overflow-hidden shadow-lg mb-6`}>
-        <GameBoard players={[currentPlayer]} />
-      </View>
-      
-      {/* Dice control with better styling */}
-      <View className="bg-white rounded-xl p-4 shadow-md border border-purple-100">
-        <Dice rollDice={rollDice} lastRoll={lastRoll} size="medium" />
-      </View>
-    </View>
-  );
-
+  // Адаптивный макет для Web и Mobile
   if (isWeb) {
     return (
-      <View className="flex-1 bg-purple-50/30">
-        <View className="max-w-5xl mx-auto w-full h-full flex-1">
-          <AppHeader />
-          <MainContent />
+      <View className="flex-1 bg-gray-50">
+        <AppHeader />
+        
+        <View className="py-4 px-6 bg-purple-50">
+          <View className="max-w-7xl mx-auto">
+            <Text className="text-base font-medium text-purple-800 italic text-center">
+              Игра Лила — это древний путь самопознания, ведущий к Космическому Сознанию. Сформулируйте ваше духовное намерение, с которым вы вступаете в эту священную игру.
+            </Text>
+          </View>
+        </View>
+        
+        <View className="flex-1 flex-row max-w-7xl mx-auto w-full p-4">
+          {/* Левая панель с информацией */}
+          <View className="w-1/5 pr-4 flex flex-col">
+            <View className="bg-white rounded-xl shadow-md p-4 mb-4 border border-purple-100">
+              <Text className="text-base font-semibold text-purple-900 mb-2">Текущая позиция:</Text>
+              <View className="flex-row items-center mb-3">
+                <View className="bg-purple-100 rounded-full w-10 h-10 items-center justify-center mr-3">
+                  <Text className="text-xl font-bold text-purple-800">{currentPlayer.plan}</Text>
+                </View>
+                <Text className="text-sm text-gray-700">Клетка на игровом поле</Text>
+              </View>
+            </View>
+            
+            {/* Блок с кубиком - перенесен в левую колонку внизу */}
+            <View className="bg-white rounded-xl shadow-md p-4 mb-4 border border-purple-100 mt-auto">
+              <Text className="text-base font-semibold text-purple-900 mb-3 text-center">Бросок кубика:</Text>
+              <View className="items-center justify-center pt-2 pb-4">
+                <Dice rollDice={rollDice} lastRoll={lastRoll} size="medium" />
+              </View>
+              
+              <Text className="text-xs text-gray-500 text-center mt-2">
+                Ваше продвижение по игре отражает ваш духовный путь
+              </Text>
+            </View>
+          </View>
+          
+          {/* Центральная панель с игровым полем - увеличена */}
+          <View className="w-3/5 px-3">
+            <View className="bg-white/40 backdrop-blur-md rounded-xl overflow-hidden shadow-xl border border-purple-100 min-h-[550px] flex items-center justify-center p-6">
+              <GameBoard players={[currentPlayer]} />
+            </View>
+          </View>
+          
+          {/* Правая панель с чат-ботом - уменьшена */}
+          <View className="w-1/5 pl-4">
+            <ChatBot />
+          </View>
         </View>
       </View>
     );
   }
 
+  // Мобильная версия
   return (
     <ImageBackground
       source={require("@/assets/icons/BG.png")}
@@ -102,7 +201,60 @@ const GameScreen: React.FC = () => {
       resizeMode="cover"
     >
       <AppHeader />
-      <MainContent />
+      
+      <View className="py-3 px-4 bg-purple-50/80 backdrop-blur-sm">
+        <Text className="text-sm font-medium text-purple-800 italic text-center">
+          Игра Лила — путь духовного самопознания
+        </Text>
+      </View>
+      
+      <ScrollView>
+        <View className="p-3 pb-6">
+          {/* Блок с игровым полем - увеличен */}
+          <View className="bg-white/70 rounded-xl overflow-hidden shadow-lg mb-4 backdrop-blur-md p-2">
+            <GameBoard players={[currentPlayer]} />
+          </View>
+          
+          <View className="flex-row mb-4">
+            {/* Информационный блок */}
+            <View className="flex-1 bg-white/80 rounded-xl shadow-md p-3 mr-2 backdrop-blur-md">
+              <Text className="text-sm font-semibold text-purple-900 mb-2">Позиция:</Text>
+              <View className="flex-row items-center justify-center">
+                <View className="bg-purple-100 rounded-full w-12 h-12 items-center justify-center">
+                  <Text className="text-xl font-bold text-purple-800">{currentPlayer.plan}</Text>
+                </View>
+              </View>
+            </View>
+            
+            {/* Блок с кубиком */}
+            <View className="w-1/2 bg-white/80 rounded-xl p-3 items-center justify-center backdrop-blur-md">
+              <Text className="text-xs text-center mb-1">Бросить кубик</Text>
+              <Dice rollDice={rollDice} lastRoll={lastRoll} size="small" />
+            </View>
+          </View>
+          
+          {/* Блок чат-бота */}
+          <View className="bg-white/80 rounded-xl shadow-md p-3 backdrop-blur-md mb-4">
+            <Text className="text-sm font-semibold text-purple-900 mb-3">Духовный помощник:</Text>
+            
+            <View className="bg-gray-100 rounded-lg p-3 mb-3">
+              <Text className="text-xs text-gray-800">
+                Здравствуйте! Я ваш духовный проводник в игре Лила. Чем могу помочь?
+              </Text>
+            </View>
+            
+            <View className="flex-row">
+              <TextInput
+                placeholder="Задайте вопрос..."
+                className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 mr-2 text-xs"
+              />
+              <TouchableOpacity className="bg-purple-600 rounded-lg p-2">
+                <Ionicons name="send" size={16} color="white" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
     </ImageBackground>
   );
 };
@@ -117,7 +269,7 @@ const styles = StyleSheet.create({
     maxWidth: 1200,
     marginHorizontal: 'auto',
     width: '100%',
-    minHeight: '100vh',
+    minHeight: '100%',
   },
   contentContainer: {
     flex: 1,
@@ -163,3 +315,4 @@ const styles = StyleSheet.create({
 });
 
 export default GameScreen;
+
