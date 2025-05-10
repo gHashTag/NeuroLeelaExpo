@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 1, // Низкий z-index, чтобы быть под всеми элементами
+    zIndex: -1, // Отрицательный z-index, чтобы быть позади ВСЕХ элементов
   },
   backgroundImage: {
     flex: 1,

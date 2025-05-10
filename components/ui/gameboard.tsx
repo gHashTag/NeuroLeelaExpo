@@ -100,7 +100,7 @@ function GameBoard({ players }: GameBoardProps) {
                         height: cellSize, 
                         borderRadius: cellSize / 2,
                         marginHorizontal: cellMargin,
-                        backgroundColor: player ? 'rgba(142, 36, 170, 0.5)' : 'rgba(0, 0, 0, 0.15)'
+                        backgroundColor: 'transparent'
                       },
                       player && styles.activeCell
                     ]} 
@@ -134,14 +134,14 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     borderRadius: 16,
-    opacity: 0.7,
+    opacity: 0.8,
     zIndex: -1,
   },
   imageContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'transparent',
     borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 5,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    backgroundColor: 'transparent',
     borderRadius: 16,
   },
   row: {
@@ -166,8 +166,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderWidth: 0,
+    borderColor: 'transparent'
   },
   activeCell: {
     backgroundColor: 'rgba(142, 36, 170, 0.7)',
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   webImageContainer: {
-    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'transparent',
     borderRadius: 20,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
