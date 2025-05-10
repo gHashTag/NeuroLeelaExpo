@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
-import React, { useEffect, useState, useRef } from "react";
-import { View, Platform, useWindowDimensions, ImageBackground } from "react-native";
+import React, { useState } from "react";
+import { View, Platform, useWindowDimensions } from "react-native";
 import { Image } from "@/components/image";
 import { SafeAreaView } from "@/components/safe-area-view";
 import { Button } from "@/components/ui/button";
@@ -95,15 +95,13 @@ export default function SignInScreen() {
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <SafeAreaView className="flex flex-1 w-full items-center justify-center">
         <View className="flex flex-1 w-full items-center justify-center px-4 web:px-0">
-          <View className="flex items-center space-y-8 w-full max-w-md">
-            <View className="flex items-center mb-2">
-              <Image
-                source={require("@/assets/icons/512.png")}
-                style={{ width: 72, height: 72, marginBottom: 8 }}
-                resizeMode="contain"
-              />
-            </View>
-            <H1 className={`text-center ${isMobile ? 'text-2xl' : 'text-3xl'} font-light tracking-wide text-neutral-800 mb-8`}>
+          <View className="flex flex-col items-center justify-center w-full max-w-md space-y-8 py-12 mx-auto">
+            <Image
+              source={require("@/assets/icons/512.png")}
+              style={{ width: 80, height: 80, marginBottom: 8 }}
+              resizeMode="contain"
+            />
+            <H1 className={`text-center ${isMobile ? 'text-2xl' : 'text-3xl'} font-light tracking-wide text-neutral-800 mb-4`}>
               Вход
             </H1>
             <View className="space-y-6 w-full">
@@ -125,10 +123,10 @@ export default function SignInScreen() {
             </View>
             <View className="w-full space-y-4 mt-4">
               {error && (
-                <Text className="text-red-500 text-center mb-4">{error}</Text>
+                <Text className="text-red-500 text-center mb-2">{error}</Text>
               )}
               {successMessage && (
-                <Text className="text-green-600 text-center mb-4">{successMessage}</Text>
+                <Text className="text-green-600 text-center mb-2">{successMessage}</Text>
               )}
               <Button
                 size={isMobile ? "default" : "lg"}
