@@ -1,7 +1,5 @@
 import React, { ReactNode } from "react";
-
-import { ScrollView, StyleSheet, View } from "react-native";
-
+import { Platform, ScrollView, StyleSheet, View } from "react-native";
 import { W } from "@constants/dimensions";
 import { useGlobalBackground } from "@hooks/useGlobalBackground";
 
@@ -17,12 +15,16 @@ const Background: React.FC<BackgroundProps> = ({
   isFlatList = false,
 }) => {
   const backgroundStyle = useGlobalBackground();
+  const isWeb = Platform.OS === 'web';
 
   if (isScrollView) {
     return (
-      <View style={[backgroundStyle, styles.flatlistStyle]}>
+      <View style={[backgroundStyle, styles.flatlistStyle, isWeb && styles.webContainer]}>
         <ScrollView
-          contentContainerStyle={styles.scrollViewContent}
+          contentContainerStyle={[
+            styles.scrollViewContent,
+            isWeb && styles.webScrollViewContent
+          ]}
           showsVerticalScrollIndicator={false}
         >
           {children}
@@ -32,10 +34,26 @@ const Background: React.FC<BackgroundProps> = ({
   }
 
   if (isFlatList) {
-    return <View style={[backgroundStyle, styles.flatlistStyle]}>{children}</View>;
+    return (
+      <View style={[
+        backgroundStyle, 
+        styles.flatlistStyle, 
+        isWeb && styles.webContainer
+      ]}>
+        {children}
+      </View>
+    );
   }
 
-  return <View style={[backgroundStyle, styles.container]}>{children}</View>;
+  return (
+    <View style={[
+      backgroundStyle, 
+      styles.container, 
+      isWeb && styles.webContainer
+    ]}>
+      {children}
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -46,6 +64,7 @@ const styles = StyleSheet.create({
   },
   flatlistStyle: {
     alignItems: "center",
+    flex: 1,
   },
   scrollViewContent: {
     alignItems: "center",
@@ -53,6 +72,17 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     width: W,
   },
+  // Web-specific styles
+  webContainer: {
+    width: '100%',
+    maxWidth: 1200,
+    marginHorizontal: 'auto',
+  },
+  webScrollViewContent: {
+    width: '100%',
+    maxWidth: 800,
+    paddingHorizontal: 16,
+  }
 });
 
 export { Background };

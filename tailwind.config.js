@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  // NOTE: Update this to include the paths to all of your component files.
-  content: ["./**/*.{js,jsx,ts,tsx}"],
+  // Update the content configuration to be more specific and avoid matching all node_modules
+  content: ["./app/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}", "./screens/**/*.{js,jsx,ts,tsx}", "./constants/**/*.{js,jsx,ts,tsx}"],
   darkMode: "class",
   presets: [require("nativewind/preset")],
   theme: {

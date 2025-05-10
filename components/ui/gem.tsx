@@ -1,20 +1,21 @@
 import React from "react";
-import { View, Image, Pressable, StyleSheet } from "react-native";
-import { gray, transparent } from "@constants/index";
-import { ms } from "react-native-size-matters";
-import { GemT } from "../../types/index";
-import { Text } from "@components/ui/text";
-import { H4 } from "./typography";
+import { Text, StyleSheet, View, Image, Platform } from "react-native";
+import { s } from "react-native-size-matters";
 
 interface GemProps {
-  player?: GemT;
+  player?: {
+    id: string;
+    plan: number;
+    avatar?: any;
+  };
   planNumber: number;
   onPress?: () => void;
 }
 
 const Gem: React.FC<GemProps> = ({ player, planNumber, onPress }) => {
+  const isWeb = Platform.OS === 'web';
+  
   let source;
-
   if (player?.avatar) {
     if (typeof player.avatar === "string" && player.avatar !== "") {
       source = { uri: player.avatar };
@@ -22,47 +23,115 @@ const Gem: React.FC<GemProps> = ({ player, planNumber, onPress }) => {
       source = player.avatar;
     }
   }
-
-  const isNumberVisible = !player && planNumber !== 68;
-
-  return (
-    <Pressable onPress={onPress}>
-      <View style={styles.container} testID="gem-container">
-        {isNumberVisible ? (
-          <View style={[styles.circle, styles.gems]} testID="gem-number">
-            <H4 style={{ color: gray }}>{planNumber.toString()}</H4>
+  
+  // Фишка игрока
+  if (player) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.playerTokenOuter, isWeb && styles.webPlayerTokenOuter]}>
+          <View style={styles.playerTokenInner}>
+            {source && (
+              <Image 
+                source={source} 
+                style={styles.playerImage} 
+                resizeMode="cover" 
+              />
+            )}
           </View>
-        ) : (
-          <View style={styles.imgStyle}>
-            {source && <Image style={styles.gems} source={source} testID="player-gem-image" />}
-          </View>
-        )}
+        </View>
       </View>
-    </Pressable>
+    );
+  }
+  
+  // Обычная ячейка с числом
+  return (
+    <View style={styles.numberContainer}>
+      <Text 
+        style={[
+          styles.number, 
+          planNumber > 9 ? styles.twoDigitNumber : {},
+          isWeb && styles.webNumber
+        ]}
+      >
+        {planNumber}
+      </Text>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  circle: {
-    alignItems: "center",
-    backgroundColor: transparent,
-    borderRadius: ms(44) / 2,
-    height: ms(44),
-    justifyContent: "center",
-    width: ms(44),
-  },
   container: {
-    alignItems: "center",
-    justifyContent: "center",
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: '100%',
   },
-  gems: {
-    borderRadius: ms(42, 0.5) / 2,
-    height: ms(42, 0.5),
-    width: ms(42, 0.5),
+  
+  // Стили для фишки игрока
+  playerTokenOuter: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#8E24AA',
+    borderColor: '#FFFFFF',
+    borderWidth: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.8,
+    shadowRadius: 5,
+    elevation: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  imgStyle: {
-    position: "absolute",
+  webPlayerTokenOuter: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 4,
   },
+  playerTokenInner: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  playerImage: {
+    width: '100%',
+    height: '100%',
+  },
+  
+  // Стили для ячейки с числом
+  numberContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: '100%',
+  },
+  number: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#000',
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+    padding: 0,
+    margin: 0,
+    lineHeight: 26,
+    textShadowColor: 'rgba(255, 255, 255, 0.9)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 4,
+  },
+  twoDigitNumber: {
+    fontSize: 18,
+    lineHeight: 22,
+  },
+  webNumber: {
+    fontSize: 22,
+    fontWeight: '800',
+    textShadowRadius: 5,
+  }
 });
 
 export { Gem };
