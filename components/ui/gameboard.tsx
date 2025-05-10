@@ -85,8 +85,6 @@ function GameBoard({ players }: GameBoardProps) {
           resizeMode="contain" 
         />
         
-        <View style={styles.boardOverlay} />
-        
         <View style={styles.boardWrapper}>
           {rows.map((a, i) => (
             <View style={[styles.row, { marginVertical: rowMargin / 2 }]} key={i}>
@@ -135,16 +133,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     borderRadius: 16,
-    opacity: 0.85,
-  },
-  boardOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: 16,
+    opacity: 1,
   },
   imageContainer: {
     alignItems: 'center',
