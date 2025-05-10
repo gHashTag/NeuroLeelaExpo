@@ -67,12 +67,12 @@ const Dice = ({
   const getSize = () => {
     switch (size) {
       case "small":
-        return vs(30);
+        return vs(35);
       case "large":
-        return vs(80);
+        return vs(90);
       case "medium":
       default:
-        return vs(55);
+        return vs(65);
     }
   };
   const getImage = (number: number) => {
@@ -119,8 +119,8 @@ const styles = StyleSheet.create({
     marginVertical: vs(12),
   },
   image: {
-    height: vs(65),
-    width: vs(65),
+    height: vs(75),
+    width: vs(75),
     borderRadius: 10,
   },
 });
