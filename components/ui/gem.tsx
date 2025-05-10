@@ -28,7 +28,15 @@ const Gem: React.FC<GemProps> = ({ player, planNumber, cellSize = 44, onPress })
     }
   }
   
-  // Фишка игрока
+  // Общий стиль для числа
+  const numberStyle = [
+    styles.number, 
+    { fontSize },
+    planNumber > 9 ? styles.twoDigitNumber : styles.singleDigitNumber,
+    isWeb && styles.webNumber
+  ];
+  
+  // Фишка игрока с номером
   if (player) {
     return (
       <View style={styles.container}>
@@ -47,6 +55,11 @@ const Gem: React.FC<GemProps> = ({ player, planNumber, cellSize = 44, onPress })
             )}
           </View>
         </View>
+        
+        {/* Отображаем номер ячейки под фишкой в том же стиле */}
+        <Text style={[numberStyle, styles.playerCellNumber]}>
+          {planNumber}
+        </Text>
       </View>
     );
   }
@@ -54,14 +67,7 @@ const Gem: React.FC<GemProps> = ({ player, planNumber, cellSize = 44, onPress })
   // Обычная ячейка с числом
   return (
     <View style={styles.numberContainer}>
-      <Text 
-        style={[
-          styles.number, 
-          { fontSize },
-          planNumber > 9 ? styles.twoDigitNumber : styles.singleDigitNumber,
-          isWeb && styles.webNumber
-        ]}
-      >
+      <Text style={numberStyle}>
         {planNumber}
       </Text>
     </View>
@@ -101,6 +107,12 @@ const styles = StyleSheet.create({
   playerImage: {
     width: '100%',
     height: '100%',
+  },
+  playerCellNumber: {
+    position: 'absolute',
+    bottom: -14,
+    color: '#000000',
+    fontWeight: '900',
   },
   
   // Стили для ячейки с числом
