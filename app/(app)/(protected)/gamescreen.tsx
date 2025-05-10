@@ -228,22 +228,10 @@ const GameScreen: React.FC = () => {
                 <GameBoard players={[currentPlayer]} />
               </View>
               
-              <View className="flex-row mb-4">
-                {/* Информационный блок */}
-                <View className="flex-1 bg-white/80 rounded-xl shadow-md p-3 mr-2 backdrop-blur-md">
-                  <Text className="text-sm font-semibold text-purple-900 mb-2">Позиция:</Text>
-                  <View className="flex-row items-center justify-center">
-                    <View className="bg-purple-100 rounded-full w-12 h-12 items-center justify-center">
-                      <Text className="text-xl font-bold text-purple-800">{currentPlayer.plan}</Text>
-                    </View>
-                  </View>
-                </View>
-                
-                {/* Блок с кубиком по центру */}
-                <View className="bg-white/80 rounded-xl p-4 items-center justify-center backdrop-blur-md mb-4 mx-auto w-2/3">
-                  <Text className="text-sm text-center mb-2 font-semibold text-purple-900">Бросить кубик</Text>
-                  <Dice rollDice={rollDice} lastRoll={lastRoll} size="medium" />
-                </View>
+              {/* Только кубик по центру, блок с позицией удален */}
+              <View className="bg-white/80 rounded-xl p-4 items-center justify-center backdrop-blur-md mb-4 mx-auto w-full">
+                <Text className="text-sm text-center mb-2 font-semibold text-purple-900">Бросить кубик</Text>
+                <Dice rollDice={rollDice} lastRoll={lastRoll} size="medium" />
               </View>
               
               {/* Блок чат-бота */}
