@@ -30,9 +30,9 @@ const Gem: React.FC<GemProps> = ({ player, planNumber, cellSize = 44, onPress })
   
   // Общий стиль для числа
   const numberStyle = [
-    styles.number, 
+    styles.number,
     { fontSize },
-    planNumber > 9 ? styles.twoDigitNumber : styles.singleDigitNumber,
+    planNumber > 9 ? styles.twoDigitNumber : styles.boldNumber,
     isWeb && styles.webNumber
   ];
   
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   number: {
-    fontWeight: 'bold',
+    fontWeight: '900',
     color: '#000000',
     textAlign: 'center',
     textAlignVertical: 'center',
@@ -140,6 +140,9 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   singleDigitNumber: {
+    fontWeight: '900',
+  },
+  boldNumber: {
     fontWeight: '900',
   },
   webNumber: {
