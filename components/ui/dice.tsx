@@ -97,17 +97,18 @@ const Dice = ({
     }
   };
   
-  // Используем pointerEvents для контроля взаимодействия вместо preventDefault
   const pointerEventsValue = disabled || isAnimating ? 'none' : 'auto';
   
   return (
     <View 
       style={styles.diceContainer} 
       testID="dice-component"
-      // Используем pointerEvents для контроля взаимодействия 
       pointerEvents={pointerEventsValue}
     >
-      <Pressable onPress={animateDice} style={styles.pressableArea}>
+      <Pressable 
+        onPress={animateDice} 
+        style={styles.pressableArea}
+      >
         <Animated.Image
           style={[
             styles.image,
