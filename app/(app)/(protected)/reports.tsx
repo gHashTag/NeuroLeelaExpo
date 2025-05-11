@@ -1,49 +1,76 @@
-import React from "react";
-import { View, ScrollView, ImageBackground, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, ScrollView, ImageBackground, TouchableOpacity, RefreshControl } from "react-native";
 import { Header } from "@/components/layout/Header";
 import { ReportPost } from "@/components/reports/ReportPost";
 import { Text } from "@/components/ui/text";
 import Icon from "@expo/vector-icons/MaterialCommunityIcons";
+import { CreateReportModal } from "@/components/modals/CreateReportModal";
+import { supabase } from "@/config/supabase";
 
 interface Post {
   id: string;
-  number: string;
+  plan_number: number;
   content: string;
-  date: string;
+  created_at: string;
   likes: number;
   comments: number;
 }
 
 export default function Reports() {
-  const reportsPosts: Post[] = [
-    {
-      id: "1",
-      number: "09",
-      content:
-        "кама-лока - это план желаний. Однако все желания исходят из чувственной природы человека, поэтому этот план еще называют чувственным планом. Он напрямую связан с неведением, отсутствием знания.",
-      date: "today",
-      likes: 2,
-      comments: 1,
-    },
-    {
-      id: "2",
-      number: "07",
-      content:
-        "На этом поле игрок оказывается окончательно запутавшимся в сетях своих собственных игр. Плохое окружение, в котором он находится, является проявлением дурных желаний.\n\nСемь - это число писателей и художников, которые при отсутствии развития пребывают в ложной гордости и известны тем, что строят воздушные замки и всегда волнуются о будущем. Они не любят ходить проторенными путями и имеют весьма специфические представления о религии. Они склонны к созданию своей собственной религии и проводят жизнь в развлечениях.",
-      date: "yesterday",
-      likes: 5,
-      comments: 3,
-    },
-    {
-      id: "3",
-      number: "12",
-      content:
-        "Двенадцатый план - это план благотворительности, предполагающий бескорыстные поступки, направленные на благо других. На этом плане человек осознает, что отдавать важнее, чем получать, и что истинное счастье возможно лишь в служении другим.",
-      date: "3 days ago",
-      likes: 7,
-      comments: 2,
-    },
-  ];
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [reportsPosts, setReportsPosts] = useState<Post[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchReports = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from("reports")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Ошибка при загрузке отчетов:", error);
+        return;
+      }
+
+      if (data) {
+        setReportsPosts(data as Post[]);
+      }
+    } catch (error) {
+      console.error("Ошибка при загрузке отчетов:", error);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchReports();
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return "сегодня";
+    } else if (diffDays === 1) {
+      return "вчера";
+    } else if (diffDays <= 7) {
+      return `${diffDays} дн. назад`;
+    } else {
+      return date.toLocaleDateString("ru-RU");
+    }
+  };
 
   return (
     <ImageBackground
@@ -75,25 +102,39 @@ export default function Reports() {
           </View>
         </View>
 
-        <ScrollView className="flex-1 px-4 mt-4">
+        <ScrollView 
+          className="flex-1 px-4 mt-4"
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           {reportsPosts.map((post) => (
             <ReportPost
               key={post.id}
-              number={post.number}
+              number={post.plan_number.toString().padStart(2, '0')}
               content={post.content}
-              date={post.date}
+              date={formatDate(post.created_at)}
               likes={post.likes}
               comments={post.comments}
             />
           ))}
 
           {/* Создать новый пост */}
-          <TouchableOpacity className="mb-6 bg-purple-50 bg-opacity-90 rounded-lg p-4 shadow-sm border border-dashed border-purple-200 items-center">
+          <TouchableOpacity 
+            className="mb-6 bg-purple-50 bg-opacity-90 rounded-lg p-4 shadow-sm border border-dashed border-purple-200 items-center"
+            onPress={() => setIsModalVisible(true)}
+          >
             <Icon name="plus-circle-outline" size={28} color="#6A0DAD" />
             <Text className="text-purple-900 mt-2 font-medium">Поделиться своим опытом</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>
+
+      <CreateReportModal 
+        isVisible={isModalVisible} 
+        onClose={() => setIsModalVisible(false)} 
+        onSuccess={fetchReports}
+      />
     </ImageBackground>
   );
 }
