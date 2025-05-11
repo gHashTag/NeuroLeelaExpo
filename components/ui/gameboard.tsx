@@ -179,10 +179,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(142, 36, 170, 0.7)',
     borderWidth: 2,
     borderColor: 'rgba(255, 255, 255, 0.9)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 3,
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.5)',
+    } : {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.5,
+      shadowRadius: 3,
+    }),
     elevation: 4,
     zIndex: 2,
   },
@@ -193,9 +197,6 @@ const styles = StyleSheet.create({
   webImageContainer: {
     backgroundColor: 'transparent',
     borderRadius: 0,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
   },
   webBgImage: {
     borderRadius: 16,

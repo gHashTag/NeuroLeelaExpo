@@ -5,7 +5,7 @@ import * as FileSystem from "expo-file-system";
 import { createClient } from '@supabase/supabase-js';
 import { pinataService } from '@/services/pinata';
 
-import { supabase } from "@/config/supabase";
+import { supabase, getSupabaseClient } from "@/config/supabase";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -58,6 +58,7 @@ export const useSupabase = () => useContext(SupabaseContext);
 
 export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
   const isMountedRef = useRef(false);
+  const authListenerRef = useRef<{subscription: {unsubscribe: () => void}} | null>(null);
   
   if (!isMountedRef.current) {
     console.log('SupabaseProvider mounted');
@@ -307,7 +308,9 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        // Используем getSupabaseClient() для получения единственного экземпляра
+        const client = getSupabaseClient();
+        const { data: { session: currentSession }, error } = await client.auth.getSession();
         if (error) {
           console.error('❌ SupabaseProvider: Ошибка при получении сессии в useEffect', error);
           console.log('SupabaseProvider: setInitialized(true) (error branch)');
@@ -339,7 +342,18 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
 
     checkSession();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    // Очищаем предыдущую подписку, если она существует
+    if (authListenerRef.current) {
+      console.log('SupabaseProvider: Отписываемся от предыдущего auth listener');
+      authListenerRef.current.subscription.unsubscribe();
+      authListenerRef.current = null;
+    }
+
+    // Используем getSupabaseClient для получения единственного экземпляра
+    const client = getSupabaseClient();
+    
+    // Регистрируем новую подписку
+    const { data: authListener } = client.auth.onAuthStateChange(async (_event, newSession) => {
       console.log('SupabaseProvider: onAuthStateChange', _event, newSession ? 'Got session' : 'No session');
       setSession(newSession);
       setUser(newSession?.user ?? null);
@@ -354,8 +368,16 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
       SplashScreen.hideAsync();
     });
 
+    // Сохраняем ссылку на текущую подписку
+    authListenerRef.current = authListener;
+
     return () => {
-      authListener.subscription.unsubscribe();
+      // Отписываемся при размонтировании компонента
+      if (authListenerRef.current) {
+        console.log('SupabaseProvider: Отписываемся от auth listener при размонтировании');
+        authListenerRef.current.subscription.unsubscribe();
+        authListenerRef.current = null;
+      }
     };
   }, []);
 
