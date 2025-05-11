@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, TouchableOpacity, TextInput, ScrollView, Image, Modal as RNModal } from "react-native";
+import { View, TouchableOpacity, TextInput, ScrollView, Image, Modal as RNModal, Alert } from "react-native";
 import { Text } from "@/components/ui/text";
 import Icon from "@expo/vector-icons/MaterialCommunityIcons";
 import { useSupabase } from "@/context/supabase-provider";
@@ -162,7 +162,14 @@ export const CreateReportModal = ({ isVisible, onClose, onSuccess, currentPlanNu
 
   // Отправка отчета в базу данных
   const handleSubmit = async () => {
-    if (!user || !content.trim() || !currentPlanNumber) return;
+    if (!user || !content.trim() || !currentPlanNumber) {
+      Alert.alert(
+        "Ошибка", 
+        "Пожалуйста, введите содержание отчета", 
+        [{ text: "OK" }]
+      );
+      return;
+    }
     
     try {
       setIsSubmitting(true);
@@ -173,16 +180,35 @@ export const CreateReportModal = ({ isVisible, onClose, onSuccess, currentPlanNu
           user_id: user.id,
           plan_number: currentPlanNumber,
           content: content.trim(),
+          likes: 0,
+          comments: 0
         });
       
       if (error) {
         console.error("Ошибка при создании отчета:", error);
+        Alert.alert(
+          "Ошибка", 
+          "Не удалось сохранить отчет. Пожалуйста, попробуйте позже.", 
+          [{ text: "OK" }]
+        );
       } else {
         setContent("");
-        onSuccess();
+        Alert.alert(
+          "Успешно", 
+          "Ваш отчет сохранен", 
+          [{ text: "OK", onPress: () => {
+            onSuccess();
+            onClose();
+          }}]
+        );
       }
     } catch (error) {
       console.error("Ошибка в handleSubmit:", error);
+      Alert.alert(
+        "Ошибка", 
+        "Произошла техническая ошибка. Пожалуйста, попробуйте позже.", 
+        [{ text: "OK" }]
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -258,6 +284,7 @@ export const CreateReportModal = ({ isVisible, onClose, onSuccess, currentPlanNu
                   className="min-h-[120px] border border-gray-200 rounded-lg p-3 text-gray-800"
                   onFocus={() => setShowPlaceholder(false)}
                   onBlur={() => setShowPlaceholder(!content)}
+                  placeholder="Опишите свои мысли и наблюдения..."
                 />
                 
                 {showPlaceholder && (

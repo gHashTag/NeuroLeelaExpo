@@ -57,7 +57,13 @@ export const SupabaseContext = createContext<SupabaseContextProps>(defaultContex
 export const useSupabase = () => useContext(SupabaseContext);
 
 export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
-  console.log('SupabaseProvider mounted');
+  const isMountedRef = useRef(false);
+  
+  if (!isMountedRef.current) {
+    console.log('SupabaseProvider mounted');
+    isMountedRef.current = true;
+  }
+  
   const router = useRouter();
   const segments = useSegments();
   const [user, setUser] = useState<User | null>(null);

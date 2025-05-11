@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useSupabase } from './supabase-provider';
-// import { neonAdapter } from '@/lib/neon-adapter';
+import { Player } from '@/db/schema';
+import { drizzleAdapter } from '@/lib/drizzle-adapter';
 
 interface GamePlayer {
   id: string;
@@ -62,22 +63,46 @@ export const GameStateProvider = ({ children }: { children: React.ReactNode }) =
       setLoading(true);
       console.log('Loading player state for user:', user.id);
       
-      // ВРЕМЕННО: Используем моковые данные вместо Neon
-      const mockPlayerData = {
-        id: user.id,
-        plan: 1,
-        previous_plan: 0,
-        message: 'Начало пути'
-      };
+      // Используем адаптер для доступа к данным
+      const playerData = await drizzleAdapter.select(user.id);
       
-      console.log('Using mock player data:', mockPlayerData);
-      
-      setCurrentPlayer({
-        id: user.id,
-        plan: 1,
-        message: 'Начало пути'
-      });
-      
+      if (!playerData) {
+        console.log('Player not found, creating initial state');
+        // Создаем начальное состояние, если запись не найдена
+        await drizzleAdapter.insert({
+          id: user.id,
+          plan: 1,
+          previous_plan: 0,
+          message: 'Начало пути'
+        });
+        
+        // Загружаем созданного игрока
+        const newPlayerData = await drizzleAdapter.select(user.id);
+        
+        if (newPlayerData) {
+          setCurrentPlayer({
+            id: user.id,
+            plan: 1,
+            message: 'Начало пути'
+          });
+        }
+      } else {
+        console.log('Player found:', playerData);
+        // Устанавливаем состояние из базы данных
+        setCurrentPlayer({
+          id: user.id,
+          plan: playerData.plan || 1,
+          previousPlan: playerData.previous_plan !== null ? playerData.previous_plan : undefined,
+          message: playerData.message || undefined,
+          fullName: playerData.fullName || undefined,
+          avatar: playerData.avatar || undefined,
+          intention: playerData.intention || undefined,
+          isStart: playerData.isStart !== null ? playerData.isStart : undefined,
+          isFinished: playerData.isFinished !== null ? playerData.isFinished : undefined,
+          consecutiveSixes: playerData.consecutiveSixes !== null ? playerData.consecutiveSixes : undefined,
+          positionBeforeThreeSixes: playerData.positionBeforeThreeSixes !== null ? playerData.positionBeforeThreeSixes : undefined,
+        });
+      }
     } catch (error) {
       console.error('Ошибка при загрузке состояния игры:', error);
     } finally {
@@ -92,7 +117,12 @@ export const GameStateProvider = ({ children }: { children: React.ReactNode }) =
       const oldPosition = currentPlayer.plan;
       console.log(`Updating player position from ${oldPosition} to ${newPosition}`);
       
-      // ВРЕМЕННО: Только обновляем локальное состояние без Neon
+      // Используем адаптер для обновления данных
+      await drizzleAdapter.update(user.id, {
+        plan: newPosition,
+        previous_plan: oldPosition,
+        updated_at: new Date()
+      });
       
       // Обновляем локальное состояние
       setCurrentPlayer({

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, ImageBackground, Platform, Text, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, Dimensions, useWindowDimensions } from "react-native";
-import { Display, Dice, GameBoard } from "@components/ui/index";
+import { Display, Dice, GameBoard, PlayerStats, PlayerInfoApollo } from "@components/ui/index";
+import { ApolloStatus } from "@/components/ui/ApolloStatus";
 import { router } from "expo-router";
 import { useSupabase } from "@/context/supabase-provider";
 import { BlurView } from "expo-blur";
@@ -221,6 +222,9 @@ const GameScreen: React.FC = () => {
             </Text>
           </View>
           
+          {/* Статус Apollo */}
+          <ApolloStatus />
+          
           <ScrollView>
             <View className="p-3 pb-6">
               {/* Блок с игровым полем - возвращаем нормальное поле без масштабирования */}
@@ -231,6 +235,11 @@ const GameScreen: React.FC = () => {
               {/* Кубик полностью без фона, внешне сзади элементов */}
               <View className="items-center justify-center mb-3 mx-auto w-full">
                 <Dice rollDice={rollDice} lastRoll={lastRoll} size="large" />
+              </View>
+              
+              {/* Player Info Apollo component */}
+              <View className="mb-4">
+                <PlayerInfoApollo />
               </View>
               
               {/* Блок чат-бота */}
@@ -283,6 +292,11 @@ const GameScreen: React.FC = () => {
                 </View>
                 <Text className="text-sm text-gray-700">Клетка на игровом поле</Text>
               </View>
+            </View>
+            
+            {/* Player Info Apollo component */}
+            <View className={`${windowWidth < 768 ? 'flex-1 mr-2' : 'mb-4'}`}>
+              <PlayerInfoApollo />
             </View>
             
             {/* Блок с кубиком по центру */}
@@ -339,6 +353,11 @@ const GameScreen: React.FC = () => {
           {/* Кубик полностью без фона, внешне сзади элементов */}
           <View className="items-center justify-center mb-3 mx-auto w-full">
             <Dice rollDice={rollDice} lastRoll={lastRoll} size="large" />
+          </View>
+          
+          {/* Player Info Apollo component */}
+          <View className="mb-4">
+            <PlayerInfoApollo />
           </View>
           
           {/* Блок чат-бота */}
