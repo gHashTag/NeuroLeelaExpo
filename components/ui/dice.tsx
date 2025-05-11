@@ -97,18 +97,21 @@ const Dice = ({
     }
   };
   
-  const interactionStyle = {
-    pointerEvents: disabled || isAnimating ? 'none' : 'auto' as any
+  const handleInteraction = () => {
+    if (!disabled && !isAnimating) {
+      animateDice();
+    }
   };
   
   return (
     <View 
-      style={[styles.diceContainer, interactionStyle]} 
+      style={styles.diceContainer} 
       testID="dice-component"
     >
       <Pressable 
-        onPress={animateDice} 
+        onPress={handleInteraction}
         style={styles.pressableArea}
+        disabled={disabled || isAnimating}
       >
         <Animated.Image
           style={[
