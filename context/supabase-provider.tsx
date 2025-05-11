@@ -2,10 +2,8 @@ import { Session, User } from "@supabase/supabase-js";
 import { useRouter, useSegments, SplashScreen } from "expo-router";
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import * as FileSystem from "expo-file-system";
-import { createClient } from '@supabase/supabase-js';
 import { pinataService } from '@/services/pinata';
-
-import { supabase, getSupabaseClient } from "@/config/supabase";
+import { supabase } from "@/config/supabase";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -196,8 +194,8 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
     try {
       console.log('🔄 Обновляем данные пользователя:', data);
       
-      const session = await supabase.auth.getSession();
-      if (!session.data.session) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
         console.error('❌ Нет активной сессии');
         throw new Error('Требуется авторизация');
       }
@@ -205,7 +203,7 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
       const { error } = await supabase
         .from('users')
         .update(data)
-        .eq('user_id', session.data.session.user.id);
+        .eq('user_id', session.user.id);
 
       if (error) {
         console.error('❌ Ошибка при обновлении данных:', error);
@@ -305,74 +303,78 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
     }
   };
 
+  // Initial session check - runs only once during component mount
   useEffect(() => {
+    let isMounted = true;
+    
     const checkSession = async () => {
       try {
-        // Используем getSupabaseClient() для получения единственного экземпляра
-        const client = getSupabaseClient();
-        const { data: { session: currentSession }, error } = await client.auth.getSession();
+        console.log('SupabaseProvider: Начальная проверка сессии...');
+        const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+        
         if (error) {
-          console.error('❌ SupabaseProvider: Ошибка при получении сессии в useEffect', error);
-          console.log('SupabaseProvider: setInitialized(true) (error branch)');
-          setInitialized(true);
-          SplashScreen.hideAsync();
-          return;
-        }
+          console.error('❌ SupabaseProvider: Ошибка при получении сессии:', error);
+        } else if (isMounted) {
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
 
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-
-        if (currentSession?.user) {
-          const profileData = await checkUserData(currentSession.user.id);
-          setUserData(profileData);
-        } else {
-          setUserData(null);
+          if (currentSession?.user) {
+            const profileData = await checkUserData(currentSession.user.id);
+            setUserData(profileData);
+          }
         }
       } catch (err) {
         console.error('❌ Критическая ошибка SupabaseProvider:', err);
-        setSession(null);
-        setUser(null);
-        setUserData(null);
       } finally {
-        console.log('SupabaseProvider: setInitialized(true) (finally branch)');
-        setInitialized(true);
-        SplashScreen.hideAsync();
+        if (isMounted) {
+          console.log('SupabaseProvider: Инициализация завершена');
+          setInitialized(true);
+          SplashScreen.hideAsync();
+        }
       }
     };
 
     checkSession();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
-    // Очищаем предыдущую подписку, если она существует
+  // Auth state listener - separate from initial check
+  useEffect(() => {
+    let isMounted = true;
+    
+    // Clear previous listener if it exists
     if (authListenerRef.current) {
       console.log('SupabaseProvider: Отписываемся от предыдущего auth listener');
       authListenerRef.current.subscription.unsubscribe();
       authListenerRef.current = null;
     }
-
-    // Используем getSupabaseClient для получения единственного экземпляра
-    const client = getSupabaseClient();
     
-    // Регистрируем новую подписку
-    const { data: authListener } = client.auth.onAuthStateChange(async (_event, newSession) => {
-      console.log('SupabaseProvider: onAuthStateChange', _event, newSession ? 'Got session' : 'No session');
+    // Set up new auth listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      console.log('SupabaseProvider: onAuthStateChange', event, newSession ? 'Got session' : 'No session');
+      
+      if (!isMounted) return;
+      
       setSession(newSession);
       setUser(newSession?.user ?? null);
+      
       if (newSession?.user) {
         const profileData = await checkUserData(newSession.user.id);
         setUserData(profileData);
       } else {
-        setUserData(null); // Очищаем данные пользователя при выходе
+        setUserData(null);
       }
-      console.log('SupabaseProvider: setInitialized(true) (authListener)');
-      setInitialized(true); // Гарантируем, что initialized всегда true
-      SplashScreen.hideAsync();
     });
 
-    // Сохраняем ссылку на текущую подписку
+    // Store listener reference for cleanup
     authListenerRef.current = authListener;
 
+    // Cleanup function
     return () => {
-      // Отписываемся при размонтировании компонента
+      isMounted = false;
       if (authListenerRef.current) {
         console.log('SupabaseProvider: Отписываемся от auth listener при размонтировании');
         authListenerRef.current.subscription.unsubscribe();
@@ -381,6 +383,7 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
     };
   }, []);
 
+  // Session change logging
   useEffect(() => {
     if (prevSession.current !== session) {
       console.log('SupabaseProvider: session changed', session);
@@ -389,64 +392,15 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
       } else {
         console.log('SupabaseProvider: session is null (not authenticated)');
       }
-      // Сигнализируем о необходимости reload, если сессия изменилась
-      if (prevSession.current !== null) {
-        console.log('SupabaseProvider: Сессия изменилась! Рекомендуется reload браузера.');
-      }
+      
       prevSession.current = session;
     }
+    
     if (JSON.stringify(prevUserData.current) !== JSON.stringify(userData)) {
       console.log('SupabaseProvider: userData changed', userData);
       prevUserData.current = userData;
     }
   }, [session, userData]);
-
-  // Навигация на основе состояния авторизации и инициализации
-  useEffect(() => {
-    // ТЕЛО ЭТОГО USEEFFECT ВРЕМЕННО ЗАКОММЕНТИРОВАНО ДЛЯ УСТРАНЕНИЯ ОШИБОК ТИПОВ
-    // TODO: Восстановить или переписать логику навигации аккуратно
-    /*
-    if (!initialized) return; // Не делаем ничего, пока инициализация не завершена
-
-    const inAuthGroup = segments.length > 0 && segments[0] === "(auth)";
-    const inProtectedAppGroup = segments.length > 1 ? (segments[0] === "(app)" && segments[1] === "(protected)") : false;
-
-    if (session && session.user) {
-      // Пользователь авторизован
-      if (userData && !userData.username && !inProtectedAppGroup) {
-        const isNotUsernameScreen = segments.length < 2 ? true : segments[1] !== "username";
-        if (segments.length > 0 && segments[0] !== "(app)" || (segments.length > 0 && segments[0] === "(app)" && isNotUsernameScreen) ) {
-          router.replace("/(app)/username");
-        }
-      } else {
-        const conditionForWelcomeRedirect = segments.length > 1 ? (segments[0] === "(app)" && segments[1] === "welcome") : false;
-        if (inAuthGroup || conditionForWelcomeRedirect) {
-          router.replace("/(app)/(protected)/gamescreen");
-        } else if (userData && userData.username && !inProtectedAppGroup) {
-          let isAppPublicNonSpecialPage = false;
-          if (segments.length > 0 && segments[0] === "(app)") { 
-            if (segments.length === 1) {
-              isAppPublicNonSpecialPage = true;
-            } else if (segments.length > 1) {
-              const secondSegment = segments[1]; 
-              if (secondSegment !== "(protected)" && secondSegment !== "username" && secondSegment !== "welcome") {
-                isAppPublicNonSpecialPage = true;
-              }
-            }
-          }
-          if (isAppPublicNonSpecialPage) {
-            // router.replace("/(app)/(protected)/gamescreen"); 
-          }
-        }
-      }
-    } else {
-      // Пользователь не авторизован
-      if (inProtectedAppGroup) {
-        router.replace("/(app)/welcome"); 
-      }
-    }
-    */
-  }, [session, initialized, segments, router, userData]);
 
   return (
     <SupabaseContext.Provider

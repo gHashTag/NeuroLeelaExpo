@@ -89,16 +89,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#8E24AA',
     borderColor: '#FFFFFF',
     borderWidth: 3,
-    // Используем boxShadow вместо shadowProps
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0px 3px 5px rgba(0, 0, 0, 0.8)',
-    } : {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.8,
-      shadowRadius: 5,
-    }),
-    elevation: 8,
+    ...(Platform.OS === 'web' 
+      ? { boxShadow: '0px 3px 5px rgba(0, 0, 0, 0.8)' } 
+      : {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.8,
+          shadowRadius: 5,
+          elevation: 8,
+        }
+    ),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -137,14 +137,14 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     padding: 0,
     margin: 0,
-    // Используем textShadow вместо textShadowProps для веб
-    ...(Platform.OS === 'web' ? {
-      textShadow: '0px 0px 4px rgba(255, 255, 255, 0.9)',
-    } : {
-      textShadowColor: 'rgba(255, 255, 255, 0.9)',
-      textShadowOffset: { width: 0, height: 0 },
-      textShadowRadius: 4,
-    }),
+    ...(Platform.OS === 'web'
+      ? { textShadow: '0px 0px 4px rgba(255, 255, 255, 0.9)' }
+      : {
+          textShadowColor: 'rgba(255, 255, 255, 0.9)',
+          textShadowOffset: { width: 0, height: 0 },
+          textShadowRadius: 4,
+        }
+    ),
   },
   twoDigitNumber: {
     fontSize: 18,
@@ -162,24 +162,25 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 22,
     fontWeight: '500',
-    // Дополнительные свойства для увеличения визуальной жирности шрифта
-    ...(Platform.OS === 'web' ? {
-      textShadow: '0px 0px 0.5px rgba(0, 0, 0, 0.3)',
-    } : {
-      textShadowColor: 'rgba(0, 0, 0, 0.3)',
-      textShadowOffset: { width: 0, height: 0 },
-      textShadowRadius: 0.5,
-    }),
+    ...(Platform.OS === 'web'
+      ? { textShadow: '0px 0px 0.5px rgba(0, 0, 0, 0.3)' }
+      : {
+          textShadowColor: 'rgba(0, 0, 0, 0.3)',
+          textShadowOffset: { width: 0, height: 0 },
+          textShadowRadius: 0.5,
+        }
+    ),
   },
   webNumber: {
     fontWeight: '900',
-    ...(Platform.OS === 'web' ? {
-      textShadow: '0px 0px 4px rgba(255, 255, 255, 1)',
-    } : {
-      textShadowRadius: 4,
-      textShadowColor: 'rgba(255, 255, 255, 1)',
-      textShadowOffset: { width: 0, height: 0 },
-    }),
+    ...(Platform.OS === 'web'
+      ? { textShadow: '0px 0px 4px rgba(255, 255, 255, 1)' }
+      : {
+          textShadowColor: 'rgba(255, 255, 255, 1)',
+          textShadowOffset: { width: 0, height: 0 },
+          textShadowRadius: 4,
+        }
+    ),
     color: '#000000',
   }
 });

@@ -4,23 +4,20 @@ import 'react-native-url-polyfill/auto';
 // Переменная для хранения единственного экземпляра клиента
 let supabaseInstance: SupabaseClient | null = null;
 
+// Проверка наличия переменных окружения
 if (!process.env.EXPO_PUBLIC_SUPABASE_URL || !process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY) {
   throw new Error('Missing Supabase environment variables. Check your .env file.');
 }
 
-// Отладочная информация
-console.log('DEBUG: Attempting to read Supabase ENV vars');
-console.log('DEBUG: Raw EXPO_PUBLIC_SUPABASE_URL:', process.env.EXPO_PUBLIC_SUPABASE_URL);
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-// Initialize Supabase client
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
-
-// Функция для получения экземпляра Supabase клиента (реализация singleton-паттерна)
+// Функция для получения экземпляра Supabase клиента (реализация singleton паттерна)
 export const getSupabaseClient = (): SupabaseClient => {
-  // Если экземпляр еще не создан, создаем его
   if (!supabaseInstance) {
     console.log('DEBUG: Creating new Supabase client instance');
+    
+    // Создаем новый экземпляр клиента
     supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: true,
@@ -28,13 +25,14 @@ export const getSupabaseClient = (): SupabaseClient => {
         detectSessionInUrl: false
       }
     });
-  } else {
-    console.log('DEBUG: Reusing existing Supabase client instance');
   }
   
   return supabaseInstance;
 };
 
-// Create and export the Supabase client (для обратной совместимости)
-export const supabase = getSupabaseClient();
+// Создаем и экспортируем клиент Supabase (инициализируем только один раз)
+export const supabase: SupabaseClient = getSupabaseClient();
+
+// Предотвращаем повторное создание экземпляра при повторном импорте модуля
+Object.freeze(supabase);
 
