@@ -6,6 +6,7 @@ import { View, Platform, StyleSheet } from "react-native";
 // import { SplashScreen } from "expo-router";
 
 import { SupabaseProvider } from "@/context/supabase-provider";
+import { GameStateProvider } from "@/context/game-state-provider";
 // Keep SupabaseProvider and RegistrationProvider imports if needed later
 // import { RegistrationProvider } from "@/context/registration-provider";
 
@@ -22,15 +23,17 @@ export default function AppLayout() {
 
   return (
     <SupabaseProvider>
-      {isWeb ? (
-        <View style={styles.webContainer}>
-          <View style={styles.webContent}>
-            <Slot />
+      <GameStateProvider>
+        {isWeb ? (
+          <View style={styles.webContainer}>
+            <View style={styles.webContent}>
+              <Slot />
+            </View>
           </View>
-        </View>
-      ) : (
-        <Slot />
-      )}
+        ) : (
+          <Slot />
+        )}
+      </GameStateProvider>
     </SupabaseProvider>
   );
 }

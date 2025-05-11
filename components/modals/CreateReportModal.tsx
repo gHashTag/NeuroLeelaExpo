@@ -10,6 +10,7 @@ interface CreateReportModalProps {
   isVisible: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  currentPlanNumber: number; // Добавлено: текущий номер плана игрока
 }
 
 interface PlanInfo {
@@ -23,20 +24,19 @@ interface PlanInfo {
   secondDecoration: string;
 }
 
-export const CreateReportModal = ({ isVisible, onClose, onSuccess }: CreateReportModalProps) => {
+export const CreateReportModal = ({ isVisible, onClose, onSuccess, currentPlanNumber }: CreateReportModalProps) => {
   const { user } = useSupabase();
   
-  const [planNumber, setPlanNumber] = useState("1");
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null);
   const [showPlaceholder, setShowPlaceholder] = useState(true);
 
-  // Обновление информации о плане при изменении номера плана
+  // Обновление информации о плане на основе текущей позиции игрока
   useEffect(() => {
-    if (planNumber) {
-      const num = parseInt(planNumber);
-      if (!isNaN(num) && num >= 1 && num <= 72) {
+    if (currentPlanNumber) {
+      const num = currentPlanNumber;
+      if (num >= 1 && num <= 72) {
         const planLevel = Math.ceil(num / 9); // Определяем уровень (1-8)
         
         // Определяем название, цвет и описание плана на основе уровня
@@ -44,7 +44,7 @@ export const CreateReportModal = ({ isVisible, onClose, onSuccess }: CreateRepor
         setPlanInfo(planInfo);
       }
     }
-  }, [planNumber]);
+  }, [currentPlanNumber]);
 
   // Функция для получения полной информации о плане
   const getPlanInfo = (level: number, num: number): PlanInfo => {
@@ -162,22 +162,16 @@ export const CreateReportModal = ({ isVisible, onClose, onSuccess }: CreateRepor
 
   // Отправка отчета в базу данных
   const handleSubmit = async () => {
-    if (!user || !content.trim() || !planNumber) return;
+    if (!user || !content.trim() || !currentPlanNumber) return;
     
     try {
       setIsSubmitting(true);
-      const planNum = parseInt(planNumber);
-      
-      if (isNaN(planNum) || planNum < 1 || planNum > 72) {
-        console.error("Неверный номер плана");
-        return;
-      }
       
       const { error } = await supabase
         .from("reports")
         .insert({
           user_id: user.id,
-          plan_number: planNum,
+          plan_number: currentPlanNumber,
           content: content.trim(),
         });
       
@@ -185,7 +179,6 @@ export const CreateReportModal = ({ isVisible, onClose, onSuccess }: CreateRepor
         console.error("Ошибка при создании отчета:", error);
       } else {
         setContent("");
-        setPlanNumber("1");
         onSuccess();
       }
     } catch (error) {
@@ -200,131 +193,109 @@ export const CreateReportModal = ({ isVisible, onClose, onSuccess }: CreateRepor
   const secondaryColor = getSecondaryColor(planInfo.color);
 
   return (
-    <RNModal visible={isVisible} transparent animationType="fade" onRequestClose={onClose}>
-      <TouchableOpacity
-        className="flex-1 justify-center items-center bg-black/50"
-        activeOpacity={1}
-        onPress={onClose}
-      >
-        <View
-          className="bg-white rounded-lg m-4 w-full max-w-lg"
-          onStartShouldSetResponder={() => true}
-        >
+    <RNModal
+      visible={isVisible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onClose}
+    >
+      <View className="flex-1 justify-center items-center bg-black/30">
+        <View className="w-[90%] max-w-md bg-white rounded-xl overflow-hidden">
           <LinearGradient
-            colors={['#ffffff', secondaryColor]}
+            colors={[planInfo.color, secondaryColor]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            className="p-5 rounded-2xl shadow-lg"
+            className="p-4"
           >
-            {/* Декоративные элементы */}
-            <View className="absolute top-5 right-5 opacity-5 rotate-12">
-              <Icon name="crystal-ball" size={60} color={planInfo.color} />
-            </View>
-            <View className="absolute bottom-5 left-5 opacity-5 -rotate-12">
-              <Icon name="feather" size={40} color={planInfo.color} />
-            </View>
-            <View className="absolute top-1/3 right-10 opacity-5">
-              <Icon name="star" size={50} color={planInfo.color} />
-            </View>
-            
-            {/* Тонкая линия градиента сверху */}
-            <LinearGradient
-              colors={[planInfo.color, 'transparent']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl"
-            />
-            
-            <View className="flex-row justify-between items-center mb-4">
+            <View className="flex-row justify-between items-center mb-2">
               <View className="flex-row items-center">
-                <LinearGradient
-                  colors={[`${planInfo.color}30`, `${secondaryColor}90`]}
-                  className="w-12 h-12 rounded-full items-center justify-center mr-3"
-                >
-                  <Icon name="meditation" size={24} color={planInfo.color} />
-                </LinearGradient>
+                <View className="w-10 h-10 rounded-full bg-white/20 items-center justify-center mr-3">
+                  <Icon name={planInfo.icon as any} size={24} color="white" />
+                </View>
                 <View>
-                  <Text className="text-xl font-bold text-gray-800">Духовный опыт</Text>
-                  <View className="flex-row items-center mt-1">
-                    <Text style={{ color: planInfo.color }} className="text-xs font-medium">
-                      План {planNumber} • {planInfo.chakraName}
-                    </Text>
-                  </View>
+                  <Text className="text-white text-lg font-bold">{planInfo.chakraName}</Text>
+                  <Text className="text-white/90 text-xs">{planInfo.name}</Text>
                 </View>
               </View>
-              <TouchableOpacity onPress={onClose}>
-                <Icon name="close" size={24} color="#9CA3AF" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Блок для ввода номера плана */}
-            <View className="mb-4">
-              <Text className="mb-2 text-sm font-medium text-gray-700">Номер плана (1-72)</Text>
+              
               <View className="flex-row items-center">
-                <TextInput
-                  className="bg-white py-2 px-3 border border-gray-200 rounded-lg flex-1 text-gray-800"
-                  placeholder="Введите номер плана (1-72)"
-                  keyboardType="number-pad"
-                  value={planNumber}
-                  onChangeText={setPlanNumber}
-                  maxLength={2}
-                />
+                <View className="h-8 w-8 rounded-full bg-white/80 items-center justify-center mr-1">
+                  <Text className="text-sm font-bold" style={{ color: planInfo.color }}>
+                    {currentPlanNumber}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={onClose} className="h-8 w-8 rounded-full bg-white/20 items-center justify-center">
+                  <Icon name="close" size={20} color="white" />
+                </TouchableOpacity>
               </View>
             </View>
 
-            {/* Информация о плане/чакре */}
-            <View 
-              className="mb-4 p-3 rounded-lg"
-              style={{ backgroundColor: `${secondaryColor}` }}
-            >
-              <View className="flex-row items-center mb-2">
-                <Icon name="meditation" size={16} color={planInfo.color} />
-                <Text className="ml-2 font-semibold" style={{ color: planInfo.color }}>
-                  {planInfo.chakraName} • {planInfo.name}
-                </Text>
-              </View>
-              <Text className="text-gray-600 text-sm mb-2">
+            <View className="relative">
+              <Text className="text-white/90 text-sm mb-3">
                 {planInfo.description}
               </Text>
-              <Text className="text-sm italic text-gray-500">
-                {planInfo.prompt}
-              </Text>
-            </View>
-            
-            {/* Поле для ввода контента */}
-            <TextInput
-              className="bg-white p-4 rounded-lg border border-gray-200 min-h-[120px] text-gray-800 mb-4"
-              multiline
-              placeholder={showPlaceholder ? planInfo.prompt : ""}
-              placeholderTextColor="#9CA3AF"
-              value={content}
-              onChangeText={setContent}
-              onFocus={() => setShowPlaceholder(false)}
-              onBlur={() => setShowPlaceholder(content.length === 0)}
-              textAlignVertical="top"
-            />
-
-            {/* Кнопка отправки */}
-            <View className="flex-row justify-end">
-              <TouchableOpacity 
-                onPress={handleSubmit}
-                disabled={isSubmitting || !content.trim()}
-              >
-                <LinearGradient
-                  colors={content.trim() ? [planInfo.color, `${planInfo.color}80`] : ['#D1D5DB', '#E5E7EB']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  className="py-3 px-6 rounded-full"
-                >
-                  <Text className="text-white font-bold">
-                    {isSubmitting ? "Отправка..." : "Сохранить опыт"}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
+              
+              {/* Декоративные элементы */}
+              <View className="absolute top-5 right-5 opacity-5 rotate-12">
+                <Icon name="crystal-ball" size={60} color={planInfo.color} />
+              </View>
+              <View className="absolute bottom-5 left-5 opacity-5 -rotate-12">
+                <Icon name={planInfo.secondDecoration as any} size={60} color={planInfo.color} />
+              </View>
             </View>
           </LinearGradient>
+
+          <View className="p-4">
+            <ScrollView className="max-h-[200px] mb-4">
+              <View className="relative">
+                <TextInput
+                  value={content}
+                  onChangeText={(text) => {
+                    setContent(text);
+                    setShowPlaceholder(!text);
+                  }}
+                  multiline
+                  className="min-h-[120px] border border-gray-200 rounded-lg p-3 text-gray-800"
+                  onFocus={() => setShowPlaceholder(false)}
+                  onBlur={() => setShowPlaceholder(!content)}
+                />
+                
+                {showPlaceholder && (
+                  <View className="absolute top-3 left-3 right-3">
+                    <Text className="text-gray-400 leading-5">
+                      {planInfo.prompt}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+            
+            <View className="flex-row justify-end">
+              <TouchableOpacity 
+                onPress={onClose}
+                disabled={isSubmitting}
+                className="py-2 px-4 rounded-lg mr-2 border border-gray-200"
+              >
+                <Text className="text-gray-700">Отмена</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                onPress={handleSubmit}
+                disabled={!content.trim() || isSubmitting}
+                className={`py-2 px-4 rounded-lg ${
+                  !content.trim() || isSubmitting 
+                    ? 'bg-gray-300' 
+                    : 'bg-gradient-to-r from-purple-500 to-indigo-600'
+                }`}
+              >
+                <Text className="text-white font-medium">
+                  {isSubmitting ? "Сохранение..." : "Сохранить"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-      </TouchableOpacity>
+      </View>
     </RNModal>
   );
 }; 

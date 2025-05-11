@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, ScrollView, ImageBackground, TouchableOpacity, RefreshControl, Image, ActivityIndicator } from "react-native";
 import { Header } from "@/components/layout/Header";
 import { ReportPost } from "@/components/reports/ReportPost";
@@ -6,6 +6,10 @@ import { Text } from "@/components/ui/text";
 import Icon from "@expo/vector-icons/MaterialCommunityIcons";
 import { CreateReportModal } from "@/components/modals/CreateReportModal";
 import { supabase } from "@/config/supabase";
+import { useSupabase } from "@/context/supabase-provider";
+import { useGameState } from "@/context/game-state-provider";
+import { LinearGradient } from "expo-linear-gradient";
+import { Feather } from "@expo/vector-icons";
 
 interface Post {
   id: string;
@@ -23,8 +27,12 @@ export default function Reports() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const { user } = useSupabase();
+  const { currentPlayer, loading: gameStateLoading } = useGameState();
 
   const fetchReports = async () => {
+    if (!user) return;
+
     try {
       setIsLoading(true);
       let query = supabase
@@ -63,7 +71,7 @@ export default function Reports() {
 
   useEffect(() => {
     fetchReports();
-  }, [selectedFilter]);
+  }, [user, selectedFilter]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -93,6 +101,41 @@ export default function Reports() {
     { value: "55-63", label: "55-63 (План сознания)" },
     { value: "64-72", label: "64-72 (Абсолютный план)" },
   ];
+
+  // Чакры и их цвета для фильтров
+  const chakraFilters = [
+    { id: "all", label: "Все планы", icon: "mandala", color: "#6A0DAD" },
+    { id: "1-9", label: "Муладхара (1-9)", icon: "meditation", color: "#ef4444" },
+    { id: "10-18", label: "Свадхистана (10-18)", icon: "water", color: "#f97316" },
+    { id: "19-27", label: "Манипура (19-27)", icon: "white-balance-sunny", color: "#eab308" },
+    { id: "28-36", label: "Анахата (28-36)", icon: "heart-outline", color: "#22c55e" },
+    { id: "37-45", label: "Вишудха (37-45)", icon: "microphone", color: "#3b82f6" },
+    { id: "46-54", label: "Аджна (46-54)", icon: "eye-outline", color: "#6366f1" },
+    { id: "55-63", label: "Сахасрара (55-63)", icon: "star-face", color: "#a855f7" },
+    { id: "64-72", label: "Нирвана (64-72)", icon: "shimmer", color: "#ec4899" },
+  ];
+
+  // Функция для определения уровня плана по номеру
+  const getPlanLevel = (planNumber: number) => {
+    return Math.ceil(planNumber / 9);
+  };
+
+  // Функция для получения диапазона плана по его номеру
+  const getPlanRange = (planNumber: number) => {
+    const level = getPlanLevel(planNumber);
+    const min = (level - 1) * 9 + 1;
+    const max = level * 9;
+    return `${min}-${max}`;
+  };
+
+  // Обработка успешного создания отчета
+  const handleReportSuccess = () => {
+    setIsModalVisible(false);
+    fetchReports();
+  };
+
+  // Определяем, может ли пользователь создать отчет о текущем положении
+  const canCreateReport = !gameStateLoading && currentPlayer && currentPlayer.plan > 0;
 
   return (
     <ImageBackground
@@ -170,6 +213,35 @@ export default function Reports() {
           </View>
         </View>
 
+        {/* Информация о текущем плане и кнопка создания отчета */}
+        {canCreateReport && (
+          <View className="bg-white bg-opacity-80 mx-4 mt-3 p-4 rounded-lg shadow-sm">
+            <View className="flex-row justify-between items-center">
+              <View className="flex-row items-center">
+                <View 
+                  className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                  style={{ backgroundColor: chakraFilters[getPlanLevel(currentPlayer.plan)].color + '20' }}
+                >
+                  <Text className="font-bold" style={{ color: chakraFilters[getPlanLevel(currentPlayer.plan)].color }}>
+                    {currentPlayer.plan}
+                  </Text>
+                </View>
+                <View>
+                  <Text className="text-sm font-bold text-gray-800">Ваш текущий план:</Text>
+                  <Text className="text-xs text-gray-600">{chakraFilters[getPlanLevel(currentPlayer.plan)].label.split(' ')[0]}</Text>
+                </View>
+              </View>
+              
+              <TouchableOpacity 
+                className="bg-gradient-to-r from-purple-500 to-indigo-600 py-2 px-4 rounded-lg"
+                onPress={() => setIsModalVisible(true)}
+              >
+                <Text className="text-white text-sm font-medium">Написать отчет</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* Визуальное представление 8 уровней */}
         <View className="flex-row justify-center items-center mx-4 my-3">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((level) => (
@@ -223,25 +295,30 @@ export default function Reports() {
             ))
           )}
 
-          {/* Создать новый пост */}
-          <TouchableOpacity 
-            className="mb-6 bg-purple-50 bg-opacity-90 rounded-lg p-4 shadow-sm border border-dashed border-purple-200 items-center"
+          {/* Создать новый отчет (плавающая кнопка) */}
+          <View className="h-20" />
+        </ScrollView>
+
+        {/* Плавающая кнопка для создания отчета */}
+        {canCreateReport && (
+          <TouchableOpacity
+            className="absolute right-6 bottom-6 bg-purple-600 w-14 h-14 rounded-full items-center justify-center shadow-lg"
             onPress={() => setIsModalVisible(true)}
           >
-            <Icon name="plus-circle-outline" size={28} color="#6A0DAD" />
-            <Text className="text-purple-900 mt-2 font-medium">Поделиться своим опытом</Text>
-            <Text className="text-gray-500 text-xs text-center mt-1">
-              Опишите ваши размышления о плане, на котором вы находитесь
-            </Text>
+            <Icon name="pencil-plus" size={24} color="white" />
           </TouchableOpacity>
-        </ScrollView>
-      </View>
+        )}
 
-      <CreateReportModal 
-        isVisible={isModalVisible} 
-        onClose={() => setIsModalVisible(false)} 
-        onSuccess={fetchReports}
-      />
+        {/* Модальное окно создания отчета */}
+        {canCreateReport && (
+          <CreateReportModal
+            isVisible={isModalVisible}
+            onClose={() => setIsModalVisible(false)}
+            onSuccess={handleReportSuccess}
+            currentPlanNumber={currentPlayer.plan}
+          />
+        )}
+      </View>
     </ImageBackground>
   );
 }
