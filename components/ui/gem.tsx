@@ -32,7 +32,8 @@ const Gem: React.FC<GemProps> = ({ player, planNumber, cellSize = 44, onPress })
   const numberStyle = [
     styles.number,
     { fontSize },
-    planNumber > 9 ? styles.twoDigitNumber : styles.boldNumber,
+    // Принудительно применяем очень жирный шрифт для цифр 1-9
+    planNumber <= 9 ? styles.firstRowNumber : styles.twoDigitNumber,
     isWeb && styles.webNumber
   ];
   
@@ -138,12 +139,23 @@ const styles = StyleSheet.create({
   twoDigitNumber: {
     fontSize: 18,
     lineHeight: 22,
+    fontWeight: '500',
   },
   singleDigitNumber: {
     fontWeight: '900',
   },
   boldNumber: {
     fontWeight: '900',
+  },
+  // Максимально жирный стиль специально для цифр 1-9
+  firstRowNumber: {
+    fontSize: 18,
+    lineHeight: 22,
+    fontWeight: '500',
+    // Дополнительные свойства для увеличения визуальной жирности шрифта
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 0.5,
   },
   webNumber: {
     fontWeight: '900',

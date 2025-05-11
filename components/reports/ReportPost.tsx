@@ -13,47 +13,49 @@ interface ReportPostProps {
 
 export const ReportPost = ({ number, content, date, likes, comments }: ReportPostProps) => {
   return (
-    <View className="mb-6 bg-white bg-opacity-90 rounded-lg p-4">
+    <View className="mb-6 bg-white bg-opacity-90 rounded-lg p-4 shadow-md">
       <View className="flex-row items-start">
         {/* Аватар с номером */}
-        <View className="relative">
+        <View className="relative mr-3">
           <Image
             source={require("@/assets/defaultImage/defaultProfileImage.png")}
-            className="w-12 h-12 rounded-lg"
+            className="w-14 h-14 rounded-lg border border-purple-200"
           />
-          <View className="absolute bottom-0 right-0 bg-white rounded-full w-6 h-6 items-center justify-center border border-purple-200">
-            <Text className="text-xs font-bold" style={{ color: "#6A0DAD" }}>
+          <View className="absolute bottom-0 right-0 bg-purple-600 rounded-full w-6 h-6 items-center justify-center border border-white">
+            <Text className="text-xs font-bold text-white">
               {number}
             </Text>
           </View>
         </View>
 
         {/* Контент */}
-        <View className="flex-1 ml-3">
-          <View className="flex-row items-center mb-1">
-            <Text className="font-semibold text-lg">Anonymous</Text>
-            <Text className="text-gray-400 text-sm ml-2">{date}</Text>
+        <View className="flex-1">
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="flex-row items-center">
+              <Text className="font-bold text-lg text-purple-900">Anonymous</Text>
+              <Text className="text-gray-400 text-xs ml-2 mt-1">{date}</Text>
+            </View>
+            <TouchableOpacity>
+              <Icon name="dots-horizontal" size={20} color="#9CA3AF" />
+            </TouchableOpacity>
           </View>
-          <Text className="text-gray-800 mb-3">{content}</Text>
+          
+          <Text className="text-gray-800 mb-4 leading-5">{content}</Text>
 
           {/* Кнопки действий */}
-          <View className="flex-row justify-between">
-            <TouchableOpacity>
-              <Icon name="dots-horizontal" size={24} color="#9CA3AF" />
+          <View className="flex-row justify-end space-x-4 border-t border-gray-100 pt-2">
+            <TouchableOpacity className="flex-row items-center">
+              <Icon name="comment-outline" size={22} color="#9CA3AF" />
+              <Text className="ml-1 text-gray-500 text-sm">{comments}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity className="flex-row items-center">
-              <Icon name="comment-outline" size={24} color="#9CA3AF" />
-              <Text className="ml-1 text-gray-400">{comments}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity className="flex-row items-center">
-              <Icon name="heart-outline" size={24} color="#9CA3AF" />
-              <Text className="ml-1 text-gray-400">{likes}</Text>
+              <Icon name="heart-outline" size={22} color="#9CA3AF" />
+              <Text className="ml-1 text-gray-500 text-sm">{likes}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity>
-              <Icon name="link-variant" size={24} color="#9CA3AF" />
+              <Icon name="share-variant-outline" size={22} color="#9CA3AF" />
             </TouchableOpacity>
           </View>
         </View>
