@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import { useSupabase } from "@/context/supabase-provider";
 import { BlurView } from "expo-blur";
 import { Ionicons } from '@expo/vector-icons';
+import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 // import { useTranslation } from 'react-i18next'
 // import { useAccount } from 'store'
 
@@ -98,6 +99,9 @@ const GameScreen: React.FC = () => {
   const isWeb = Platform.OS === 'web';
   const isLandscape = windowWidth > windowHeight;
   
+  // Apollo Drizzle — единый источник истины
+  const { currentPlayer, isLoading, error, movePlayer } = useApolloDrizzle();
+
   // Определяем макет в зависимости от ширины экрана
   const getLayout = () => {
     // Extra large displays
@@ -170,27 +174,14 @@ const GameScreen: React.FC = () => {
 
   const layout = getLayout();
   
-  const { currentPlayer, rollDice, message } = {
-    currentPlayer: {
-      id: "1",
-      fullName: "Player One",
-      plan: 5,
-      avatar: require("@/assets/defaultImage/defaultProfileImage.png"),
-      intention: "Win the game",
-      previousPlan: 0,
-      isStart: true,
-      isFinished: false,
-      consecutiveSixes: 0,
-      positionBeforeThreeSixes: 0,
-      message: "Ready to play",
-    },
-    rollDice: () => {
-      const roll = Math.floor(Math.random() * 6) + 1;
-      setLastRoll(roll);
-      router.push("/(app)/report");
-      return roll;
-    },
-    message: userData?.designation || "",
+  // Функция броска кубика через Apollo Drizzle
+  const rollDice = () => {
+    if (!currentPlayer) return;
+    const roll = Math.floor(Math.random() * 6) + 1;
+    setLastRoll(roll);
+    movePlayer(currentPlayer.plan + roll);
+    // router.push("/(app)/report"); // если нужен переход
+    return roll;
   };
 
   // Custom header component
@@ -201,12 +192,27 @@ const GameScreen: React.FC = () => {
         <View className="flex-row items-center">
           <Text className="text-sm text-purple-700 mr-2">Уровень:</Text>
           <View className="bg-purple-100 w-8 h-8 rounded-full items-center justify-center">
-            <Text className="font-bold text-purple-800">{currentPlayer.plan}</Text>
+            <Text className="font-bold text-purple-800">{currentPlayer?.plan ?? '-'}</Text>
           </View>
         </View>
       </View>
     </BlurView>
   );
+
+  // Перед передачей в GameBoard:
+  const safePlayer = currentPlayer
+    ? {
+        ...currentPlayer,
+        fullName: currentPlayer.fullName || '',
+        avatar: currentPlayer.avatar || '',
+        intention: currentPlayer.intention || '',
+        isStart: currentPlayer.isStart ?? undefined,
+        isFinished: currentPlayer.isFinished ?? undefined,
+        consecutiveSixes: currentPlayer.consecutiveSixes ?? undefined,
+        positionBeforeThreeSixes: currentPlayer.positionBeforeThreeSixes ?? undefined,
+        message: currentPlayer.message || '',
+      }
+    : null;
 
   // Адаптивный макет для Web и Mobile
   if (isWeb) {
@@ -229,7 +235,7 @@ const GameScreen: React.FC = () => {
             <View className="p-3 pb-6">
               {/* Блок с игровым полем - возвращаем нормальное поле без масштабирования */}
               <View className="bg-white/70 rounded-xl overflow-hidden shadow-lg mb-0 backdrop-blur-md p-1">
-                <GameBoard players={[currentPlayer]} />
+                <GameBoard players={safePlayer ? [safePlayer] : []} />
               </View>
               
               {/* Кубик полностью без фона, внешне сзади элементов */}
@@ -284,28 +290,16 @@ const GameScreen: React.FC = () => {
         <View className={`flex-1 ${windowWidth < 768 ? '' : 'flex-row'} ${layout.maxWidth} mx-auto w-full ${layout.padding}`}>
           {/* Левая панель с информацией */}
           <View className={`${windowWidth < 768 ? 'w-full mb-3' : layout.leftColumn} pr-2 flex ${windowWidth < 768 ? 'flex-row' : 'flex-col'}`}>
-            <View className={`bg-white rounded-xl shadow-md p-4 ${windowWidth < 768 ? 'flex-1 mr-2' : 'mb-4'} border border-purple-100`}>
-              <Text className="text-base font-semibold text-purple-900 mb-2">Текущая позиция:</Text>
-              <View className="flex-row items-center mb-3">
-                <View className="bg-purple-100 rounded-full w-10 h-10 items-center justify-center mr-3">
-                  <Text className="text-xl font-bold text-purple-800">{currentPlayer.plan}</Text>
-                </View>
-                <Text className="text-sm text-gray-700">Клетка на игровом поле</Text>
-              </View>
-            </View>
-            
             {/* Player Info Apollo component */}
             <View className={`${windowWidth < 768 ? 'flex-1 mr-2' : 'mb-4'}`}>
               <PlayerInfoApollo />
             </View>
-            
             {/* Блок с кубиком по центру */}
             <View className={`bg-white rounded-xl shadow-md p-4 border border-purple-100 ${windowWidth < 768 ? 'flex-1' : 'mb-4 mt-auto'}`}>
               <Text className="text-base font-semibold text-purple-900 mb-3 text-center">Бросок кубика:</Text>
               <View className="items-center justify-center pt-2 pb-4">
                 <Dice rollDice={rollDice} lastRoll={lastRoll} size={windowWidth < 768 ? "small" : "medium"} />
               </View>
-              
               <Text className="text-xs text-gray-500 text-center mt-2">
                 Ваше продвижение по игре отражает ваш духовный путь
               </Text>
@@ -315,7 +309,7 @@ const GameScreen: React.FC = () => {
           {/* Центральная панель с игровым полем - адаптивная */}
           <View className={`${windowWidth < 768 ? 'w-full mb-3' : layout.centerColumn} px-2`}>
             <View className={`bg-white/40 backdrop-blur-md rounded-xl overflow-hidden shadow-xl border border-purple-100 ${windowWidth < 768 ? 'min-h-[450px]' : 'min-h-[550px]'} flex items-center justify-center ${layout.gameBoardPadding}`}>
-              <GameBoard players={[currentPlayer]} />
+              <GameBoard players={safePlayer ? [safePlayer] : []} />
             </View>
           </View>
           
@@ -347,7 +341,7 @@ const GameScreen: React.FC = () => {
         <View className="p-2 pb-4">
           {/* Блок с игровым полем - возвращаем нормальное поле без масштабирования */}
           <View className="bg-white/70 rounded-xl overflow-hidden shadow-lg mb-0 backdrop-blur-md p-1">
-            <GameBoard players={[currentPlayer]} />
+            <GameBoard players={safePlayer ? [safePlayer] : []} />
           </View>
           
           {/* Кубик полностью без фона, внешне сзади элементов */}
