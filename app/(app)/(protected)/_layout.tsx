@@ -43,9 +43,12 @@ export default function ProtectedLayout() {
             // Убеждаемся, что табы находятся поверх фона
             position: 'relative',
             zIndex: 10,
+           
           },
+          tabBarActiveBackgroundColor: 'white',
           tabBarActiveTintColor: activeColor,
           tabBarInactiveTintColor: inactiveColor,
+          tabBarInactiveBackgroundColor: 'white',
           tabBarShowLabel: true,
           tabBarLabelStyle: {
             fontSize: 12,

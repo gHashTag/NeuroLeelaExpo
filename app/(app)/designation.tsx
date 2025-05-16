@@ -130,13 +130,7 @@ export default function Designation() {
                       onChangeText={(text) => {
                         field.onChange(text);
                       }}
-                      onPaste={(e) => {
-                        const pastedText = e.nativeEvent.data;
-                        if (pastedText) {
-                          const processedText = handlePaste(pastedText);
-                          field.onChange(processedText);
-                        }
-                      }}
+                    
                     />
                   )}
                 />
