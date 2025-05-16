@@ -13,11 +13,12 @@ import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 // Logo component for the app
 const AppLogo = () => (
   <View className="flex-row items-center">
-    <View className="w-10 h-10 rounded-full overflow-hidden bg-purple-100 border-2 border-purple-300 shadow-md">
+    {/* Упрощенный контейнер для Image с красной рамкой для отладки */}
+    <View className="w-10 h-10 border-2 border-red-500"> 
       <Image 
-        source={require('@/assets/icon.jpg')} 
+        source={require('@/assets/icons/1024.png')} // Используем пока 1024.png для теста
         className="w-full h-full"
-        resizeMode="cover"
+        // resizeMode="cover" // resizeMode временно закомментирован для теста
       />
     </View>
     <Text className="text-2xl font-bold ml-3 text-purple-800">НейроЛила</Text>
@@ -186,17 +187,18 @@ const GameScreen: React.FC = () => {
 
   // Custom header component
   const AppHeader = () => (
-    <BlurView intensity={60} tint="light" className="border-b border-gray-200/50 py-4 px-5">
-      <View className="flex-row items-center justify-between">
+    // Временно заменяем BlurView на обычный View для упрощения
+    <View className="bg-gray-100 border-b border-gray-300 py-4 px-5"> 
+      <View className="flex-row items-center justify-between w-full"> 
         <AppLogo />
-        <View className="flex-row items-center">
+        <View className="flex-row items-center"> {/* Этот блок должен быть справа */}
           <Text className="text-sm text-purple-700 mr-2">Уровень:</Text>
           <View className="bg-purple-100 w-8 h-8 rounded-full items-center justify-center">
             <Text className="font-bold text-purple-800">{currentPlayer?.plan ?? '-'}</Text>
           </View>
         </View>
       </View>
-    </BlurView>
+    </View>
   );
 
   // Перед передачей в GameBoard:
