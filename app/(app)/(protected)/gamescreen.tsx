@@ -188,7 +188,7 @@ const GameScreen: React.FC = () => {
   // Custom header component
   const AppHeader = () => (
     // Временно заменяем BlurView на обычный View для упрощения
-    <View className="bg-gray-100 border-b border-gray-300 py-4 px-5"> 
+    <View className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-lg py-4 px-5">
       <View className="flex-row items-center justify-between w-full"> 
         <AppLogo />
         <View className="flex-row items-center"> {/* Этот блок должен быть справа */}
@@ -221,11 +221,11 @@ const GameScreen: React.FC = () => {
     // Мобильный web в портретной ориентации - показываем мобильную версию интерфейса
     if (windowWidth < 640 && !isLandscape) {
       return (
-        <View className="flex-1 bg-gray-50">
+        <View className="flex-1 bg-gray-50 dark:bg-slate-950">
           <AppHeader />
           
-          <View className="py-2 px-3 bg-purple-50">
-            <Text className="text-sm font-medium text-purple-800 italic text-center">
+          <View className="py-2 px-3 bg-purple-50/80 dark:bg-purple-900/80 backdrop-blur-md rounded-lg shadow-md mx-2 my-1">
+            <Text className="text-sm font-medium text-purple-800 dark:text-purple-200 italic text-center">
               Игра Лила — древний путь к Космическому Сознанию
             </Text>
           </View>
@@ -236,7 +236,7 @@ const GameScreen: React.FC = () => {
           <ScrollView>
             <View className="p-3 pb-6">
               {/* Блок с игровым полем - возвращаем нормальное поле без масштабирования */}
-              <View className="bg-white/70 rounded-xl overflow-hidden shadow-lg mb-0 backdrop-blur-md p-1">
+              <View className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-xl shadow-lg mb-4 p-2">
                 <GameBoard players={safePlayer ? [safePlayer] : []} />
               </View>
               
@@ -246,29 +246,18 @@ const GameScreen: React.FC = () => {
               </View>
               
               {/* Player Info Apollo component */}
-              <View className="mb-4">
+              <View className="mb-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-xl shadow-lg p-4">
                 <PlayerInfoApollo />
               </View>
-              
-              {/* Блок чат-бота */}
-              <View className="bg-white/80 rounded-xl shadow-md p-3 backdrop-blur-md mb-4">
-                <Text className="text-sm font-semibold text-purple-900 mb-3">Духовный помощник:</Text>
-                
-                <View className="bg-gray-100 rounded-lg p-3 mb-3">
-                  <Text className="text-xs text-gray-800">
-                    Здравствуйте! Я ваш духовный проводник в игре Лила. Чем могу помочь?
-                  </Text>
-                </View>
-                
-                <View className="flex-row">
-                  <TextInput
-                    placeholder="Задайте вопрос..."
-                    className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 mr-2 text-xs"
-                  />
-                  <TouchableOpacity className="bg-purple-600 rounded-lg p-2">
-                    <Ionicons name="send" size={16} color="white" />
-                  </TouchableOpacity>
-                </View>
+
+              {/* PlayerStats component */}
+              <View className="mb-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-xl shadow-lg p-4">
+                <PlayerStats />
+              </View>
+
+              {/* ChatBot component */}
+              <View className="h-[400px] bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-xl shadow-lg">
+                <ChatBot />
               </View>
             </View>
           </ScrollView>
@@ -278,48 +267,58 @@ const GameScreen: React.FC = () => {
     
     // Десктопная или ландшафтная мобильная версия
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-100 dark:bg-slate-900">
+        {/* <ImageBackground 
+          source={require('@/assets/gameboard/leela-bg-main.jpg')} 
+          className="flex-1"
+          resizeMode="cover"
+        > */}
+        {/* <View className="flex-1 bg-black/30"> */}
         <AppHeader />
         
-        <View className="py-3 px-4 bg-purple-50">
-          <View className={layout.maxWidth + " mx-auto"}>
-            <Text className="text-base font-medium text-purple-800 italic text-center">
-              Игра Лила — это древний путь самопознания, ведущий к Космическому Сознанию. Сформулируйте ваше духовное намерение, с которым вы вступаете в эту священную игру.
-            </Text>
-          </View>
+        <View className="py-2 px-3 bg-purple-50/80 dark:bg-purple-900/80 backdrop-blur-md rounded-lg shadow-md mx-auto my-1 max-w-2xl">
+          <Text className="text-sm font-medium text-purple-800 dark:text-purple-200 italic text-center">
+            Игра Лила — это древний путь самопознания, ведущий к Космическому Сознанию. Сформулируйте ваше духовное намерение, с которым вы вступаете в эту священную игру.
+          </Text>
         </View>
         
-        <View className={`flex-1 ${windowWidth < 768 ? '' : 'flex-row'} ${layout.maxWidth} mx-auto w-full ${layout.padding}`}>
-          {/* Левая панель с информацией */}
-          <View className={`${windowWidth < 768 ? 'w-full mb-3' : layout.leftColumn} pr-2 flex ${windowWidth < 768 ? 'flex-row' : 'flex-col'}`}>
-            {/* Player Info Apollo component */}
-            <View className={`${windowWidth < 768 ? 'flex-1 mr-2' : 'mb-4'}`}>
-              <PlayerInfoApollo />
-            </View>
-            {/* Блок с кубиком по центру */}
-            <View className={`bg-white rounded-xl shadow-md p-4 border border-purple-100 ${windowWidth < 768 ? 'flex-1' : 'mb-4 mt-auto'}`}>
-              <Text className="text-base font-semibold text-purple-900 mb-3 text-center">Бросок кубика:</Text>
-              <View className="items-center justify-center pt-2 pb-4">
-                <Dice rollDice={rollDice} lastRoll={lastRoll} size={windowWidth < 768 ? "small" : "medium"} />
+        <View className={`flex-1 flex-row ${layout.padding} mx-auto ${layout.maxWidth} space-x-4`}>
+          {/* Левая колонка */}
+          {(windowWidth >= 768) && (
+            <View className={`${layout.leftColumn} space-y-4`}>
+              <View className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-xl shadow-lg p-4 flex-1">
+                <PlayerInfoApollo />
               </View>
-              <Text className="text-xs text-gray-500 text-center mt-2">
-                Ваше продвижение по игре отражает ваш духовный путь
-              </Text>
+              <View className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-xl shadow-lg p-4">
+                <PlayerStats />
+              </View>
             </View>
-          </View>
-          
-          {/* Центральная панель с игровым полем - адаптивная */}
-          <View className={`${windowWidth < 768 ? 'w-full mb-3' : layout.centerColumn} px-2`}>
-            <View className={`bg-white/40 backdrop-blur-md rounded-xl overflow-hidden shadow-xl border border-purple-100 ${windowWidth < 768 ? 'min-h-[450px]' : 'min-h-[550px]'} flex items-center justify-center ${layout.gameBoardPadding}`}>
+          )}
+
+          {/* Центральная колонка */}
+          <View className={`${layout.centerColumn} flex flex-col space-y-4`}>
+            {/* GameBoard Container */}
+            <View className={`bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-xl shadow-lg ${layout.gameBoardPadding} flex-grow flex items-center justify-center`}>
               <GameBoard players={safePlayer ? [safePlayer] : []} />
             </View>
+            
+            {/* Dice Container */}
+            <View className="items-center justify-center w-full">
+              <Dice rollDice={rollDice} lastRoll={lastRoll} size="large" />
+            </View>
           </View>
-          
-          {/* Правая панель с чат-ботом - адаптивная */}
-          <View className={`${windowWidth < 768 ? 'w-full' : layout.rightColumn} pl-2`}>
-            <ChatBot />
-          </View>
+
+          {/* Правая колонка */}
+          {(windowWidth >= 768) && (
+            <View className={`${layout.rightColumn} flex flex-col`}>
+              <View className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-xl shadow-lg flex-1 overflow-hidden">
+                <ChatBot />
+              </View>
+            </View>
+          )}
         </View>
+        {/* </View> */}
+      {/* </ImageBackground> */}
       </View>
     );
   }
