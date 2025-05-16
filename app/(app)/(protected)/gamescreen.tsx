@@ -15,7 +15,7 @@ const AppLogo = () => (
   <View className="flex-row items-center">
     <View className="w-10 h-10 rounded-full overflow-hidden bg-purple-100 border-2 border-purple-300 shadow-md">
       <Image 
-        source={require('@/assets/icons/1024.png')} 
+        source={require('@/assets/icon.jpg')} 
         className="w-full h-full"
         resizeMode="cover"
       />
