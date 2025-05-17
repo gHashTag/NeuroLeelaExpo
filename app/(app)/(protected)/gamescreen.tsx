@@ -15,7 +15,7 @@ const AppLogo = () => (
   <View className="flex-row items-center">
     <View className="w-8 h-8 mr-2 border-2 border-red-500">
       <Image 
-        source={require('@/assets/icon.jpg')}
+        source={{ uri: '/web/images/logo.jpg' }}
         className="w-full h-full rounded-full"
       />
     </View>
