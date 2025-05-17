@@ -20,7 +20,7 @@ const AppLogo = () => (
         className="rounded-full"
       />
     </View>
-    <Text className="text-xl font-bold text-purple-800 dark:text-purple-200">НейроЛила</Text>
+    <Text className="text-xl font-bold text-sky-700 dark:text-sky-300">НейроЛила</Text>
   </View>
 );
 
@@ -49,9 +49,9 @@ const ChatBot = () => {
   };
 
   return (
-    <View className="flex-1 bg-white rounded-xl shadow-md border border-purple-100 flex flex-col overflow-hidden">
-      <View className="bg-purple-50 p-3 border-b border-purple-100">
-        <Text className="text-base font-semibold text-purple-900">Духовный помощник</Text>
+    <View className="flex-1 bg-white rounded-xl shadow-md border border-sky-100 flex flex-col overflow-hidden">
+      <View className="bg-sky-50 p-3 border-b border-sky-100">
+        <Text className="text-base font-semibold text-sky-800">Духовный помощник</Text>
       </View>
       
       <ScrollView className="flex-1 p-3">
@@ -63,7 +63,7 @@ const ChatBot = () => {
             <View 
               className={`rounded-2xl px-4 py-2 max-w-[85%] ${
                 msg.type === 'user' 
-                  ? 'bg-purple-600 ml-auto' 
+                  ? 'bg-pink-500 ml-auto' 
                   : 'bg-gray-100'
               }`}
             >
@@ -84,7 +84,7 @@ const ChatBot = () => {
           placeholder="Задайте вопрос..."
           className="flex-1 bg-gray-100 rounded-full px-4 py-2 mr-2"
         />
-        <TouchableOpacity onPress={sendMessage} className="bg-purple-600 rounded-full p-2">
+        <TouchableOpacity onPress={sendMessage} className="bg-pink-500 rounded-full p-2">
           <Ionicons name="send" size={20} color="white" />
         </TouchableOpacity>
       </View>
@@ -190,14 +190,14 @@ const GameScreen: React.FC = () => {
       <View className="flex-row items-center justify-between w-full space-x-4">
         <AppLogo />
         <View className="flex-1 min-w-0">
-          <Text className="text-xs text-center text-purple-700 dark:text-purple-300 truncate">
+          <Text className="text-xs text-center text-sky-600 dark:text-sky-300 truncate">
             Игра Лила — это древний путь самопознания, ведущий к Космическому Сознанию.
           </Text>
         </View>
         <View className="flex-row items-center">
-          <Text className="text-sm text-purple-700 mr-2">Уровень:</Text>
-          <View className="bg-purple-100 w-8 h-8 rounded-full items-center justify-center">
-            <Text className="font-bold text-purple-800">{currentPlayer?.plan ?? '-'}</Text>
+          <Text className="text-sm text-sky-600 mr-2">Уровень:</Text>
+          <View className="bg-sky-100 w-8 h-8 rounded-full items-center justify-center">
+            <Text className="font-bold text-sky-800">{currentPlayer?.plan ?? '-'}</Text>
           </View>
         </View>
       </View>
@@ -334,7 +334,7 @@ const GameScreen: React.FC = () => {
           
           {/* Блок чат-бота */}
           <View className="bg-white/80 rounded-xl shadow-md p-3 backdrop-blur-md mb-4">
-            <Text className="text-sm font-semibold text-purple-900 mb-3">Духовный помощник:</Text>
+            <Text className="text-sm font-semibold text-sky-800 mb-3">Духовный помощник:</Text>
             
             <View className="bg-gray-100 rounded-lg p-3 mb-3">
               <Text className="text-xs text-gray-800">
@@ -347,7 +347,7 @@ const GameScreen: React.FC = () => {
                 placeholder="Задайте вопрос..."
                 className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 mr-2 text-xs"
               />
-              <TouchableOpacity className="bg-purple-600 rounded-lg p-2">
+              <TouchableOpacity className="bg-pink-500 rounded-lg p-2">
                 <Ionicons name="send" size={16} color="white" />
               </TouchableOpacity>
             </View>
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     marginLeft: 12,
-    color: '#6A0DAD',
+    color: '#38bdf8', // sky-500 color
   }
 });
 
