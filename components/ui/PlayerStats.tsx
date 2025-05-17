@@ -53,30 +53,36 @@ export const PlayerStats = () => {
 
   if (loading) {
     return (
-      <View className="bg-white rounded-xl p-4 shadow-md">
+      <View className="bg-white/40 backdrop-blur-sm rounded-xl p-4 shadow-md">
         <ActivityIndicator size="small" color="#38bdf8" />
       </View>
     );
   }
 
   return (
-    <View className="bg-white rounded-xl p-4 shadow-md">
-      <Text className="text-lg font-bold text-sky-700 mb-2">Статистика игрока</Text>
+    <View className="bg-white/40 backdrop-blur-sm rounded-xl p-4 shadow-md">
+      <Text className="text-lg font-semibold text-sky-700 mb-3">Статистика игрока</Text>
       
-      <View className="space-y-2">
-        <View className="flex-row justify-between">
-          <Text className="text-gray-600">Текущая позиция:</Text>
-          <Text className="font-semibold">{stats.currentPosition}</Text>
+      <View className="space-y-3">
+        <View className="flex-row justify-between items-center bg-white/30 backdrop-blur-sm p-3 rounded-lg">
+          <Text className="text-sky-700">Текущая позиция:</Text>
+          <View className="bg-sky-100/50 backdrop-blur-sm px-3 py-1 rounded-full">
+            <Text className="font-semibold">{stats.currentPosition}</Text>
+          </View>
         </View>
         
-        <View className="flex-row justify-between">
-          <Text className="text-gray-600">Лучшая позиция:</Text>
-          <Text className="font-semibold">{stats.highestPosition}</Text>
+        <View className="flex-row justify-between items-center bg-white/30 backdrop-blur-sm p-3 rounded-lg">
+          <Text className="text-sky-700">Лучшая позиция:</Text>
+          <View className="bg-sky-100/50 backdrop-blur-sm px-3 py-1 rounded-full">
+            <Text className="font-semibold">{stats.highestPosition}</Text>
+          </View>
         </View>
         
-        <View className="flex-row justify-between">
-          <Text className="text-gray-600">Игр сыграно:</Text>
-          <Text className="font-semibold">{stats.gamesPlayed}</Text>
+        <View className="flex-row justify-between items-center bg-white/30 backdrop-blur-sm p-3 rounded-lg">
+          <Text className="text-sky-700">Игр сыграно:</Text>
+          <View className="bg-pink-100/50 backdrop-blur-sm px-3 py-1 rounded-full">
+            <Text className="font-semibold">{stats.gamesPlayed}</Text>
+          </View>
         </View>
       </View>
     </View>

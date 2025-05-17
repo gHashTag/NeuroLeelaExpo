@@ -43,9 +43,12 @@ export function ApolloStatus() {
 const styles = StyleSheet.create({
   container: {
     padding: 10,
-    backgroundColor: 'rgba(186, 230, 253, 0.3)',
-    borderRadius: 5,
+    backgroundColor: 'rgba(186, 230, 253, 0.2)',
+    borderRadius: 12,
     margin: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    backdropFilter: 'blur(8px)',
   },
   title: {
     fontWeight: 'bold',
@@ -58,9 +61,12 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     padding: 10,
-    backgroundColor: 'rgba(254, 205, 211, 0.5)',
-    borderRadius: 5,
+    backgroundColor: 'rgba(254, 205, 211, 0.3)',
+    borderRadius: 12,
     margin: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    backdropFilter: 'blur(8px)',
   },
   errorTitle: {
     fontWeight: 'bold',
