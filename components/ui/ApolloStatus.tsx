@@ -42,39 +42,39 @@ export function ApolloStatus() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 10,
-    backgroundColor: 'rgba(186, 230, 253, 0.2)',
-    borderRadius: 12,
-    margin: 5,
+    padding: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 16,
+    margin: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    backdropFilter: 'blur(8px)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(16px)',
   },
   title: {
     fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#0284c7',
+    marginBottom: 6,
+    color: 'rgba(255, 255, 255, 0.9)',
   },
   status: {
     fontSize: 12,
-    color: '#0369a1',
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   errorContainer: {
-    padding: 10,
-    backgroundColor: 'rgba(254, 205, 211, 0.3)',
-    borderRadius: 12,
-    margin: 5,
+    padding: 12,
+    backgroundColor: 'rgba(191, 30, 46, 0.2)',
+    borderRadius: 16,
+    margin: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
-    backdropFilter: 'blur(8px)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    backdropFilter: 'blur(16px)',
   },
   errorTitle: {
     fontWeight: 'bold',
-    color: '#e11d48',
-    marginBottom: 5,
+    color: '#FF5C8D',
+    marginBottom: 6,
   },
   errorText: {
     fontSize: 12,
-    color: '#be123c',
+    color: '#FF8EB4',
   }
 }); 
