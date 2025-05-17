@@ -18,7 +18,7 @@ export const PlayerInfoApollo = () => {
   if (isLoading) {
     return (
       <View className="bg-white rounded-xl p-4 shadow-md">
-        <ActivityIndicator size="small" color="#8b5cf6" />
+        <ActivityIndicator size="small" color="#38bdf8" />
       </View>
     );
   }
@@ -41,7 +41,7 @@ export const PlayerInfoApollo = () => {
 
   return (
     <View className="bg-white rounded-xl p-4 shadow-md">
-      <Text className="text-lg font-bold text-purple-800 mb-2">Информация об игроке</Text>
+      <Text className="text-lg font-bold text-sky-700 mb-2">Информация об игроке</Text>
       
       <View className="space-y-2">
         <View className="flex-row justify-between">
@@ -65,12 +65,12 @@ export const PlayerInfoApollo = () => {
           <Text className="text-sm text-gray-500 mb-2">Действия:</Text>
           <View className="flex-row space-x-2">
             <TouchableOpacity onPress={() => handleMove(currentPlayer.plan + 1)}>
-              <Text className="bg-purple-600 text-white px-3 py-1 rounded-lg text-center">
+              <Text className="bg-pink-500 text-white px-3 py-1 rounded-lg text-center">
                 Шаг вперед
               </Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => handleMove(1)}>
-              <Text className="bg-gray-600 text-white px-3 py-1 rounded-lg text-center">
+              <Text className="bg-sky-600 text-white px-3 py-1 rounded-lg text-center">
                 В начало
               </Text>
             </TouchableOpacity>

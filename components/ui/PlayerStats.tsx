@@ -54,28 +54,28 @@ export const PlayerStats = () => {
   if (loading) {
     return (
       <View className="bg-white rounded-xl p-4 shadow-md">
-        <ActivityIndicator size="small" color="#8b5cf6" />
+        <ActivityIndicator size="small" color="#38bdf8" />
       </View>
     );
   }
 
   return (
     <View className="bg-white rounded-xl p-4 shadow-md">
-      <Text className="text-lg font-bold text-purple-800 mb-2">Player Stats</Text>
+      <Text className="text-lg font-bold text-sky-700 mb-2">Статистика игрока</Text>
       
       <View className="space-y-2">
         <View className="flex-row justify-between">
-          <Text className="text-gray-600">Current Position:</Text>
+          <Text className="text-gray-600">Текущая позиция:</Text>
           <Text className="font-semibold">{stats.currentPosition}</Text>
         </View>
         
         <View className="flex-row justify-between">
-          <Text className="text-gray-600">Highest Position:</Text>
+          <Text className="text-gray-600">Лучшая позиция:</Text>
           <Text className="font-semibold">{stats.highestPosition}</Text>
         </View>
         
         <View className="flex-row justify-between">
-          <Text className="text-gray-600">Games Played:</Text>
+          <Text className="text-gray-600">Игр сыграно:</Text>
           <Text className="font-semibold">{stats.gamesPlayed}</Text>
         </View>
       </View>
