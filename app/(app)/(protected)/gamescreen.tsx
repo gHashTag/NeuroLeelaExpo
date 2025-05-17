@@ -13,15 +13,13 @@ import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 // Logo component for the app
 const AppLogo = () => (
   <View className="flex-row items-center">
-    {/* Упрощенный контейнер для Image с красной рамкой для отладки */}
-    <View className="w-10 h-10 border-2 border-red-500"> 
+    <View className="w-8 h-8 mr-2 border-2 border-red-500">
       <Image 
-        source={require('@/assets/icons/1024.png')} // Используем пока 1024.png для теста
-        className="w-full h-full"
-        // resizeMode="cover" // resizeMode временно закомментирован для теста
+        source={require('@/assets/icon.jpg')}
+        className="w-full h-full rounded-full"
       />
     </View>
-    <Text className="text-2xl font-bold ml-3 text-purple-800">НейроЛила</Text>
+    <Text className="text-xl font-bold text-purple-800 dark:text-purple-200">НейроЛила</Text>
   </View>
 );
 
@@ -187,11 +185,15 @@ const GameScreen: React.FC = () => {
 
   // Custom header component
   const AppHeader = () => (
-    // Временно заменяем BlurView на обычный View для упрощения
-    <View className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-lg py-4 px-5">
-      <View className="flex-row items-center justify-between w-full"> 
+    <View className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-lg py-2 px-4">
+      <View className="flex-row items-center justify-between w-full space-x-4">
         <AppLogo />
-        <View className="flex-row items-center"> {/* Этот блок должен быть справа */}
+        <View className="flex-1 min-w-0">
+          <Text className="text-xs text-center text-purple-700 dark:text-purple-300 truncate">
+            Игра Лила — это древний путь самопознания, ведущий к Космическому Сознанию.
+          </Text>
+        </View>
+        <View className="flex-row items-center">
           <Text className="text-sm text-purple-700 mr-2">Уровень:</Text>
           <View className="bg-purple-100 w-8 h-8 rounded-full items-center justify-center">
             <Text className="font-bold text-purple-800">{currentPlayer?.plan ?? '-'}</Text>
@@ -223,12 +225,6 @@ const GameScreen: React.FC = () => {
       return (
         <View className="flex-1 bg-gray-50 dark:bg-slate-950">
           <AppHeader />
-          
-          <View className="py-2 px-3 bg-purple-50/80 dark:bg-purple-900/80 backdrop-blur-md rounded-lg shadow-md mx-2 my-1">
-            <Text className="text-sm font-medium text-purple-800 dark:text-purple-200 italic text-center">
-              Игра Лила — древний путь к Космическому Сознанию
-            </Text>
-          </View>
           
           {/* Статус Apollo */}
           <ApolloStatus />
@@ -268,19 +264,7 @@ const GameScreen: React.FC = () => {
     // Десктопная или ландшафтная мобильная версия
     return (
       <View className="flex-1 bg-gray-100 dark:bg-slate-900">
-        {/* <ImageBackground 
-          source={require('@/assets/gameboard/leela-bg-main.jpg')} 
-          className="flex-1"
-          resizeMode="cover"
-        > */}
-        {/* <View className="flex-1 bg-black/30"> */}
         <AppHeader />
-        
-        <View className="py-2 px-3 bg-purple-50/80 dark:bg-purple-900/80 backdrop-blur-md rounded-lg shadow-md mx-auto my-1 max-w-2xl">
-          <Text className="text-sm font-medium text-purple-800 dark:text-purple-200 italic text-center">
-            Игра Лила — это древний путь самопознания, ведущий к Космическому Сознанию. Сформулируйте ваше духовное намерение, с которым вы вступаете в эту священную игру.
-          </Text>
-        </View>
         
         <View className={`flex-1 flex-row ${layout.padding} mx-auto ${layout.maxWidth} space-x-4`}>
           {/* Левая колонка */}
@@ -317,8 +301,6 @@ const GameScreen: React.FC = () => {
             </View>
           )}
         </View>
-        {/* </View> */}
-      {/* </ImageBackground> */}
       </View>
     );
   }
@@ -331,12 +313,6 @@ const GameScreen: React.FC = () => {
       resizeMode="cover"
     >
       <AppHeader />
-      
-      <View className="py-3 px-4 bg-purple-50/80 backdrop-blur-sm">
-        <Text className="text-sm font-medium text-purple-800 italic text-center">
-          Игра Лила — путь духовного самопознания
-        </Text>
-      </View>
       
       <ScrollView>
         <View className="p-2 pb-4">
