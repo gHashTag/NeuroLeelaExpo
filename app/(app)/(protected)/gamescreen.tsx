@@ -13,7 +13,7 @@ import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 // Logo component for the app
 const AppLogo = () => (
   <View className="flex-row items-center">
-    <View className="w-8 h-8 mr-2 border-2 border-red-500">
+    <View className="w-10 h-10 mr-2 overflow-hidden rounded-full">
       <Image 
         source={require('../../../assets/icon.jpg')}
         style={{ width: '100%', height: '100%' }}
