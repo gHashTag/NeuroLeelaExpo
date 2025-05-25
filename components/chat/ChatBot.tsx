@@ -3,7 +3,6 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-nativ
 import { Ionicons } from '@expo/vector-icons';
 import { PlanCard } from './PlanCard';
 import { DiceInChat } from './DiceInChat';
-import { ReportRequest } from './ReportRequest';
 import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 import { processGameStep } from '@/services/GameService';
 import { updatePlayerInStorage, markReportCompleted } from '@/lib/apollo-drizzle-client';
@@ -19,7 +18,7 @@ interface Message {
 
 interface ToolInvocation {
   toolCallId: string;
-  toolName: 'createPlanCard' | 'showDice' | 'requestReport' | 'gameStatus';
+  toolName: 'createPlanCard' | 'showDice' | 'gameStatus';
   state: 'partial-call' | 'call' | 'result' | 'error';
   args?: any;
   result?: any;
@@ -169,11 +168,9 @@ export const ChatBot = () => {
       
       // Проверяем, нужно ли показать запрос отчета
       if (currentPlayer.needsReport) {
-        addGameMessage('requestReport', {
-          planNumber: currentPlayer.plan,
-          planName: getPlanInfo(currentPlayer.plan).name,
-          prompt: getPlanPrompt(currentPlayer.plan)
-        });
+        const planInfo = getPlanInfo(currentPlayer.plan);
+        const prompt = getPlanPrompt(currentPlayer.plan);
+        addSimpleMessage(`📝 Время для отчета о плане ${currentPlayer.plan}: "${planInfo.name}"\n\n${prompt}\n\n💡 Напишите ваши размышления и наблюдения в чате. После отправки отчета вы сможете продолжить игру.`);
       } 
       // Если отчет не нужен, показываем кубик для следующего хода
       else if (currentPlayer.plan === 68 && currentPlayer.isFinished) {
@@ -189,6 +186,16 @@ export const ChatBot = () => {
       }
     }
   }, [currentPlayer?.needsReport, currentPlayer?.plan, currentPlayer?.isFinished, currentPlayer?.previous_plan]);
+
+  // Функция для добавления простых сообщений от ассистента
+  const addSimpleMessage = (content: string) => {
+    const message: Message = {
+      id: `simple-${Date.now()}`,
+      role: 'assistant',
+      content
+    };
+    setMessages(prev => [message, ...prev]);
+  };
 
   // Функция для добавления игровых сообщений
   const addGameMessage = (toolName: ToolInvocation['toolName'], data: any, customContent?: string) => {
@@ -220,8 +227,6 @@ export const ChatBot = () => {
     switch (toolName) {
       case 'showDice':
         return data.message || "Время для следующего хода! 🎲";
-      case 'requestReport':
-        return `Вы достигли плана ${data.planNumber}! Время для размышлений и записи отчета о вашем духовном состоянии. 📝`;
       case 'gameStatus':
         return data.message || "Обновление игрового статуса";
       default:
@@ -238,12 +243,85 @@ export const ChatBot = () => {
       content: input.trim()
     };
 
-    setMessages(prev => [userMessage, ...prev]);
+    setMessages(prev => [userMessage, ...prev]); // Добавляем в начало
+    const userInput = input.trim();
     setInput('');
     setIsLoading(true);
 
     try {
-      // Прямой вызов к OpenRouter API
+      // Проверяем, нужен ли отчет
+      if (currentPlayer?.needsReport && user) {
+        // Сохраняем отчет пользователя в базу данных
+        const { error } = await supabase
+          .from("reports")
+          .insert({
+            user_id: user.id,
+            plan_number: currentPlayer.plan,
+            content: userInput,
+            likes: 0,
+            comments: 0
+          });
+
+        if (error) {
+          console.error("Ошибка при создании отчета:", error);
+          throw error;
+        }
+
+        // Отмечаем отчет как завершенный
+        await markReportCompleted(user.id);
+
+        // Формируем контекст для ИИ с информацией о плане и отчете
+        const planInfo = getPlanInfo(currentPlayer.plan);
+        const systemPrompt = `Ты - Лила, богиня игры самопознания. Игрок только что написал отчет о своем опыте на плане ${currentPlayer.plan}: "${planInfo.name}" (${planInfo.description}).
+
+Отчет игрока: "${userInput}"
+
+Твоя задача:
+- Дать мудрый и сострадательный отклик на отчет игрока
+- Связать его опыт с духовным значением плана ${currentPlayer.plan}
+- Дать рекомендации для дальнейшего духовного развития
+- Поздравить с завершением отчета и разрешить продолжить игру
+
+Отвечай с мудростью древних ведических текстов, будь сострадательной и понимающей.`;
+
+        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.EXPO_PUBLIC_OPENROUTER_API_KEY}`,
+            'HTTP-Referer': 'https://neurolila.app',
+            'X-Title': 'NeuroLila Game'
+          },
+          body: JSON.stringify({
+            model: 'meta-llama/llama-3.1-8b-instruct:free',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userInput }
+            ],
+            temperature: 0.7,
+            max_tokens: 500
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`OpenRouter API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const aiResponse = data.choices?.[0]?.message?.content || 
+          `✅ Благодарю за ваш искренний отчет о плане ${currentPlayer.plan}! Ваши размышления записаны в дневник духовного пути. Теперь вы можете продолжить путешествие.`;
+
+        const responseMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: aiResponse
+        };
+
+        setMessages(prev => [responseMessage, ...prev]);
+        return; // Выходим, так как это был отчет
+      }
+
+      // Обычная обработка сообщений (если отчет не нужен)
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -318,12 +396,12 @@ export const ChatBot = () => {
         toolInvocations: toolInvocations.length > 0 ? toolInvocations : undefined
       };
 
-      setMessages(prev => [responseMessage, ...prev]);
+      setMessages(prev => [responseMessage, ...prev]); // Добавляем в начало
     } catch (error) {
       console.error('Ошибка ИИ:', error);
       // Fallback к мок ответам только в случае ошибки
-      const mockResponse = generateMockResponse(userMessage.content);
-      setMessages(prev => [mockResponse, ...prev]);
+      const mockResponse = generateMockResponse(userInput);
+      setMessages(prev => [mockResponse, ...prev]); // Добавляем в начало
     } finally {
       setIsLoading(false);
     }
@@ -399,17 +477,6 @@ export const ChatBot = () => {
             />
           );
         
-        case 'requestReport':
-          return (
-            <ReportRequest
-              key={toolInvocation.toolCallId}
-              planNumber={result.planNumber}
-              planName={result.planName}
-              prompt={result.prompt}
-              onSubmit={handleReportSubmit}
-            />
-          );
-        
         default:
           return null;
       }
@@ -421,7 +488,6 @@ export const ChatBot = () => {
           <Text className="text-purple-600 text-sm">
             {toolName === 'createPlanCard' ? '🎴 Создаю карточку плана...' : 
              toolName === 'showDice' ? '🎲 Подготавливаю кубик...' :
-             toolName === 'requestReport' ? '📝 Подготавливаю форму отчета...' :
              'Обрабатываю...'}
           </Text>
         </View>
@@ -479,50 +545,6 @@ export const ChatBot = () => {
     return roll;
   };
 
-  // Обработчик отправки отчета
-  const handleReportSubmit = async (content: string) => {
-    if (!user || !currentPlayer) return;
-
-    try {
-      // Сохраняем отчет в базу данных
-      const { error } = await supabase
-        .from("reports")
-        .insert({
-          user_id: user.id,
-          plan_number: currentPlayer.plan,
-          content: content.trim(),
-          likes: 0,
-          comments: 0
-        });
-
-      if (error) {
-        console.error("Ошибка при создании отчета:", error);
-        throw error;
-      }
-
-      // Отмечаем отчет как завершенный
-      await markReportCompleted(user.id);
-
-      // Добавляем сообщение об успешной отправке отчета
-      const successMessage: Message = {
-        id: `report-success-${Date.now()}`,
-        role: 'assistant',
-        content: `✅ Ваш отчет о плане ${currentPlayer.plan} успешно сохранен! Теперь вы можете продолжить путешествие.`
-      };
-      
-      setMessages(prev => [successMessage, ...prev]);
-
-    } catch (error) {
-      console.error('Ошибка при отправке отчета:', error);
-      const errorMessage: Message = {
-        id: `report-error-${Date.now()}`,
-        role: 'assistant',
-        content: `❌ Произошла ошибка при сохранении отчета. Попробуйте еще раз.`
-      };
-      setMessages(prev => [errorMessage, ...prev]);
-    }
-  };
-
   return (
     <View className="flex-1 bg-white flex flex-col overflow-hidden">
       <View className="bg-gradient-to-r from-purple-50 to-blue-50 p-3 border-b border-gray-100">
@@ -573,7 +595,11 @@ export const ChatBot = () => {
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder="Спросите о плане или поделитесь мыслями..."
+            placeholder={
+              currentPlayer?.needsReport 
+                ? "Напишите ваш отчет о духовном опыте..."
+                : "Спросите о плане или поделитесь мыслями..."
+            }
             placeholderTextColor="rgba(107,114,128,0.5)"
             className="flex-1 bg-gray-50 rounded-full px-4 py-2 mr-2 text-gray-700"
             editable={!isLoading}
