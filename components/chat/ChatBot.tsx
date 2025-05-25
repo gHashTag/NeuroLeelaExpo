@@ -171,18 +171,23 @@ export const ChatBot = () => {
         const planInfo = getPlanInfo(currentPlayer.plan);
         const prompt = getPlanPrompt(currentPlayer.plan);
         addSimpleMessage(`📝 Время для отчета о плане ${currentPlayer.plan}: "${planInfo.name}"\n\n${prompt}\n\n💡 Напишите ваши размышления и наблюдения в чате. После отправки отчета вы сможете продолжить игру.`);
-      } 
-      // Если отчет не нужен, показываем кубик для следующего хода
-      else if (currentPlayer.plan === 68 && currentPlayer.isFinished) {
-        addGameMessage('showDice', {
-          message: "🎲 Вы достигли Космического сознания! Бросьте 6, чтобы начать новый путь самопознания!",
-          disabled: false
-        });
-      } else if (!currentPlayer.isFinished) {
-        addGameMessage('showDice', {
-          message: `🎲 Готовы к следующему шагу? Вы на плане ${currentPlayer.plan}`,
-          disabled: false
-        });
+      }
+      // Показываем кубик только если отчет НЕ нужен и игрок может делать ход
+      else if (!currentPlayer.needsReport && currentPlayer.plan > 0) {
+        // Если игра завершена на плане 68
+        if (currentPlayer.plan === 68 && currentPlayer.isFinished) {
+          addGameMessage('showDice', {
+            message: "🎲 Вы достигли Космического сознания! Бросьте 6, чтобы начать новый путь самопознания!",
+            disabled: false
+          });
+        } 
+        // Если игра не завершена
+        else if (!currentPlayer.isFinished) {
+          addGameMessage('showDice', {
+            message: `🎲 Готовы к следующему шагу? Вы на плане ${currentPlayer.plan}`,
+            disabled: false
+          });
+        }
       }
     }
   }, [currentPlayer?.needsReport, currentPlayer?.plan, currentPlayer?.isFinished, currentPlayer?.previous_plan]);
@@ -252,7 +257,7 @@ export const ChatBot = () => {
       // Проверяем, нужен ли отчет
       if (currentPlayer?.needsReport && user) {
         // Сохраняем отчет пользователя в базу данных
-        const { error } = await supabase
+        const { data: reportData, error: reportError } = await supabase
           .from("reports")
           .insert({
             user_id: user.id,
@@ -260,11 +265,13 @@ export const ChatBot = () => {
             content: userInput,
             likes: 0,
             comments: 0
-          });
+          })
+          .select()
+          .single();
 
-        if (error) {
-          console.error("Ошибка при создании отчета:", error);
-          throw error;
+        if (reportError) {
+          console.error("Ошибка при создании отчета:", reportError);
+          throw reportError;
         }
 
         // Отмечаем отчет как завершенный
@@ -280,9 +287,9 @@ export const ChatBot = () => {
 - Дать мудрый и сострадательный отклик на отчет игрока
 - Связать его опыт с духовным значением плана ${currentPlayer.plan}
 - Дать рекомендации для дальнейшего духовного развития
-- Поздравить с завершением отчета и разрешить продолжить игру
+- Поздравить с завершением отчета и предложить продолжить игру
 
-Отвечай с мудростью древних ведических текстов, будь сострадательной и понимающей.`;
+Отвечай с мудростью древних ведических текстов, будь сострадательной и понимающей. В конце обязательно скажи что-то вроде "Теперь вы готовы к следующему шагу на пути самопознания! 🎲"`;
 
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
@@ -309,7 +316,19 @@ export const ChatBot = () => {
 
         const data = await response.json();
         const aiResponse = data.choices?.[0]?.message?.content || 
-          `✅ Благодарю за ваш искренний отчет о плане ${currentPlayer.plan}! Ваши размышления записаны в дневник духовного пути. Теперь вы можете продолжить путешествие.`;
+          `✅ Благодарю за ваш искренний отчет о плане ${currentPlayer.plan}! Ваши размышления записаны в дневник духовного пути. Теперь вы готовы к следующему шагу на пути самопознания! 🎲`;
+
+        // Сохраняем диалог в истории чата
+        await supabase
+          .from("chat_history")
+          .insert({
+            user_id: user.id,
+            plan_number: currentPlayer.plan,
+            user_message: userInput,
+            ai_response: aiResponse,
+            report_id: reportData.id,
+            message_type: 'report'
+          });
 
         const responseMessage: Message = {
           id: (Date.now() + 1).toString(),
@@ -318,6 +337,22 @@ export const ChatBot = () => {
         };
 
         setMessages(prev => [responseMessage, ...prev]);
+
+        // После ответа ИИ на отчет автоматически показываем кубик для следующего хода
+        setTimeout(() => {
+          if (currentPlayer.plan === 68 && currentPlayer.isFinished) {
+            addGameMessage('showDice', {
+              message: "🎲 Вы достигли Космического сознания! Бросьте 6, чтобы начать новый путь самопознания!",
+              disabled: false
+            });
+          } else {
+            addGameMessage('showDice', {
+              message: `🎲 Готовы к следующему шагу? Бросьте кубик для продолжения путешествия!`,
+              disabled: false
+            });
+          }
+        }, 1000);
+
         return; // Выходим, так как это был отчет
       }
 
@@ -365,6 +400,19 @@ export const ChatBot = () => {
 
       const data = await response.json();
       const aiResponse = data.choices?.[0]?.message?.content || 'Извините, произошла ошибка при получении ответа.';
+
+      // Сохраняем обычный диалог в истории чата
+      if (user) {
+        await supabase
+          .from("chat_history")
+          .insert({
+            user_id: user.id,
+            plan_number: currentPlayer?.plan || 1,
+            user_message: userInput,
+            ai_response: aiResponse,
+            message_type: 'question'
+          });
+      }
 
       // Проверяем, упоминает ли ИИ конкретный план для создания карточки
       const planMatch = aiResponse.match(/план[а-я\s]*(\d+)|позици[а-я\s]*(\d+)|(\d+)[а-я\s]*план/i);

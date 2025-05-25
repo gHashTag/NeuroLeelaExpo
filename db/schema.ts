@@ -30,10 +30,26 @@ export const reports = pgTable('reports', {
   updated_at: timestamp('updated_at').defaultNow(),
 });
 
+// Define the chat_history table schema for storing user-AI conversations
+export const chatHistory = pgTable('chat_history', {
+  id: serial('id').primaryKey(),
+  user_id: text('user_id').notNull(),
+  plan_number: integer('plan_number').notNull(),
+  user_message: text('user_message').notNull(),
+  ai_response: text('ai_response').notNull(),
+  report_id: integer('report_id'), // Связь с отчетом, если это диалог об отчете
+  message_type: text('message_type').notNull().default('report'), // 'report', 'question', 'general'
+  created_at: timestamp('created_at').defaultNow(),
+});
+
 // Define types for the players table
 export type Player = typeof players.$inferSelect;
 export type NewPlayer = typeof players.$inferInsert;
 
 // Define types for the reports table
 export type Report = typeof reports.$inferSelect;
-export type NewReport = typeof reports.$inferInsert; 
+export type NewReport = typeof reports.$inferInsert;
+
+// Define types for the chat_history table
+export type ChatHistory = typeof chatHistory.$inferSelect;
+export type NewChatHistory = typeof chatHistory.$inferInsert; 
