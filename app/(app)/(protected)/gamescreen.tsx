@@ -11,7 +11,7 @@ import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 import { ChatBot } from '@/components/chat/ChatBot';
 import { processGameStep } from '@/services/GameService';
 import { GameMessageService } from '@/services/GameMessageService';
-import { currentPlayerVar } from '@/lib/apollo-drizzle-client';
+import { updatePlayerInStorage } from '@/lib/apollo-drizzle-client';
 // import { useTranslation } from 'react-i18next'
 // import { useAccount } from 'store'
 
@@ -162,9 +162,9 @@ const GameScreen: React.FC = () => {
             message: message
           };
           
-          // Используем currentPlayerVar напрямую для обновления состояния
-          currentPlayerVar(updatedPlayer);
-          console.log('[Dice Roll] Локальное состояние Apollo обновлено напрямую:', updatedPlayer);
+          // Используем updatePlayerInStorage для обновления состояния
+          updatePlayerInStorage(updatedPlayer);
+          console.log('[Dice Roll] Локальное состояние Apollo обновлено через updatePlayerInStorage:', updatedPlayer);
         })
         .catch(error => {
           console.error('[Dice Roll] Ошибка при обработке хода:', error);

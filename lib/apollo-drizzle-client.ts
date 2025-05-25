@@ -1,5 +1,6 @@
 import { ApolloClient, InMemoryCache, makeVar } from '@apollo/client';
 import { Player } from '@/db/schema';
+import { supabase } from '@/config/supabase';
 // import { neonAdapter } from './neon-adapter';
 
 // Создаем реактивные переменные для хранения состояния
@@ -7,37 +8,145 @@ export const currentPlayerVar = makeVar<Player | null>(null);
 export const isLoadingVar = makeVar<boolean>(true);
 export const errorVar = makeVar<string | null>(null);
 
-// Функция для загрузки данных игрока из Neon через наш адаптер
+// Ключ для localStorage
+const PLAYER_STORAGE_KEY = 'neuroleela_player_data';
+
+// Функция для сохранения данных игрока в localStorage
+const savePlayerToStorage = (playerData: Player) => {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(playerData));
+      console.log('[Apollo] Данные игрока сохранены в localStorage');
+    }
+  } catch (error) {
+    console.error('[Apollo] Ошибка при сохранении в localStorage:', error);
+  }
+};
+
+// Функция для загрузки данных игрока из localStorage
+const loadPlayerFromStorage = (userId: string): Player | null => {
+  try {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(PLAYER_STORAGE_KEY);
+      if (stored) {
+        const playerData = JSON.parse(stored);
+        if (playerData.id === userId) {
+          console.log('[Apollo] Данные игрока загружены из localStorage:', playerData);
+          return playerData;
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[Apollo] Ошибка при загрузке из localStorage:', error);
+  }
+  return null;
+};
+
+// Функция для загрузки данных игрока из Supabase
 export const loadPlayerData = async (userId: string) => {
   try {
     isLoadingVar(true);
     errorVar(null);
     
-    // ВРЕМЕННО: Используем мок-данные вместо Neon
     console.log('[Apollo] Загрузка данных игрока для userId:', userId);
     
-    const mockPlayerData = {
-      id: userId,
-      plan: 68, // Начинаем с позиции победы (68)
-      previous_plan: 0,
-      message: 'Бросьте 6 чтобы начать путь самопознания',
-      avatar: null,
-      fullName: null,
-      intention: null,
-      isStart: false,
-      isFinished: true, // Устанавливаем в true, чтобы активировать логику "нужна 6 для старта"
-      consecutiveSixes: 0,
-      positionBeforeThreeSixes: 0
-    };
+    // Сначала пытаемся загрузить из localStorage
+    const storedPlayer = loadPlayerFromStorage(userId);
+    if (storedPlayer) {
+      currentPlayerVar(storedPlayer);
+      console.log('[Apollo] Используем данные из localStorage');
+      return;
+    }
     
-    currentPlayerVar(mockPlayerData as Player);
-    console.log('[Apollo] Данные игрока загружены:', mockPlayerData);
+    // Если в localStorage нет данных, пытаемся загрузить из Supabase
+    try {
+      const { data: playerData, error } = await supabase
+        .from('players')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+        throw error;
+      }
+      
+      let finalPlayerData;
+      
+      if (!playerData) {
+        // Если игрок не найден, создаем нового с начальными данными
+        console.log('[Apollo] Игрок не найден, создаем нового с начальными данными');
+        
+        finalPlayerData = {
+          id: userId,
+          plan: 68, // Начинаем с позиции победы (68)
+          previous_plan: 0,
+          message: 'Бросьте 6 чтобы начать путь самопознания',
+          avatar: null,
+          fullName: null,
+          intention: null,
+          isStart: false,
+          isFinished: true, // Устанавливаем в true, чтобы активировать логику "нужна 6 для старта"
+          consecutiveSixes: 0,
+          positionBeforeThreeSixes: 0
+        };
+        
+        // Пытаемся сохранить нового игрока в Supabase
+        try {
+          const { data: createdPlayer, error: createError } = await supabase
+            .from('players')
+            .insert([finalPlayerData])
+            .select()
+            .single();
+          
+          if (!createError && createdPlayer) {
+            finalPlayerData = createdPlayer;
+            console.log('[Apollo] Новый игрок создан в Supabase:', createdPlayer);
+          }
+        } catch (createError) {
+          console.log('[Apollo] Не удалось создать игрока в Supabase, используем локальные данные');
+        }
+      } else {
+        finalPlayerData = playerData;
+        console.log('[Apollo] Данные игрока загружены из Supabase:', playerData);
+      }
+      
+      currentPlayerVar(finalPlayerData as Player);
+      savePlayerToStorage(finalPlayerData as Player);
+      
+    } catch (supabaseError) {
+      console.log('[Apollo] Supabase недоступен, используем начальные данные');
+      
+      // Создаем начальные данные
+      const initialPlayerData = {
+        id: userId,
+        plan: 68,
+        previous_plan: 0,
+        message: 'Бросьте 6 чтобы начать путь самопознания',
+        avatar: null,
+        fullName: null,
+        intention: null,
+        isStart: false,
+        isFinished: true,
+        consecutiveSixes: 0,
+        positionBeforeThreeSixes: 0
+      };
+      
+      currentPlayerVar(initialPlayerData as Player);
+      savePlayerToStorage(initialPlayerData as Player);
+    }
+    
   } catch (error) {
-    console.error('[Apollo] Ошибка при загрузке данных игрока:', error);
-    errorVar('Не удалось загрузить данные игрока');
+    console.error('[Apollo] Критическая ошибка при загрузке данных игрока:', error);
+    errorVar('Ошибка загрузки данных игрока');
   } finally {
     isLoadingVar(false);
   }
+};
+
+// Функция для обновления данных игрока
+export const updatePlayerInStorage = (updatedPlayer: Player) => {
+  currentPlayerVar(updatedPlayer);
+  savePlayerToStorage(updatedPlayer);
 };
 
 // Функция для обновления позиции игрока

@@ -92,40 +92,30 @@ export const getPlan = (lokaNumber: number, languageCode = 'en'): Plan => {
 export const updatePlayerPosition = async (userId: string, gameStep: GameStep, message?: string): Promise<void> => {
   console.log(`[GameService] updatePlayerPosition вызвана с userId=${userId}, gameStep:`, gameStep, `message=${message}`);
   
-  // ВРЕМЕННО: Отключаем Supabase для тестирования логики
-  console.log(`[GameService] ВРЕМЕННО: Пропускаем обновление Supabase, работаем только с локальным состоянием`);
-  console.log(`[GameService] Данные, которые должны были быть сохранены:`, {
-    plan: gameStep.loka,
-    previous_plan: gameStep.previous_loka,
-    consecutiveSixes: gameStep.consecutive_sixes,
-    positionBeforeThreeSixes: gameStep.position_before_three_sixes,
-    isFinished: gameStep.is_finished,
-    message: message || `Last move: ${gameStep.direction}`,
-  });
-  
-  // Имитируем успешное сохранение
-  console.log(`[GameService] updatePlayerPosition успешно "обновила" позицию (мок-режим)`);
-  
-  /* ОТКЛЮЧЕНО ДЛЯ ТЕСТИРОВАНИЯ:
-  const { error } = await supabase
-    .from('players')
-    .update({
-      plan: gameStep.loka,
-      previous_plan: gameStep.previous_loka,
-      consecutiveSixes: gameStep.consecutive_sixes,
-      positionBeforeThreeSixes: gameStep.position_before_three_sixes,
-      isFinished: gameStep.is_finished,
-      message: message || `Last move: ${gameStep.direction}`,
-    })
-    .eq('id', userId);
+  try {
+    const { error } = await supabase
+      .from('players')
+      .update({
+        plan: gameStep.loka,
+        previous_plan: gameStep.previous_loka,
+        consecutiveSixes: gameStep.consecutive_sixes,
+        positionBeforeThreeSixes: gameStep.position_before_three_sixes,
+        isFinished: gameStep.is_finished,
+        message: message || `Last move: ${gameStep.direction}`,
+      })
+      .eq('id', userId);
 
-  if (error) {
-    console.error('[GameService] Error updating player position:', error);
-    throw new Error('Failed to update player position');
-  } else {
-    console.log(`[GameService] updatePlayerPosition успешно обновила позицию в Supabase`);
+    if (error) {
+      console.error('[GameService] Error updating player position:', error);
+      throw new Error('Failed to update player position');
+    } else {
+      console.log(`[GameService] updatePlayerPosition успешно обновила позицию в Supabase`);
+    }
+  } catch (error) {
+    console.error('[GameService] Критическая ошибка при обновлении Supabase:', error);
+    // В случае ошибки Supabase, продолжаем работу (не блокируем игру)
+    console.log('[GameService] Продолжаем работу без сохранения в Supabase');
   }
-  */
 };
 
 // Helper function to handle consecutive sixes
