@@ -63,10 +63,10 @@ export const useApolloDrizzle = () => {
       // 2. В противном случае оставляем текущее значение
       const newIsFinished = isFinishedFlag !== undefined ? isFinishedFlag : previousIsFinished;
       
-      console.log(`[Apollo Drizzle] Обновление игрока: позиция ${oldPosition} -> ${newPosition}, isFinished ${previousIsFinished} -> ${newIsFinished}`);
+      console.log(`[Apollo Drizzle] Обновление локального состояния: позиция ${oldPosition} -> ${newPosition}, isFinished ${previousIsFinished} -> ${newIsFinished}`);
       
-      // Обновляем положение игрока в Supabase
-      await updatePlayerPosition(user.id, newPosition);
+      // ВАЖНО: НЕ вызываем updatePlayerPosition здесь, так как GameService уже обновил Supabase
+      // Только обновляем локальное состояние Apollo
       
       // Обновляем локальное состояние с флагом isFinished
       const updatedPlayer = {...currentPlayer};
@@ -86,7 +86,7 @@ export const useApolloDrizzle = () => {
       currentPlayerVar(updatedPlayer);
       console.log('[Apollo Drizzle] Локальное состояние обновлено:', updatedPlayer);
     } catch (error) {
-      console.error('[Apollo Drizzle] Ошибка при обновлении позиции:', error);
+      console.error('[Apollo Drizzle] Ошибка при обновлении локального состояния:', error);
       // Только если компонент все еще смонтирован
       if (isMounted.current) {
         errorVar(error instanceof Error ? error.message : 'Ошибка обновления позиции');
