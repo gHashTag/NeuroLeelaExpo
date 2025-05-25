@@ -87,7 +87,8 @@ export const loadPlayerData = async (userId: string) => {
           isStart: false,
           isFinished: true, // Устанавливаем в true, чтобы активировать логику "нужна 6 для старта"
           consecutiveSixes: 0,
-          positionBeforeThreeSixes: 0
+          positionBeforeThreeSixes: 0,
+          needsReport: false // Изначально отчет не нужен
         };
         
         // Пытаемся сохранить нового игрока в Supabase
@@ -128,7 +129,8 @@ export const loadPlayerData = async (userId: string) => {
         isStart: false,
         isFinished: true,
         consecutiveSixes: 0,
-        positionBeforeThreeSixes: 0
+        positionBeforeThreeSixes: 0,
+        needsReport: false // Изначально отчет не нужен
       };
       
       currentPlayerVar(initialPlayerData as Player);
@@ -147,6 +149,44 @@ export const loadPlayerData = async (userId: string) => {
 export const updatePlayerInStorage = (updatedPlayer: Player) => {
   currentPlayerVar(updatedPlayer);
   savePlayerToStorage(updatedPlayer);
+};
+
+// Функция для отметки о завершении отчета
+export const markReportCompleted = async (userId: string) => {
+  try {
+    const currentPlayer = currentPlayerVar();
+    if (!currentPlayer) {
+      throw new Error('Игрок не найден');
+    }
+    
+    // Обновляем локальное состояние
+    const updatedPlayer = {
+      ...currentPlayer,
+      needsReport: false
+    };
+    
+    updatePlayerInStorage(updatedPlayer);
+    
+    // Пытаемся обновить в Supabase
+    try {
+      const { error } = await supabase
+        .from('players')
+        .update({ needsReport: false })
+        .eq('id', userId);
+      
+      if (error) {
+        console.log('[Apollo] Не удалось обновить needsReport в Supabase, но локальное состояние обновлено');
+      } else {
+        console.log('[Apollo] needsReport успешно сброшен в Supabase');
+      }
+    } catch (supabaseError) {
+      console.log('[Apollo] Supabase недоступен, используем только локальное состояние');
+    }
+    
+  } catch (error) {
+    console.error('[Apollo] Ошибка при сбросе needsReport:', error);
+    errorVar('Не удалось отметить отчет как завершенный');
+  }
 };
 
 // Функция для обновления позиции игрока

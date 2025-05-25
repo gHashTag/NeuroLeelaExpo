@@ -11,7 +11,8 @@ import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 import { ChatBot } from '@/components/chat/ChatBot';
 import { processGameStep } from '@/services/GameService';
 import { GameMessageService } from '@/services/GameMessageService';
-import { updatePlayerInStorage } from '@/lib/apollo-drizzle-client';
+import { updatePlayerInStorage, markReportCompleted } from '@/lib/apollo-drizzle-client';
+import { CreateReportModal } from '@/components/modals/CreateReportModal';
 // import { useTranslation } from 'react-i18next'
 // import { useAccount } from 'store'
 
@@ -32,6 +33,7 @@ const AppLogo = () => (
 const GameScreen: React.FC = () => {
   const [lastRoll, setLastRoll] = useState(1);
   const [currentMessage, setCurrentMessage] = useState<string>(GameMessageService.getWelcomeMessage());
+  const [showReportModal, setShowReportModal] = useState(false);
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { userData, getAvatarUrl } = useSupabase();
   const isWeb = Platform.OS === 'web';
@@ -131,6 +133,14 @@ const GameScreen: React.FC = () => {
       return 0;
     }
     
+    // Проверяем, нужен ли отчет перед следующим ходом
+    if (currentPlayer.needsReport) {
+      console.log('[Dice Roll] Требуется отчет перед следующим ходом');
+      setCurrentMessage("📝 Сначала напишите отчет о вашем текущем состоянии!");
+      setShowReportModal(true);
+      return 0;
+    }
+    
     try {
       // Генерируем случайное число от 1 до 6
       const roll = Math.floor(Math.random() * 6) + 1;
@@ -151,6 +161,9 @@ const GameScreen: React.FC = () => {
           // Обновляем сообщение
           setCurrentMessage(message);
           
+          // Определяем, нужен ли отчет - если позиция изменилась и игра активна
+          const needsReport = gameStep.loka !== gameStep.previous_loka && !gameStep.is_finished;
+          
           // Обновляем локальное состояние Apollo со всеми данными из gameStep
           const updatedPlayer = {
             ...currentPlayer,
@@ -159,12 +172,20 @@ const GameScreen: React.FC = () => {
             isFinished: gameStep.is_finished,
             consecutiveSixes: gameStep.consecutive_sixes,
             positionBeforeThreeSixes: gameStep.position_before_three_sixes,
+            needsReport: needsReport, // Устанавливаем флаг необходимости отчета
             message: message
           };
           
           // Используем updatePlayerInStorage для обновления состояния
           updatePlayerInStorage(updatedPlayer);
           console.log('[Dice Roll] Локальное состояние Apollo обновлено через updatePlayerInStorage:', updatedPlayer);
+          
+          // Если нужен отчет, показываем модал
+          if (needsReport) {
+            console.log('[Dice Roll] Требуется отчет, показываем модал');
+            setCurrentMessage("📝 Напишите отчет о вашем новом состоянии!");
+            setShowReportModal(true);
+          }
         })
         .catch(error => {
           console.error('[Dice Roll] Ошибка при обработке хода:', error);
@@ -174,6 +195,20 @@ const GameScreen: React.FC = () => {
     } catch (error) {
       console.error('[Dice Roll] Критическая ошибка при броске кубика:', error);
       return 0;
+    }
+  };
+
+  // Обработчик закрытия модала отчета
+  const handleReportModalClose = () => {
+    setShowReportModal(false);
+  };
+
+  // Обработчик успешного создания отчета
+  const handleReportSuccess = async () => {
+    if (currentPlayer) {
+      await markReportCompleted(currentPlayer.id);
+      setShowReportModal(false);
+      setCurrentMessage("✅ Отчет сохранен! Теперь можете продолжить путешествие.");
     }
   };
 
@@ -187,10 +222,21 @@ const GameScreen: React.FC = () => {
             {currentMessage}
           </Text>
         </View>
-        <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-full shadow-sm">
-          <Text className="text-sm text-gray-500 mr-2">Уровень:</Text>
-          <View className="bg-blue-50 w-8 h-8 rounded-full items-center justify-center shadow-inner">
-            <Text className="font-medium text-blue-600">{currentPlayer?.plan ?? '-'}</Text>
+        <View className="flex-row items-center space-x-3">
+          {/* Кнопка отчетов */}
+          <TouchableOpacity 
+            onPress={() => router.push('/reports')}
+            className="bg-purple-50 p-2 rounded-full shadow-sm"
+          >
+            <Ionicons name="book-outline" size={20} color="#8E24AA" />
+          </TouchableOpacity>
+          
+          {/* Индикатор уровня */}
+          <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-full shadow-sm">
+            <Text className="text-sm text-gray-500 mr-2">Уровень:</Text>
+            <View className="bg-blue-50 w-8 h-8 rounded-full items-center justify-center shadow-inner">
+              <Text className="font-medium text-blue-600">{currentPlayer?.plan ?? '-'}</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -246,6 +292,14 @@ const GameScreen: React.FC = () => {
               </View>
             </View>
           </ScrollView>
+          
+          {/* Модал отчета */}
+          <CreateReportModal
+            isVisible={showReportModal}
+            onClose={handleReportModalClose}
+            onSuccess={handleReportSuccess}
+            currentPlanNumber={currentPlayer?.plan || 1}
+          />
         </View>
       );
     }
@@ -287,6 +341,14 @@ const GameScreen: React.FC = () => {
             </View>
           )}
         </View>
+        
+        {/* Модал отчета */}
+        <CreateReportModal
+          isVisible={showReportModal}
+          onClose={handleReportModalClose}
+          onSuccess={handleReportSuccess}
+          currentPlanNumber={currentPlayer?.plan || 1}
+        />
       </View>
     );
   }
@@ -319,6 +381,14 @@ const GameScreen: React.FC = () => {
           </View>
         </View>
       </ScrollView>
+      
+      {/* Модал отчета */}
+      <CreateReportModal
+        isVisible={showReportModal}
+        onClose={handleReportModalClose}
+        onSuccess={handleReportSuccess}
+        currentPlanNumber={currentPlayer?.plan || 1}
+      />
     </View>
   );
 };

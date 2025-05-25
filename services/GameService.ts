@@ -93,6 +93,9 @@ export const updatePlayerPosition = async (userId: string, gameStep: GameStep, m
   console.log(`[GameService] updatePlayerPosition вызвана с userId=${userId}, gameStep:`, gameStep, `message=${message}`);
   
   try {
+    // Определяем, нужен ли отчет - если позиция изменилась и игра активна
+    const needsReport = gameStep.loka !== gameStep.previous_loka && !gameStep.is_finished;
+    
     const { error } = await supabase
       .from('players')
       .update({
@@ -101,6 +104,7 @@ export const updatePlayerPosition = async (userId: string, gameStep: GameStep, m
         consecutiveSixes: gameStep.consecutive_sixes,
         positionBeforeThreeSixes: gameStep.position_before_three_sixes,
         isFinished: gameStep.is_finished,
+        needsReport: needsReport, // Устанавливаем флаг необходимости отчета
         message: message || `Last move: ${gameStep.direction}`,
       })
       .eq('id', userId);
@@ -109,7 +113,7 @@ export const updatePlayerPosition = async (userId: string, gameStep: GameStep, m
       console.error('[GameService] Error updating player position:', error);
       throw new Error('Failed to update player position');
     } else {
-      console.log(`[GameService] updatePlayerPosition успешно обновила позицию в Supabase`);
+      console.log(`[GameService] updatePlayerPosition успешно обновила позицию в Supabase, needsReport=${needsReport}`);
     }
   } catch (error) {
     console.error('[GameService] Критическая ошибка при обновлении Supabase:', error);
