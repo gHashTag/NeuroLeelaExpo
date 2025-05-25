@@ -206,12 +206,12 @@ export const ChatBot = () => {
     
     setMessages(prev => {
       // Избегаем дублирования игровых сообщений одного типа подряд
-      const lastMessage = prev[prev.length - 1];
-      if (lastMessage?.toolInvocations?.[0]?.toolName === toolName && 
-          lastMessage?.toolInvocations?.[0]?.result?.planNumber === data.planNumber) {
+      const firstMessage = prev[0];
+      if (firstMessage?.toolInvocations?.[0]?.toolName === toolName && 
+          firstMessage?.toolInvocations?.[0]?.result?.planNumber === data.planNumber) {
         return prev;
       }
-      return [...prev, gameMessage];
+      return [gameMessage, ...prev]; // Добавляем в начало массива
     });
   };
 
@@ -238,7 +238,7 @@ export const ChatBot = () => {
       content: input.trim()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages(prev => [userMessage, ...prev]);
     setInput('');
     setIsLoading(true);
 
@@ -270,7 +270,8 @@ export const ChatBot = () => {
 
 Если игрок спрашивает о конкретном плане, дай подробное объяснение его духовного значения.`
             },
-            ...[...messages, userMessage].map(msg => ({
+            // Обращаем порядок сообщений для API (от старых к новым)
+            ...[userMessage, ...messages].reverse().map(msg => ({
               role: msg.role,
               content: msg.content
             }))
@@ -317,12 +318,12 @@ export const ChatBot = () => {
         toolInvocations: toolInvocations.length > 0 ? toolInvocations : undefined
       };
 
-      setMessages(prev => [...prev, responseMessage]);
+      setMessages(prev => [responseMessage, ...prev]);
     } catch (error) {
       console.error('Ошибка ИИ:', error);
       // Fallback к мок ответам только в случае ошибки
       const mockResponse = generateMockResponse(userMessage.content);
-      setMessages(prev => [...prev, mockResponse]);
+      setMessages(prev => [mockResponse, ...prev]);
     } finally {
       setIsLoading(false);
     }
@@ -463,7 +464,7 @@ export const ChatBot = () => {
         content: `🎲 Выпало ${roll}! ${result.message}`
       };
       
-      setMessages(prev => [...prev, resultMessage]);
+      setMessages(prev => [resultMessage, ...prev]);
       
     } catch (error) {
       console.error('Ошибка при броске кубика:', error);
@@ -472,7 +473,7 @@ export const ChatBot = () => {
         role: 'assistant',
         content: `🎲 Выпало ${roll}, но произошла ошибка при обработке хода. Попробуйте еще раз.`
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [errorMessage, ...prev]);
     }
 
     return roll;
@@ -509,7 +510,7 @@ export const ChatBot = () => {
         content: `✅ Ваш отчет о плане ${currentPlayer.plan} успешно сохранен! Теперь вы можете продолжить путешествие.`
       };
       
-      setMessages(prev => [...prev, successMessage]);
+      setMessages(prev => [successMessage, ...prev]);
 
     } catch (error) {
       console.error('Ошибка при отправке отчета:', error);
@@ -518,7 +519,7 @@ export const ChatBot = () => {
         role: 'assistant',
         content: `❌ Произошла ошибка при сохранении отчета. Попробуйте еще раз.`
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [errorMessage, ...prev]);
     }
   };
 
@@ -529,6 +530,14 @@ export const ChatBot = () => {
       </View>
       
       <ScrollView className="flex-1 p-3">
+        {isLoading && (
+          <View className="items-start flex flex-row mb-3">
+            <View className="bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg px-4 py-2 shadow-sm">
+              <Text className="text-gray-600">Лила размышляет... 🤔</Text>
+            </View>
+          </View>
+        )}
+        
         {messages.map((msg) => (
           <View key={msg.id}>
             <View 
@@ -557,14 +566,6 @@ export const ChatBot = () => {
             )}
           </View>
         ))}
-        
-        {isLoading && (
-          <View className="items-start flex flex-row mb-3">
-            <View className="bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg px-4 py-2 shadow-sm">
-              <Text className="text-gray-600">Лила размышляет... 🤔</Text>
-            </View>
-          </View>
-        )}
       </ScrollView>
       
       <View className="border-t border-gray-100 p-3">
