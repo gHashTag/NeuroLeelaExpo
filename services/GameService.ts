@@ -42,7 +42,10 @@ export const getUserByUserId = async (userId: string) => {
 export const getLastStep = (): GameStep => {
   const currentPlayer = currentPlayerVar();
   
+  console.log(`[GameService] getLastStep вызвана, currentPlayer:`, currentPlayer);
+  
   if (!currentPlayer) {
+    console.log(`[GameService] currentPlayer не найден, возвращаем начальное состояние`);
     // Возвращаем начальное состояние, если игрок не найден
     return {
       loka: 1,
@@ -55,7 +58,7 @@ export const getLastStep = (): GameStep => {
   }
   
   // Convert player data to gameStep format
-  return {
+  const gameStep = {
     loka: currentPlayer.plan || 1,
     previous_loka: currentPlayer.previous_plan || 0,
     direction: '',
@@ -63,6 +66,9 @@ export const getLastStep = (): GameStep => {
     position_before_three_sixes: currentPlayer.positionBeforeThreeSixes || 0,
     is_finished: currentPlayer.isFinished || false,
   };
+  
+  console.log(`[GameService] getLastStep возвращает gameStep:`, gameStep);
+  return gameStep;
 };
 
 // Helper function to get plan information
@@ -84,6 +90,23 @@ export const getPlan = (lokaNumber: number, languageCode = 'en'): Plan => {
 
 // Helper function to update player position
 export const updatePlayerPosition = async (userId: string, gameStep: GameStep, message?: string): Promise<void> => {
+  console.log(`[GameService] updatePlayerPosition вызвана с userId=${userId}, gameStep:`, gameStep, `message=${message}`);
+  
+  // ВРЕМЕННО: Отключаем Supabase для тестирования логики
+  console.log(`[GameService] ВРЕМЕННО: Пропускаем обновление Supabase, работаем только с локальным состоянием`);
+  console.log(`[GameService] Данные, которые должны были быть сохранены:`, {
+    plan: gameStep.loka,
+    previous_plan: gameStep.previous_loka,
+    consecutiveSixes: gameStep.consecutive_sixes,
+    positionBeforeThreeSixes: gameStep.position_before_three_sixes,
+    isFinished: gameStep.is_finished,
+    message: message || `Last move: ${gameStep.direction}`,
+  });
+  
+  // Имитируем успешное сохранение
+  console.log(`[GameService] updatePlayerPosition успешно "обновила" позицию (мок-режим)`);
+  
+  /* ОТКЛЮЧЕНО ДЛЯ ТЕСТИРОВАНИЯ:
   const { error } = await supabase
     .from('players')
     .update({
@@ -97,9 +120,12 @@ export const updatePlayerPosition = async (userId: string, gameStep: GameStep, m
     .eq('id', userId);
 
   if (error) {
-    console.error('Error updating player position:', error);
+    console.error('[GameService] Error updating player position:', error);
     throw new Error('Failed to update player position');
+  } else {
+    console.log(`[GameService] updatePlayerPosition успешно обновила позицию в Supabase`);
   }
+  */
 };
 
 // Helper function to handle consecutive sixes
