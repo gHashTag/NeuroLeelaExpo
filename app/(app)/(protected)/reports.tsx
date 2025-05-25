@@ -4,7 +4,6 @@ import { Header } from "@/components/layout/Header";
 import { ReportPost } from "@/components/reports/ReportPost";
 import { Text } from "@/components/ui/text";
 import Icon from "@expo/vector-icons/MaterialCommunityIcons";
-import { CreateReportModal } from "@/components/modals/CreateReportModal";
 import { supabase } from "@/config/supabase";
 import { useSupabase } from "@/context/supabase-provider";
 import { useGameState } from "@/context/game-state-provider";
@@ -21,7 +20,6 @@ interface Post {
 }
 
 export default function Reports() {
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [isRulesVisible, setIsRulesVisible] = useState(false);
   const [reportsPosts, setReportsPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -128,15 +126,6 @@ export default function Reports() {
     return `${min}-${max}`;
   };
 
-  // Обработка успешного создания отчета
-  const handleReportSuccess = () => {
-    setIsModalVisible(false);
-    fetchReports();
-  };
-
-  // Определяем, может ли пользователь создать отчет о текущем положении
-  const canCreateReport = !gameStateLoading && currentPlayer && currentPlayer.plan > 0;
-
   return (
     <ImageBackground
       source={require("@/assets/icons/BG.png")}
@@ -213,31 +202,23 @@ export default function Reports() {
           </View>
         </View>
 
-        {/* Информация о текущем плане и кнопка создания отчета */}
-        {canCreateReport && (
+        {/* Информация о текущем плане */}
+        {!gameStateLoading && currentPlayer && currentPlayer.plan > 0 && (
           <View className="bg-white bg-opacity-80 mx-4 mt-3 p-4 rounded-lg shadow-sm">
-            <View className="flex-row justify-between items-center">
-              <View className="flex-row items-center">
-                <View 
-                  className="w-10 h-10 rounded-full items-center justify-center mr-3"
-                  style={{ backgroundColor: chakraFilters[getPlanLevel(currentPlayer.plan)].color + '20' }}
-                >
-                  <Text className="font-bold" style={{ color: chakraFilters[getPlanLevel(currentPlayer.plan)].color }}>
-                    {currentPlayer.plan}
-                  </Text>
-                </View>
-                <View>
-                  <Text className="text-sm font-bold text-gray-800">Ваш текущий план:</Text>
-                  <Text className="text-xs text-gray-600">{chakraFilters[getPlanLevel(currentPlayer.plan)].label.split(' ')[0]}</Text>
-                </View>
-              </View>
-              
-              <TouchableOpacity 
-                className="bg-gradient-to-r from-purple-500 to-indigo-600 py-2 px-4 rounded-lg"
-                onPress={() => setIsModalVisible(true)}
+            <View className="flex-row items-center">
+              <View 
+                className="w-10 h-10 rounded-full items-center justify-center mr-3"
+                style={{ backgroundColor: chakraFilters[getPlanLevel(currentPlayer.plan)].color + '20' }}
               >
-                <Text className="text-white text-sm font-medium">Написать отчет</Text>
-              </TouchableOpacity>
+                <Text className="font-bold" style={{ color: chakraFilters[getPlanLevel(currentPlayer.plan)].color }}>
+                  {currentPlayer.plan}
+                </Text>
+              </View>
+              <View>
+                <Text className="text-sm font-bold text-gray-800">Ваш текущий план:</Text>
+                <Text className="text-xs text-gray-600">{chakraFilters[getPlanLevel(currentPlayer.plan)].label.split(' ')[0]}</Text>
+                <Text className="text-xs text-purple-600 mt-1">💬 Создавайте отчеты через чат в игре</Text>
+              </View>
             </View>
           </View>
         )}
@@ -298,26 +279,6 @@ export default function Reports() {
           {/* Создать новый отчет (плавающая кнопка) */}
           <View className="h-20" />
         </ScrollView>
-
-        {/* Плавающая кнопка для создания отчета */}
-        {canCreateReport && (
-          <TouchableOpacity
-            className="absolute right-6 bottom-6 bg-purple-600 w-14 h-14 rounded-full items-center justify-center shadow-lg"
-            onPress={() => setIsModalVisible(true)}
-          >
-            <Icon name="pencil-plus" size={24} color="white" />
-          </TouchableOpacity>
-        )}
-
-        {/* Модальное окно создания отчета */}
-        {canCreateReport && (
-          <CreateReportModal
-            isVisible={isModalVisible}
-            onClose={() => setIsModalVisible(false)}
-            onSuccess={handleReportSuccess}
-            currentPlanNumber={currentPlayer.plan}
-          />
-        )}
       </View>
     </ImageBackground>
   );

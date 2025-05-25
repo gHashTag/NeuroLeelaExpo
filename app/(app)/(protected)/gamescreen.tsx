@@ -11,8 +11,7 @@ import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 import { ChatBot } from '@/components/chat/ChatBot';
 import { processGameStep } from '@/services/GameService';
 import { GameMessageService } from '@/services/GameMessageService';
-import { updatePlayerInStorage, markReportCompleted } from '@/lib/apollo-drizzle-client';
-import { CreateReportModal } from '@/components/modals/CreateReportModal';
+import { updatePlayerInStorage } from '@/lib/apollo-drizzle-client';
 // import { useTranslation } from 'react-i18next'
 // import { useAccount } from 'store'
 
@@ -33,7 +32,6 @@ const AppLogo = () => (
 const GameScreen: React.FC = () => {
   const [lastRoll, setLastRoll] = useState(1);
   const [currentMessage, setCurrentMessage] = useState<string>(GameMessageService.getWelcomeMessage());
-  const [showReportModal, setShowReportModal] = useState(false);
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { userData, getAvatarUrl } = useSupabase();
   const isWeb = Platform.OS === 'web';
@@ -136,8 +134,7 @@ const GameScreen: React.FC = () => {
     // Проверяем, нужен ли отчет перед следующим ходом
     if (currentPlayer.needsReport) {
       console.log('[Dice Roll] Требуется отчет перед следующим ходом');
-      setCurrentMessage("📝 Сначала напишите отчет о вашем текущем состоянии!");
-      setShowReportModal(true);
+      setCurrentMessage("📝 Сначала напишите отчет в чате о вашем текущем состоянии!");
       return 0;
     }
     
@@ -180,11 +177,10 @@ const GameScreen: React.FC = () => {
           updatePlayerInStorage(updatedPlayer);
           console.log('[Dice Roll] Локальное состояние Apollo обновлено через updatePlayerInStorage:', updatedPlayer);
           
-          // Если нужен отчет, показываем модал
+          // Если нужен отчет, показываем сообщение в чате
           if (needsReport) {
-            console.log('[Dice Roll] Требуется отчет, показываем модал');
-            setCurrentMessage("📝 Напишите отчет о вашем новом состоянии!");
-            setShowReportModal(true);
+            console.log('[Dice Roll] Требуется отчет, показываем сообщение в чате');
+            setCurrentMessage("📝 Напишите отчет в чате о вашем новом состоянии!");
           }
         })
         .catch(error => {
@@ -195,20 +191,6 @@ const GameScreen: React.FC = () => {
     } catch (error) {
       console.error('[Dice Roll] Критическая ошибка при броске кубика:', error);
       return 0;
-    }
-  };
-
-  // Обработчик закрытия модала отчета
-  const handleReportModalClose = () => {
-    setShowReportModal(false);
-  };
-
-  // Обработчик успешного создания отчета
-  const handleReportSuccess = async () => {
-    if (currentPlayer) {
-      await markReportCompleted(currentPlayer.id);
-      setShowReportModal(false);
-      setCurrentMessage("✅ Отчет сохранен! Теперь можете продолжить путешествие.");
     }
   };
 
@@ -292,14 +274,6 @@ const GameScreen: React.FC = () => {
               </View>
             </View>
           </ScrollView>
-          
-          {/* Модал отчета */}
-          <CreateReportModal
-            isVisible={showReportModal}
-            onClose={handleReportModalClose}
-            onSuccess={handleReportSuccess}
-            currentPlanNumber={currentPlayer?.plan || 1}
-          />
         </View>
       );
     }
@@ -341,14 +315,6 @@ const GameScreen: React.FC = () => {
             </View>
           )}
         </View>
-        
-        {/* Модал отчета */}
-        <CreateReportModal
-          isVisible={showReportModal}
-          onClose={handleReportModalClose}
-          onSuccess={handleReportSuccess}
-          currentPlanNumber={currentPlayer?.plan || 1}
-        />
       </View>
     );
   }
@@ -381,14 +347,6 @@ const GameScreen: React.FC = () => {
           </View>
         </View>
       </ScrollView>
-      
-      {/* Модал отчета */}
-      <CreateReportModal
-        isVisible={showReportModal}
-        onClose={handleReportModalClose}
-        onSuccess={handleReportSuccess}
-        currentPlanNumber={currentPlayer?.plan || 1}
-      />
     </View>
   );
 };
