@@ -26,7 +26,16 @@ export const PlanCard: React.FC<PlanCardProps> = ({
       purple: 'bg-purple-100 border-purple-300',
       blue: 'bg-blue-100 border-blue-300',
       gold: 'bg-yellow-100 border-yellow-300',
-      violet: 'bg-violet-100 border-violet-300'
+      violet: 'bg-violet-100 border-violet-300',
+      red: 'bg-red-100 border-red-300',
+      brown: 'bg-amber-100 border-amber-300',
+      gray: 'bg-gray-100 border-gray-300',
+      pink: 'bg-pink-100 border-pink-300',
+      orange: 'bg-orange-100 border-orange-300',
+      yellow: 'bg-yellow-100 border-yellow-300',
+      black: 'bg-gray-800 border-gray-600',
+      white: 'bg-white border-gray-200',
+      clear: 'bg-blue-50 border-blue-200'
     };
     return colorMap[color as keyof typeof colorMap] || 'bg-gray-100 border-gray-300';
   };
@@ -37,7 +46,16 @@ export const PlanCard: React.FC<PlanCardProps> = ({
       purple: 'text-purple-800',
       blue: 'text-blue-800',
       gold: 'text-yellow-800',
-      violet: 'text-violet-800'
+      violet: 'text-violet-800',
+      red: 'text-red-800',
+      brown: 'text-amber-800',
+      gray: 'text-gray-800',
+      pink: 'text-pink-800',
+      orange: 'text-orange-800',
+      yellow: 'text-yellow-800',
+      black: 'text-white',
+      white: 'text-gray-800',
+      clear: 'text-blue-800'
     };
     return colorMap[color as keyof typeof colorMap] || 'text-gray-800';
   };
@@ -79,7 +97,16 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         planInfo.color === 'purple' ? 'bg-purple-300' :
         planInfo.color === 'blue' ? 'bg-blue-300' :
         planInfo.color === 'gold' ? 'bg-yellow-300' :
-        planInfo.color === 'violet' ? 'bg-violet-300' : 'bg-gray-300'
+        planInfo.color === 'violet' ? 'bg-violet-300' :
+        planInfo.color === 'red' ? 'bg-red-300' :
+        planInfo.color === 'brown' ? 'bg-amber-300' :
+        planInfo.color === 'gray' ? 'bg-gray-300' :
+        planInfo.color === 'pink' ? 'bg-pink-300' :
+        planInfo.color === 'orange' ? 'bg-orange-300' :
+        planInfo.color === 'yellow' ? 'bg-yellow-300' :
+        planInfo.color === 'black' ? 'bg-gray-600' :
+        planInfo.color === 'white' ? 'bg-gray-200' :
+        planInfo.color === 'clear' ? 'bg-blue-200' : 'bg-gray-300'
       }`} />
     </View>
   );
