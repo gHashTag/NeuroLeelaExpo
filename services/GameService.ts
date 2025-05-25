@@ -298,6 +298,9 @@ export const processGameStep = async (
     };
     const gameMessage = GameMessageService.generateMessage(messageContext);
 
+    // Сохраняем изменения в базе данных
+    await updatePlayerPosition(userId, gameStep, gameMessage.text);
+
     console.log(`[GameService] Игра началась! Перемещаемся на позицию ${START_LOKA}`);
     return {
       gameStep,
@@ -333,6 +336,9 @@ export const processGameStep = async (
       consecutiveSixes: 0
     };
     const gameMessage = GameMessageService.generateMessage(messageContext);
+    
+    // Сохраняем изменения в базе данных
+    await updatePlayerPosition(userId, gameStep, gameMessage.text);
     
     return {
       gameStep,
@@ -400,6 +406,9 @@ export const processGameStep = async (
     consecutiveSixes: newConsecutive
   };
   const gameMessage = GameMessageService.generateMessage(messageContext);
+
+  // Сохраняем изменения в базе данных
+  await updatePlayerPosition(userId, gameStep, gameMessage.text);
 
   console.log(`[GameService] processGameStep завершение:`, { gameStep, plan: newPlan, direction: localizedDirection, message: gameMessage.text });
   // Return the result
