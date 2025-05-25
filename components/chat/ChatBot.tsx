@@ -43,6 +43,7 @@ export const ChatBot = () => {
     setIsLoading(true);
 
     try {
+      // Сначала пробуем реальный API
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -56,8 +57,12 @@ export const ChatBot = () => {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Ошибка сети');
+      // Если API недоступен, используем мок ответы
+      if (!response.ok || response.headers.get('content-type')?.includes('text/html')) {
+        console.log('API недоступен, используем мок ответы');
+        const mockResponse = generateMockResponse(userMessage.content);
+        setMessages(prev => [...prev, mockResponse]);
+        return;
       }
 
       const reader = response.body?.getReader();
@@ -103,15 +108,74 @@ export const ChatBot = () => {
       setMessages(prev => [...prev, responseMessage]);
     } catch (error) {
       console.error('Ошибка чата:', error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'Извините, произошла ошибка. Попробуйте позже. 🙏'
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      // Используем мок ответ в случае ошибки
+      const mockResponse = generateMockResponse(userMessage.content);
+      setMessages(prev => [...prev, mockResponse]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Функция для генерации мок ответов от Лилы
+  const generateMockResponse = (userInput: string): Message => {
+    const input = userInput.toLowerCase();
+    
+    // Проверяем, спрашивает ли пользователь о конкретном плане
+    const planMatch = input.match(/план\s*(\d+)|позиция\s*(\d+)|(\d+)/);
+    const planNumber = planMatch ? parseInt(planMatch[1] || planMatch[2] || planMatch[3]) : null;
+    
+    let content = '';
+    let toolInvocations: ToolInvocation[] = [];
+    
+    if (planNumber && planNumber >= 1 && planNumber <= 72) {
+      content = `Намасте! 🙏 Позвольте мне рассказать вам о плане ${planNumber}. Это особое место на пути самопознания.`;
+      
+      // Создаем мок tool invocation для карточки плана
+      const planInfo = getPlanInfo(planNumber);
+      toolInvocations = [{
+        toolCallId: `mock-${Date.now()}`,
+        toolName: 'createPlanCard',
+        state: 'result',
+        result: {
+          type: 'plan-card',
+          planNumber,
+          planInfo,
+          isCurrentPosition: false,
+          timestamp: new Date().toISOString()
+        }
+      }];
+    } else if (input.includes('привет') || input.includes('hi') || input.includes('hello')) {
+      content = 'Намасте! 🙏 Добро пожаловать в игру самопознания! Я - Лила, ваш духовный проводник. Спросите меня о любом плане (1-72) или поделитесь своими мыслями о духовном пути.';
+    } else if (input.includes('помощь') || input.includes('help')) {
+      content = 'Я могу помочь вам понять значение планов игры Лила! 🎭\n\nПопробуйте спросить:\n• "Что означает план 10?"\n• "Расскажи о позиции 23"\n• "Объясни план 68"\n\nИли просто поделитесь своими мыслями о духовном пути! ✨';
+    } else {
+      content = 'Намасте! 🙏 Ваши слова несут глубокий смысл. В игре Лила каждый момент - это возможность для самопознания. Расскажите мне больше о том, что вас интересует, или спросите о конкретном плане игры.';
+    }
+    
+    return {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content,
+      toolInvocations: toolInvocations.length > 0 ? toolInvocations : undefined
+    };
+  };
+
+  // Функция для получения информации о плане
+  const getPlanInfo = (planNumber: number) => {
+    const plansData: Record<number, { name: string; description: string; element: string; color: string }> = {
+      1: { name: "Рождение", description: "Начало духовного пути", element: "🌱", color: "green" },
+      10: { name: "Майя (Иллюзия)", description: "Понимание природы реальности", element: "🎭", color: "purple" },
+      23: { name: "Небеса", description: "Состояние блаженства", element: "☁️", color: "blue" },
+      41: { name: "Добрые дела", description: "Карма служения", element: "🤝", color: "gold" },
+      68: { name: "Космическое сознание", description: "Высшее просветление", element: "🕉️", color: "violet" }
+    };
+    
+    return plansData[planNumber] || {
+      name: `План ${planNumber}`,
+      description: "Особый этап духовного развития на пути к самопознанию",
+      element: "✨",
+      color: "blue"
+    };
   };
 
   const renderToolInvocation = (toolInvocation: ToolInvocation) => {
