@@ -1,6 +1,7 @@
 import { GameStep, Plan } from '../types';
 import { supabase } from '../config/supabase';
 import { currentPlayerVar } from '../lib/apollo-drizzle-client';
+import { GameMessageService, GameContext } from './GameMessageService';
 
 const directionMap: { [key: string]: { ru: string; en: string } } = {
   'stop 🛑': { ru: 'Стоп 🛑', en: 'Stop 🛑' },
@@ -82,7 +83,7 @@ export const getPlan = (lokaNumber: number, languageCode = 'en'): Plan => {
 };
 
 // Helper function to update player position
-export const updatePlayerPosition = async (userId: string, gameStep: GameStep): Promise<void> => {
+export const updatePlayerPosition = async (userId: string, gameStep: GameStep, message?: string): Promise<void> => {
   const { error } = await supabase
     .from('players')
     .update({
@@ -91,7 +92,7 @@ export const updatePlayerPosition = async (userId: string, gameStep: GameStep): 
       consecutiveSixes: gameStep.consecutive_sixes,
       positionBeforeThreeSixes: gameStep.position_before_three_sixes,
       isFinished: gameStep.is_finished,
-      message: `Last move: ${gameStep.direction}`,
+      message: message || `Last move: ${gameStep.direction}`,
     })
     .eq('id', userId);
 
@@ -260,7 +261,8 @@ export const processGameStep = async (
 ): Promise<{ 
   gameStep: GameStep; 
   plan: Plan; 
-  direction: string 
+  direction: string;
+  message: string;
 }> => {
   console.log(`[GameService] processGameStep начало с roll=${roll}, userId=${userId}`);
   // Получаем текущее состояние игры из локального состояния Apollo
@@ -285,11 +287,23 @@ export const processGameStep = async (
     // Get the plan information for the new loka
     const newPlan = getPlan(START_LOKA, languageCode);
 
+    // Генерируем динамическое сообщение
+    const messageContext: GameContext = {
+      currentPlan: START_LOKA,
+      previousPlan: WIN_LOKA,
+      roll,
+      direction: 'step 🚶🏼',
+      isFinished: false,
+      consecutiveSixes: 0
+    };
+    const gameMessage = GameMessageService.generateMessage(messageContext);
+
     console.log(`[GameService] Игра началась! Перемещаемся на позицию ${START_LOKA}`);
     return {
       gameStep,
       plan: newPlan,
       direction: 'Игра началась! 🎮',
+      message: gameMessage.text,
     };
   }
   
@@ -309,10 +323,22 @@ export const processGameStep = async (
 
     const newPlan = getPlan(WIN_LOKA, languageCode);
     
+    // Генерируем сообщение для ожидания шестерки
+    const messageContext: GameContext = {
+      currentPlan: WIN_LOKA,
+      previousPlan: currentState.previous_loka,
+      roll,
+      direction: 'stop 🛑',
+      isFinished: true,
+      consecutiveSixes: 0
+    };
+    const gameMessage = GameMessageService.generateMessage(messageContext);
+    
     return {
       gameStep,
       plan: newPlan,
       direction: 'Для начала игры нужно выбросить 6! 🎲',
+      message: gameMessage.text,
     };
   }
   
@@ -364,12 +390,24 @@ export const processGameStep = async (
     directionMap[direction]?.['en'] || 
     direction;
 
-  console.log(`[GameService] processGameStep завершение:`, { gameStep, plan: newPlan, direction: localizedDirection });
+  // Генерируем динамическое сообщение для хода
+  const messageContext: GameContext = {
+    currentPlan: finalLoka,
+    previousPlan: currentState.loka,
+    roll,
+    direction,
+    isFinished: isGameFinished,
+    consecutiveSixes: newConsecutive
+  };
+  const gameMessage = GameMessageService.generateMessage(messageContext);
+
+  console.log(`[GameService] processGameStep завершение:`, { gameStep, plan: newPlan, direction: localizedDirection, message: gameMessage.text });
   // Return the result
   return {
     gameStep,
     plan: newPlan,
     direction: localizedDirection,
+    message: gameMessage.text,
   };
 };
 

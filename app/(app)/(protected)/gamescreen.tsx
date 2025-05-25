@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 import { ChatBot } from '@/components/chat/ChatBot';
 import { processGameStep } from '@/services/GameService';
+import { GameMessageService } from '@/services/GameMessageService';
 // import { useTranslation } from 'react-i18next'
 // import { useAccount } from 'store'
 
@@ -29,6 +30,7 @@ const AppLogo = () => (
 
 const GameScreen: React.FC = () => {
   const [lastRoll, setLastRoll] = useState(1);
+  const [currentMessage, setCurrentMessage] = useState<string>(GameMessageService.getWelcomeMessage());
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { userData, getAvatarUrl } = useSupabase();
   const isWeb = Platform.OS === 'web';
@@ -36,6 +38,18 @@ const GameScreen: React.FC = () => {
   
   // Apollo Drizzle — единый источник истины
   const { currentPlayer, isLoading, error, movePlayer } = useApolloDrizzle();
+
+  // Обновляем сообщение при изменении состояния игрока
+  useEffect(() => {
+    if (currentPlayer) {
+      if (currentPlayer.plan === 68 && currentPlayer.isFinished) {
+        setCurrentMessage("🎲 Бросьте 6, чтобы начать путь самопознания!");
+      } else if (currentPlayer.message && currentPlayer.message !== 'Last move: ') {
+        // Если есть сообщение от последнего хода, используем его
+        setCurrentMessage(currentPlayer.message);
+      }
+    }
+  }, [currentPlayer]);
 
   // Определяем макет в зависимости от ширины экрана
   const getLayout = () => {
@@ -128,9 +142,13 @@ const GameScreen: React.FC = () => {
       console.log(`[Dice Roll] Вызываем processGameStep с roll=${roll}, id=${currentPlayer.id}`);
       
       processGameStep(roll, currentPlayer.id)
-        .then(({ gameStep, direction }) => {
+        .then(({ gameStep, direction, message }) => {
           console.log(`[Dice Roll] Результат processGameStep:`, gameStep);
           console.log(`[Dice Roll] Новая позиция: ${gameStep.loka}, направление: ${direction}, isFinished: ${gameStep.is_finished}`);
+          console.log(`[Dice Roll] Сообщение: ${message}`);
+          
+          // Обновляем сообщение
+          setCurrentMessage(message);
           
           // Обновляем положение игрока и его статус (isFinished)
           movePlayer(gameStep.loka, gameStep.is_finished);
@@ -148,14 +166,12 @@ const GameScreen: React.FC = () => {
 
   // Custom header component
   const AppHeader = () => (
-    <View className="bg-white py-3 px-5 border-b border-gray-100 z-10 shadow-sm">
+    <View className="bg-white py-4 px-5 border-b border-gray-100 z-10 shadow-sm">
       <View className="flex-row items-center justify-between w-full space-x-4">
         <AppLogo />
-        <View className="flex-1 min-w-0">
-          <Text className="text-xs text-center text-gray-500 truncate">
-            {currentPlayer?.plan === 68 && currentPlayer?.isFinished
-              ? "Бросьте 6 на кубике, чтобы начать путь самопознания" 
-              : "Игра Лила — это древний путь самопознания, ведущий к Космическому Сознанию."}
+        <View className="flex-1 min-w-0 px-2">
+          <Text className="text-sm text-center text-gray-700 font-medium leading-relaxed">
+            {currentMessage}
           </Text>
         </View>
         <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-full shadow-sm">
