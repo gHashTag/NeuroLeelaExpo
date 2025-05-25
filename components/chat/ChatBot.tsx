@@ -35,6 +35,7 @@ export const ChatBot = () => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [lastRoll, setLastRoll] = useState(1);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   
   // Игровое состояние
   const { currentPlayer } = useApolloDrizzle();
@@ -150,6 +151,64 @@ export const ChatBot = () => {
         return "Опишите свой опыт и размышления...";
     }
   };
+
+  // Функция для загрузки истории чата
+  const loadChatHistory = async () => {
+    if (!user || historyLoaded) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('chat_history')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(20); // Загружаем последние 20 диалогов
+
+      if (error) {
+        console.error('Ошибка загрузки истории чата:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const historyMessages: Message[] = [];
+        
+        // Преобразуем историю в сообщения чата
+        data.reverse().forEach((record) => {
+          // Добавляем сообщение пользователя
+          historyMessages.push({
+            id: `history-user-${record.id}`,
+            role: 'user',
+            content: record.user_message
+          });
+          
+          // Добавляем ответ ИИ
+          historyMessages.push({
+            id: `history-ai-${record.id}`,
+            role: 'assistant',
+            content: record.ai_response
+          });
+        });
+
+        // Добавляем историю в начало (после приветственного сообщения)
+        setMessages(prev => [
+          prev[0], // Приветственное сообщение
+          ...historyMessages,
+          ...prev.slice(1) // Остальные сообщения
+        ]);
+      }
+
+      setHistoryLoaded(true);
+    } catch (error) {
+      console.error('Ошибка при загрузке истории чата:', error);
+    }
+  };
+
+  // Загружаем историю чата при инициализации
+  useEffect(() => {
+    if (user && !historyLoaded) {
+      loadChatHistory();
+    }
+  }, [user, historyLoaded]);
 
   // Добавляем игровые сообщения при изменении состояния игрока
   useEffect(() => {
@@ -593,10 +652,40 @@ export const ChatBot = () => {
     return roll;
   };
 
+  // Функция для очистки истории чата (для тестирования)
+  const clearChatHistory = () => {
+    setMessages([
+      { 
+        id: '1', 
+        role: 'assistant', 
+        content: 'Намасте! 🙏 Я - Лила, богиня игры самопознания. Я здесь, чтобы помочь вам понять глубокий смысл вашего духовного путешествия. Спросите меня о любом плане (1-72) или просто поделитесь своими мыслями!' 
+      },
+    ]);
+    setHistoryLoaded(false);
+  };
+
   return (
     <View className="flex-1 bg-white flex flex-col overflow-hidden">
       <View className="bg-gradient-to-r from-purple-50 to-blue-50 p-3 border-b border-gray-100">
-        <Text className="text-base font-medium text-gray-700">🕉️ Лила - Духовный проводник</Text>
+        <View className="flex-row justify-between items-center">
+          <View className="flex-1">
+            <Text className="text-base font-medium text-gray-700">🕉️ Лила - Духовный проводник</Text>
+            {currentPlayer && (
+              <Text className="text-xs text-gray-500 mt-1">
+                {currentPlayer.needsReport 
+                  ? `📝 Ожидается отчет о плане ${currentPlayer.plan}` 
+                  : `🎲 План ${currentPlayer.plan} • Готов к следующему ходу`
+                }
+              </Text>
+            )}
+          </View>
+          <TouchableOpacity 
+            onPress={clearChatHistory}
+            className="bg-purple-100 rounded-full p-2"
+          >
+            <Ionicons name="refresh" size={16} color="#6A0DAD" />
+          </TouchableOpacity>
+        </View>
       </View>
       
       <ScrollView className="flex-1 p-3">
