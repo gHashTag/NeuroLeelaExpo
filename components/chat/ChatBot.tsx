@@ -1,19 +1,95 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useChat } from 'ai/react';
+
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 export const ChatBot = () => {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: '/api/chat',
-    initialMessages: [
-      { 
-        id: '1', 
-        role: 'assistant', 
-        content: 'Намасте! 🙏 Я - Лила, богиня игры самопознания. Я здесь, чтобы помочь вам понять глубокий смысл вашего духовного путешествия. Чем могу помочь?' 
-      },
-    ],
-  });
+  const [messages, setMessages] = useState<Message[]>([
+    { 
+      id: '1', 
+      role: 'assistant', 
+      content: 'Намасте! 🙏 Я - Лила, богиня игры самопознания. Я здесь, чтобы помочь вам понять глубокий смысл вашего духовного путешествия. Чем могу помочь?' 
+    },
+  ]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: input.trim()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [...messages, userMessage].map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }))
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Ошибка сети');
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let assistantMessage = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+          
+          for (const line of lines) {
+            if (line.startsWith('0:')) {
+              const content = line.slice(3, -1); // Убираем '0:"' и '"'
+              assistantMessage += content;
+            }
+          }
+        }
+      }
+
+      const responseMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: assistantMessage || 'Извините, произошла ошибка при получении ответа.'
+      };
+
+      setMessages(prev => [...prev, responseMessage]);
+    } catch (error) {
+      console.error('Ошибка чата:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'Извините, произошла ошибка. Попробуйте позже. 🙏'
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <View className="flex-1 bg-white flex flex-col overflow-hidden">
@@ -56,7 +132,7 @@ export const ChatBot = () => {
         <View className="flex-row items-center">
           <TextInput
             value={input}
-            onChangeText={(text) => handleInputChange({ target: { value: text } } as any)}
+            onChangeText={setInput}
             placeholder="Задайте вопрос о вашем духовном пути..."
             placeholderTextColor="rgba(107,114,128,0.5)"
             className="flex-1 bg-gray-50 rounded-full px-4 py-2 mr-2 text-gray-700"

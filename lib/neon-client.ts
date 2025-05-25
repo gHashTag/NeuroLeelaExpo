@@ -8,7 +8,7 @@ neonConfig.fetchConnectionCache = true;
 // Строка подключения для Neon
 // Формат: postgresql://[user]:[password]@[hostname]/[database]
 // Эту строку нужно взять из консоли Neon.tech (Connection Details)
-const connectionString = process.env.DATABASE_URL || 'postgresql://default:Gz8aVR1jQ2yt@ep-young-king-44118946.us-east-2.aws.neon.tech/neondb?sslmode=require';
+const connectionString = process.env.EXPO_PUBLIC_DATABASE_URL!
 
 // Маскируем пароль в логах для отладки
 const maskedConnectionString = connectionString.replace(/postgresql:\/\/([^:]+):([^@]+)@/, 'postgresql://$1:***@');

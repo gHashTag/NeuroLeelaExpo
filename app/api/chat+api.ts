@@ -4,7 +4,7 @@ import { streamText } from 'ai';
 // Конфигурация для OpenRouter
 const openrouter = createOpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPENROUTER_API_KEY,
+  apiKey: process.env.EXPO_PUBLIC_OPENROUTER_API_KEY,
 });
 
 export async function POST(request: Request) {
