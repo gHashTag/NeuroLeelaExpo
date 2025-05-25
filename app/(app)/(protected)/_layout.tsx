@@ -30,30 +30,9 @@ export default function ProtectedLayout() {
         initialRouteName="gamescreen"
         screenOptions={{
           headerShown: false,
+          // Скрываем табы полностью, чтобы удалить нижнюю навигацию
           tabBarStyle: {
-            backgroundColor: colorScheme === "dark" ? "rgba(31, 41, 55, 0.9)" : "rgba(255, 255, 255, 0.95)",
-            borderTopWidth: 1,
-            borderTopColor: colorScheme === "dark" ? "rgba(55, 65, 81, 0.5)" : "rgba(229, 231, 235, 0.7)",
-            elevation: 4,
-            shadowOpacity: 0.1,
-            shadowRadius: 4,
-            shadowOffset: { width: 0, height: -2 },
-            height: isWeb ? 64 : 56, // Больше высота для веб
-            paddingBottom: isWeb ? 8 : 4,
-            // Убеждаемся, что табы находятся поверх фона
-            position: 'relative',
-            zIndex: 10,
-           
-          },
-          tabBarActiveBackgroundColor: 'white',
-          tabBarActiveTintColor: activeColor,
-          tabBarInactiveTintColor: inactiveColor,
-          tabBarInactiveBackgroundColor: 'white',
-          tabBarShowLabel: true,
-          tabBarLabelStyle: {
-            fontSize: 12,
-            fontWeight: '500',
-            marginTop: 2,
+            display: 'none',
           },
         }}
       >
@@ -61,36 +40,24 @@ export default function ProtectedLayout() {
           name="gamescreen"
           options={{
             title: "Главная",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="home-outline" color={color} size={size} />
-            ),
           }}
         />
         <Tabs.Screen
           name="reports"
           options={{
             title: "Игра",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="game-controller-outline" color={color} size={size} />
-            ),
           }}
         />
         <Tabs.Screen
           name="aichat"
           options={{
             title: "Правила",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="book-outline" color={color} size={size} />
-            ),
           }}
         />
         <Tabs.Screen
           name="settings"
           options={{
             title: "Профиль",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="person-outline" color={color} size={size} />
-            ),
           }}
         />
       </Tabs>

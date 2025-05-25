@@ -14,25 +14,26 @@ export const loadPlayerData = async (userId: string) => {
     errorVar(null);
     
     // ВРЕМЕННО: Используем мок-данные вместо Neon
-    console.log('Using mock player data for user:', userId);
+    console.log('[Apollo] Загрузка данных игрока для userId:', userId);
     
     const mockPlayerData = {
       id: userId,
-      plan: 1,
+      plan: 68, // Начинаем с позиции победы (68)
       previous_plan: 0,
-      message: 'Начало пути',
+      message: 'Бросьте 6 чтобы начать путь самопознания',
       avatar: null,
       fullName: null,
       intention: null,
       isStart: false,
-      isFinished: false,
+      isFinished: true, // Устанавливаем в true, чтобы активировать логику "нужна 6 для старта"
       consecutiveSixes: 0,
       positionBeforeThreeSixes: 0
     };
     
     currentPlayerVar(mockPlayerData as Player);
+    console.log('[Apollo] Данные игрока загружены:', mockPlayerData);
   } catch (error) {
-    console.error('Ошибка при загрузке данных игрока:', error);
+    console.error('[Apollo] Ошибка при загрузке данных игрока:', error);
     errorVar('Не удалось загрузить данные игрока');
   } finally {
     isLoadingVar(false);
@@ -53,16 +54,19 @@ export const updatePlayerPosition = async (userId: string, newPosition: number) 
     const oldPosition = currentPlayer.plan;
     
     // ВРЕМЕННО: Только обновляем локальное состояние без Neon
-    console.log(`Updating mock player position from ${oldPosition} to ${newPosition} for user:`, userId);
+    console.log(`[Apollo] Обновление позиции игрока с ${oldPosition} на ${newPosition} для userId:`, userId);
     
-    // Обновляем локальное состояние
+    // Обращаем внимание, что флаг isFinished обновляется отдельно в компоненте
+    // через параметр, а здесь мы просто обновляем позицию
     currentPlayerVar({
       ...currentPlayer,
       plan: newPosition,
-      previous_plan: oldPosition
+      previous_plan: oldPosition,
     });
+    
+    console.log('[Apollo] Позиция игрока обновлена:', currentPlayerVar());
   } catch (error) {
-    console.error('Ошибка при обновлении позиции:', error);
+    console.error('[Apollo] Ошибка при обновлении позиции:', error);
     errorVar('Не удалось обновить позицию игрока');
   } finally {
     isLoadingVar(false);

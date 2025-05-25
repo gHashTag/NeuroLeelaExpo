@@ -4,6 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "expo start",
+    "dev": "expo start --dev-client",
     "web": "expo start --web",
     "android": "expo start --android",
     "ios": "expo start --ios",
@@ -12,7 +13,8 @@
     "browser-tools": "npx @agentdeskai/browser-tools-server@1.2.0",
     "db:generate": "drizzle-kit generate:pg",
     "db:migrate": "drizzle-kit migrate:pg",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test": "vitest run"
   },
   "dependencies": {
     "@apollo/client": "^3.13.8",
@@ -43,7 +45,8 @@
     "graphql": "^16.11.0",
     "metro-core": "^0.82.1",
     "nativewind": "^4.1.23",
-    "pg": "^8.15.6",
+    "node-fetch": "^3.3.2",
+    "pg": "^8.16.0",
     "pinata": "^2.0.1",
     "postgres": "^3.4.5",
     "react": "18.3.1",

@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSupabase } from '@/context/supabase-provider';
 
 // Временный флаг для режима разработки - можно установить true для пропуска аутентификации
-const DEV_MODE = false; 
+const DEV_MODE = true; 
 
 export default function Index() {
   const router = useRouter();
@@ -24,7 +24,10 @@ export default function Index() {
     // Режим разработки для быстрого доступа к игровому экрану
     if (DEV_MODE) {
       console.log('Index.tsx: DEV_MODE - redirect to gamescreen');
-      router.replace('/(app)/(protected)/gamescreen');
+      // Добавляем небольшую задержку для монтирования Root Layout
+      setTimeout(() => {
+        router.replace('/(app)/(protected)/gamescreen');
+      }, 100);
       return;
     }
 

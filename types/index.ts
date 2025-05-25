@@ -7,6 +7,13 @@ export type GameStep = {
   direction: string;
 };
 
+export interface Plan {
+  key: string;
+  title: string;
+  description?: string;
+  content?: string;
+}
+
 export interface GemT {
   id: string;
   plan: number;

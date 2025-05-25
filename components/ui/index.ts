@@ -17,3 +17,4 @@ export * from './toast';
 export * from './ApolloStatus';
 export * from './PlayerStats';
 export * from './PlayerInfoApollo';
+export * from './PlayerInfoConsolidated';

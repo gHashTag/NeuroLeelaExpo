@@ -53,35 +53,35 @@ export const PlayerStats = () => {
 
   if (loading) {
     return (
-      <View className="bg-black/10 backdrop-blur-2xl rounded-2xl p-4 shadow-xl border border-white/10">
-        <ActivityIndicator size="small" color="#E0AAFF" />
+      <View className="bg-white rounded-lg p-4 shadow-sm">
+        <ActivityIndicator size="small" color="#3B82F6" />
       </View>
     );
   }
 
   return (
-    <View className="bg-black/10 backdrop-blur-2xl rounded-2xl p-5 shadow-xl border border-white/10">
-      <Text className="text-lg font-semibold text-white/90 mb-4">Статистика игрока</Text>
+    <View className="bg-white rounded-lg p-4 shadow-sm">
+      <Text className="text-lg font-medium text-gray-700 mb-3">Статистика игрока</Text>
       
-      <View className="space-y-4">
-        <View className="flex-row justify-between items-center bg-white/5 backdrop-blur-xl p-4 rounded-xl border border-white/5">
-          <Text className="text-white/80">Текущая позиция:</Text>
-          <View className="bg-gradient-to-r from-pink-600/30 to-purple-600/30 backdrop-blur-xl px-4 py-2 rounded-full">
-            <Text className="font-semibold text-white">{stats.currentPosition}</Text>
+      <View className="space-y-3">
+        <View className="flex-row justify-between items-center bg-gray-50 p-3 rounded-lg">
+          <Text className="text-gray-600">Текущая позиция:</Text>
+          <View className="bg-blue-50 px-3 py-1 rounded-full">
+            <Text className="font-medium text-blue-600">{stats.currentPosition}</Text>
           </View>
         </View>
         
-        <View className="flex-row justify-between items-center bg-white/5 backdrop-blur-xl p-4 rounded-xl border border-white/5">
-          <Text className="text-white/80">Лучшая позиция:</Text>
-          <View className="bg-gradient-to-r from-pink-600/30 to-purple-600/30 backdrop-blur-xl px-4 py-2 rounded-full">
-            <Text className="font-semibold text-white">{stats.highestPosition}</Text>
+        <View className="flex-row justify-between items-center bg-gray-50 p-3 rounded-lg">
+          <Text className="text-gray-600">Лучшая позиция:</Text>
+          <View className="bg-blue-50 px-3 py-1 rounded-full">
+            <Text className="font-medium text-blue-600">{stats.highestPosition}</Text>
           </View>
         </View>
         
-        <View className="flex-row justify-between items-center bg-white/5 backdrop-blur-xl p-4 rounded-xl border border-white/5">
-          <Text className="text-white/80">Игр сыграно:</Text>
-          <View className="bg-gradient-to-r from-indigo-600/30 to-blue-600/30 backdrop-blur-xl px-4 py-2 rounded-full">
-            <Text className="font-semibold text-white">{stats.gamesPlayed}</Text>
+        <View className="flex-row justify-between items-center bg-gray-50 p-3 rounded-lg">
+          <Text className="text-gray-600">Игр сыграно:</Text>
+          <View className="bg-blue-50 px-3 py-1 rounded-full">
+            <Text className="font-medium text-blue-600">{stats.gamesPlayed}</Text>
           </View>
         </View>
       </View>

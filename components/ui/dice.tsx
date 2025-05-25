@@ -6,7 +6,7 @@ export interface DiceProps {
   disabled?: boolean;
   rollDice: () => void;
   lastRoll: number;
-  size?: "small" | "medium" | "large";
+  size?: "extra-small" | "small" | "medium" | "large";
 }
 
 const Dice = ({
@@ -31,7 +31,12 @@ const Dice = ({
     }
 
     setIsAnimating(true);
-
+    
+    // Сначала вызываем rollDice() для обновления положения игрока
+    // Это позволяет сразу обновить состояние игры, не дожидаясь анимации
+    rollDice();
+    
+    // Затем запускаем анимацию вращения кубика
     spinValue.setValue(0);
     Animated.timing(spinValue, {
       toValue: 1,
@@ -39,11 +44,12 @@ const Dice = ({
       easing: Easing.cubic,
       useNativeDriver: true,
     }).start(() => {
-      rollDice();
+      // По окончании анимации сбрасываем состояние
       spinValue.setValue(0);
       setIsAnimating(false);
     });
 
+    // Анимируем масштабирование
     scaleValue.setValue(1);
     Animated.sequence([
       Animated.timing(scaleValue, {
@@ -58,6 +64,7 @@ const Dice = ({
       }),
     ]).start();
 
+    // Анимируем прозрачность
     opacityValue.setValue(0);
     Animated.timing(opacityValue, {
       toValue: 1,
@@ -68,13 +75,15 @@ const Dice = ({
 
   const getSize = () => {
     switch (size) {
+      case "extra-small":
+        return vs(40);
       case "small":
-        return vs(60);
+        return vs(55);
       case "large":
-        return vs(110);
+        return vs(80);
       case "medium":
       default:
-        return vs(85);
+        return vs(65);
     }
   };
   
@@ -102,9 +111,11 @@ const Dice = ({
   
   return (
     <View 
-      style={styles.diceContainer} 
+      style={[styles.diceContainer, { 
+        marginTop: size === "extra-small" ? 5 : 10,
+        marginBottom: size === "extra-small" ? 5 : 10
+      }]} 
       testID="dice-component"
-      // Используем pointerEvents для контроля взаимодействия 
       pointerEvents={pointerEventsValue}
     >
       <Pressable onPress={animateDice} style={styles.pressableArea}>
@@ -116,6 +127,7 @@ const Dice = ({
               height: getSize(),
               width: getSize(),
               opacity: opacityValue,
+              borderRadius: size === "extra-small" ? 8 : 10,
             },
           ]}
           source={getImage(lastRoll)}
@@ -130,12 +142,13 @@ const styles = StyleSheet.create({
   diceContainer: {
     alignItems: "center",
     alignSelf: "center",
-    marginTop: 30,
-    marginBottom: vs(12),
+    marginTop: 10,
+    marginBottom: vs(8),
   },
   pressableArea: {
     alignItems: "center",
     justifyContent: "center",
+    padding: 5,
   },
   image: {
     height: vs(90),

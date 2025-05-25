@@ -26,26 +26,26 @@ export const ChatBot = () => {
   };
 
   return (
-    <View className="flex-1 bg-black/10 backdrop-blur-2xl rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/10">
-      <View className="bg-white/5 backdrop-blur-xl p-4 border-b border-white/10">
-        <Text className="text-base font-semibold text-white/90">Духовный проводник</Text>
+    <View className="flex-1 bg-white flex flex-col overflow-hidden">
+      <View className="bg-gray-50 p-3 border-b border-gray-100">
+        <Text className="text-base font-medium text-gray-700">Духовный проводник</Text>
       </View>
       
-      <ScrollView className="flex-1 p-4">
+      <ScrollView className="flex-1 p-3">
         {chatHistory.map((msg, index) => (
           <View 
             key={index} 
-            className={`mb-4 ${msg.type === 'user' ? 'items-end' : 'items-start'} flex flex-row`}
+            className={`mb-3 ${msg.type === 'user' ? 'items-end' : 'items-start'} flex flex-row`}
           >
             <View 
-              className={`rounded-2xl px-5 py-3 max-w-[85%] ${
+              className={`rounded-lg px-4 py-2 max-w-[85%] ${
                 msg.type === 'user' 
-                  ? 'bg-gradient-to-r from-pink-600 to-purple-600 ml-auto shadow-lg' 
-                  : 'bg-white/10 backdrop-blur-xl shadow-lg border border-white/10'
+                  ? 'bg-blue-500 ml-auto shadow-sm' 
+                  : 'bg-gray-100 shadow-sm'
               }`}
             >
               <Text 
-                className={msg.type === 'user' ? 'text-white' : 'text-white/90'}
+                className={msg.type === 'user' ? 'text-white' : 'text-gray-800'}
               >
                 {msg.text}
               </Text>
@@ -54,19 +54,19 @@ export const ChatBot = () => {
         ))}
       </ScrollView>
       
-      <View className="border-t border-white/10 p-3 flex-row items-center">
+      <View className="border-t border-gray-100 p-3 flex-row items-center">
         <TextInput
           value={message}
           onChangeText={setMessage}
           placeholder="Задайте вопрос..."
-          placeholderTextColor="rgba(255,255,255,0.5)"
-          className="flex-1 bg-white/5 border border-white/10 backdrop-blur-xl rounded-full px-5 py-3 mr-3 text-white"
+          placeholderTextColor="rgba(107,114,128,0.5)"
+          className="flex-1 bg-gray-50 rounded-full px-4 py-2 mr-2 text-gray-700"
         />
         <TouchableOpacity 
           onPress={sendMessage} 
-          className="bg-gradient-to-r from-pink-600 to-purple-600 rounded-full p-4 shadow-lg"
+          className="bg-blue-500 rounded-full p-2 shadow-sm"
         >
-          <Ionicons name="send" size={18} color="white" />
+          <Ionicons name="send" size={16} color="white" />
         </TouchableOpacity>
       </View>
     </View>

@@ -45,13 +45,48 @@ export const useApolloDrizzle = () => {
   }, [user]);
 
   // Функция для обновления позиции игрока
-  const movePlayer = async (newPosition: number) => {
+  const movePlayer = async (newPosition: number, isFinishedFlag?: boolean) => {
     if (!user || !isMounted.current) return;
     
     try {
+      const currentPlayer = currentPlayerVar();
+      if (!currentPlayer) {
+        console.error('[Apollo Drizzle] Игрок не найден при попытке обновить позицию');
+        return;
+      }
+      
+      const oldPosition = currentPlayer.plan;
+      const previousIsFinished = currentPlayer.isFinished;
+      
+      // Определяем значение isFinished:
+      // 1. Если явно передан параметр isFinishedFlag, используем его
+      // 2. В противном случае оставляем текущее значение
+      const newIsFinished = isFinishedFlag !== undefined ? isFinishedFlag : previousIsFinished;
+      
+      console.log(`[Apollo Drizzle] Обновление игрока: позиция ${oldPosition} -> ${newPosition}, isFinished ${previousIsFinished} -> ${newIsFinished}`);
+      
+      // Обновляем положение игрока в Supabase
       await updatePlayerPosition(user.id, newPosition);
+      
+      // Обновляем локальное состояние с флагом isFinished
+      const updatedPlayer = {...currentPlayer};
+      updatedPlayer.plan = newPosition;
+      updatedPlayer.previous_plan = oldPosition;
+      updatedPlayer.isFinished = newIsFinished;
+      
+      // Обновляем сообщение в зависимости от состояния игры
+      if (newPosition === 68 && newIsFinished) {
+        updatedPlayer.message = 'Победа! 🕉 Бросьте 6, чтобы начать заново';
+      } else if (newIsFinished) {
+        updatedPlayer.message = 'Бросьте 6 чтобы начать путь самопознания';
+      } else {
+        updatedPlayer.message = 'Игра продолжается...';
+      }
+      
+      currentPlayerVar(updatedPlayer);
+      console.log('[Apollo Drizzle] Локальное состояние обновлено:', updatedPlayer);
     } catch (error) {
-      console.error('Error updating player position:', error);
+      console.error('[Apollo Drizzle] Ошибка при обновлении позиции:', error);
       // Только если компонент все еще смонтирован
       if (isMounted.current) {
         errorVar(error instanceof Error ? error.message : 'Ошибка обновления позиции');
