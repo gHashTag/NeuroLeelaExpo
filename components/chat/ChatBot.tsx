@@ -5,7 +5,7 @@ import { PlanCard } from './PlanCard';
 import { DiceInChat } from './DiceInChat';
 import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 import { processGameStep } from '@/services/GameService';
-import { updatePlayerInStorage, markReportCompleted } from '@/lib/apollo-drizzle-client';
+import { updatePlayerState, markReportCompleted } from '@/lib/apollo-drizzle-client';
 import { supabase } from '@/config/supabase';
 import { useSupabase } from '@/context/supabase-provider';
 
@@ -212,9 +212,17 @@ export const ChatBot = () => {
 
   // Добавляем игровые сообщения при изменении состояния игрока
   useEffect(() => {
+    console.log('🔄 [ChatBot] useEffect: состояние игрока изменилось', {
+      plan: currentPlayer?.plan,
+      previous_plan: currentPlayer?.previous_plan,
+      needsReport: currentPlayer?.needsReport,
+      isFinished: currentPlayer?.isFinished
+    });
+    
     if (currentPlayer) {
       // Если игрок переместился на новый план, показываем информацию о нем
       if (currentPlayer.plan !== currentPlayer.previous_plan && currentPlayer.plan > 0) {
+        console.log('🎯 [ChatBot] Игрок переместился на новый план:', currentPlayer.plan);
         const planInfo = getPlanInfo(currentPlayer.plan);
         addGameMessage('createPlanCard', {
           type: 'plan-card',
@@ -225,23 +233,15 @@ export const ChatBot = () => {
         }, `🎯 Вы достигли плана ${currentPlayer.plan}: "${planInfo.name}" ${planInfo.element}\n\n${planInfo.description}`);
       }
       
-      // Проверяем, нужно ли показать запрос отчета
-      if (currentPlayer.needsReport) {
-        const planInfo = getPlanInfo(currentPlayer.plan);
-        const prompt = getPlanPrompt(currentPlayer.plan);
-        addSimpleMessage(`📝 Время для отчета о плане ${currentPlayer.plan}: "${planInfo.name}"\n\n${prompt}\n\n💡 Напишите ваши размышления и наблюдения в чате. После отправки отчета вы сможете продолжить игру.`);
-      }
-      // Показываем кубик только если отчет НЕ нужен и игрок может делать ход
-      else if (!currentPlayer.needsReport && currentPlayer.plan > 0) {
-        // Если игра завершена на плане 68
+      // Показываем начальный кубик только при первой загрузке, если игрок готов играть
+      if (!historyLoaded && !currentPlayer.needsReport && currentPlayer.plan > 0) {
+        console.log('🎲 [ChatBot] Показываем начальный кубик');
         if (currentPlayer.plan === 68 && currentPlayer.isFinished) {
           addGameMessage('showDice', {
             message: "🎲 Вы достигли Космического сознания! Бросьте 6, чтобы начать новый путь самопознания!",
             disabled: false
           });
-        } 
-        // Если игра не завершена
-        else if (!currentPlayer.isFinished) {
+        } else if (!currentPlayer.isFinished) {
           addGameMessage('showDice', {
             message: `🎲 Готовы к следующему шагу? Вы на плане ${currentPlayer.plan}`,
             disabled: false
@@ -249,7 +249,7 @@ export const ChatBot = () => {
         }
       }
     }
-  }, [currentPlayer?.needsReport, currentPlayer?.plan, currentPlayer?.isFinished, currentPlayer?.previous_plan]);
+  }, [currentPlayer?.plan, currentPlayer?.isFinished, currentPlayer?.previous_plan, historyLoaded]);
 
   // Функция для добавления простых сообщений от ассистента
   const addSimpleMessage = (content: string) => {
@@ -312,205 +312,203 @@ export const ChatBot = () => {
     setInput('');
     setIsLoading(true);
 
+    console.log('🎯 Начинаем обработку сообщения:', userInput);
+    console.log('🎮 Состояние игрока:', { 
+      needsReport: currentPlayer?.needsReport, 
+      plan: currentPlayer?.plan,
+      user: !!user 
+    });
+
+    // Добавляем таймаут для всей операции
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('TIMEOUT: Обработка сообщения зависла на более чем 10 секунд')), 10000);
+    });
+
     try {
-      // Проверяем, нужен ли отчет
-      if (currentPlayer?.needsReport && user) {
-        // Сохраняем отчет пользователя в базу данных
-        const { data: reportData, error: reportError } = await supabase
-          .from("reports")
-          .insert({
-            user_id: user.id,
-            plan_number: currentPlayer.plan,
-            content: userInput,
-            likes: 0,
-            comments: 0
-          })
-          .select()
-          .single();
-
-        if (reportError) {
-          console.error("Ошибка при создании отчета:", reportError);
-          throw reportError;
-        }
-
-        // Отмечаем отчет как завершенный
-        await markReportCompleted(user.id);
-
-        // Формируем контекст для ИИ с информацией о плане и отчете
-        const planInfo = getPlanInfo(currentPlayer.plan);
-        const systemPrompt = `Ты - Лила, богиня игры самопознания. Игрок только что написал отчет о своем опыте на плане ${currentPlayer.plan}: "${planInfo.name}" (${planInfo.description}).
-
-Отчет игрока: "${userInput}"
-
-Твоя задача:
-- Дать мудрый и сострадательный отклик на отчет игрока
-- Связать его опыт с духовным значением плана ${currentPlayer.plan}
-- Дать рекомендации для дальнейшего духовного развития
-- Поздравить с завершением отчета и предложить продолжить игру
-
-Отвечай с мудростью древних ведических текстов, будь сострадательной и понимающей. В конце обязательно скажи что-то вроде "Теперь вы готовы к следующему шагу на пути самопознания! 🎲"`;
-
-        const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.EXPO_PUBLIC_OPENROUTER_API_KEY}`,
-            'HTTP-Referer': 'https://neurolila.app',
-            'X-Title': 'NeuroLila Game'
-          },
-          body: JSON.stringify({
-            model: 'meta-llama/llama-3.1-8b-instruct:free',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: userInput }
-            ],
-            temperature: 0.7,
-            max_tokens: 500
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`OpenRouter API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const aiResponse = data.choices?.[0]?.message?.content || 
-          `✅ Благодарю за ваш искренний отчет о плане ${currentPlayer.plan}! Ваши размышления записаны в дневник духовного пути. Теперь вы готовы к следующему шагу на пути самопознания! 🎲`;
-
-        // Сохраняем диалог в истории чата
-        await supabase
-          .from("chat_history")
-          .insert({
-            user_id: user.id,
-            plan_number: currentPlayer.plan,
-            user_message: userInput,
-            ai_response: aiResponse,
-            report_id: reportData.id,
-            message_type: 'report'
-          });
-
-        const responseMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: 'assistant',
-          content: aiResponse
-        };
-
-        setMessages(prev => [responseMessage, ...prev]);
-
-        // После ответа ИИ на отчет автоматически показываем кубик для следующего хода
-        setTimeout(() => {
-          if (currentPlayer.plan === 68 && currentPlayer.isFinished) {
-            addGameMessage('showDice', {
-              message: "🎲 Вы достигли Космического сознания! Бросьте 6, чтобы начать новый путь самопознания!",
-              disabled: false
-            });
-          } else {
-            addGameMessage('showDice', {
-              message: `🎲 Готовы к следующему шагу? Бросьте кубик для продолжения путешествия!`,
-              disabled: false
-            });
-          }
-        }, 1000);
-
-        return; // Выходим, так как это был отчет
-      }
-
-      // Обычная обработка сообщений (если отчет не нужен)
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.EXPO_PUBLIC_OPENROUTER_API_KEY}`,
-          'HTTP-Referer': 'https://neurolila.app',
-          'X-Title': 'NeuroLila Game'
-        },
-        body: JSON.stringify({
-          model: 'meta-llama/llama-3.1-8b-instruct:free',
-          messages: [
-            {
-              role: 'system',
-              content: `Ты - Лила, богиня игры самопознания. Ты мудрая наставница, которая помогает игрокам понять глубокий смысл их путешествия по игровому полю. 
-
-Твоя роль:
-- Объяснять значение позиций на игровом поле (планы 1-72)
-- Давать духовные советы и наставления
-- Помогать игрокам понять уроки, которые несет каждый ход
-- Отвечать с мудростью древних ведических текстов
-- Быть сострадательной и понимающей
-
-Отвечай кратко, но глубоко. Используй эмодзи для выражения эмоций. Всегда помни, что игра Лила - это путь к самопознанию и космическому сознанию.
-
-Если игрок спрашивает о конкретном плане, дай подробное объяснение его духовного значения.`
-            },
-            // Обращаем порядок сообщений для API (от старых к новым)
-            ...[userMessage, ...messages].reverse().map(msg => ({
-              role: msg.role,
-              content: msg.content
-            }))
-          ],
-          temperature: 0.7,
-          max_tokens: 500
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`OpenRouter API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const aiResponse = data.choices?.[0]?.message?.content || 'Извините, произошла ошибка при получении ответа.';
-
-      // Сохраняем обычный диалог в истории чата
-      if (user) {
-        await supabase
-          .from("chat_history")
-          .insert({
-            user_id: user.id,
-            plan_number: currentPlayer?.plan || 1,
-            user_message: userInput,
-            ai_response: aiResponse,
-            message_type: 'question'
-          });
-      }
-
-      // Проверяем, упоминает ли ИИ конкретный план для создания карточки
-      const planMatch = aiResponse.match(/план[а-я\s]*(\d+)|позици[а-я\s]*(\d+)|(\d+)[а-я\s]*план/i);
-      const planNumber = planMatch ? parseInt(planMatch[1] || planMatch[2] || planMatch[3]) : null;
-
-      let toolInvocations: ToolInvocation[] = [];
+      const result = await Promise.race([
+        handleSubmitCore(userInput),
+        timeoutPromise
+      ]);
       
-      // Если ИИ упоминает план, создаем карточку
-      if (planNumber && planNumber >= 1 && planNumber <= 72) {
-        const planInfo = getPlanInfo(planNumber);
-        toolInvocations = [{
-          toolCallId: `ai-${Date.now()}`,
-          toolName: 'createPlanCard',
-          state: 'result',
-          result: {
-            type: 'plan-card',
-            planNumber,
-            planInfo,
-            isCurrentPosition: false,
-            timestamp: new Date().toISOString()
-          }
-        }];
+      console.log('🏁 Обработка сообщения завершена успешно');
+      
+    } catch (error) {
+      console.error('❌ Критическая ошибка или таймаут:', error);
+      
+      // Показываем пользователю понятное сообщение об ошибке
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        content: `🙏 Прошу прощения, произошла техническая ошибка или превышено время ожидания. ${
+          currentPlayer?.needsReport 
+            ? 'Ваш отчет может быть не сохранен. Попробуйте написать его еще раз.' 
+            : 'Попробуйте задать вопрос еще раз.'
+        }\n\nОшибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`
+      };
+      
+      setMessages(prev => [errorMessage, ...prev]);
+    } finally {
+      setIsLoading(false);
+      console.log('🏁 Обработка сообщения завершена (finally)');
+    }
+  };
+
+  // Выносим основную логику в отдельную функцию для лучшего контроля
+  const handleSubmitCore = async (userInput: string) => {
+    // Проверяем, нужен ли отчет
+    if (currentPlayer?.needsReport && user) {
+      console.log('📝 Обрабатываем отчет для плана:', currentPlayer.plan);
+      
+      // Сначала отмечаем отчет как завершенный (это быстрая локальная операция)
+      console.log('🔄 Отмечаем отчет как завершенный...');
+      try {
+        await markReportCompleted(user.id);
+        console.log('✅ Отчет отмечен как завершенный');
+      } catch (markError) {
+        console.error('⚠️ Ошибка отметки завершения (не критично):', markError);
       }
+
+      // Создаем духовный комментарий Лилы к отчету
+      const planInfo = getPlanInfo(currentPlayer.plan);
+      const spiritualCommentary = generateSpiritualCommentary(userInput, currentPlayer.plan, planInfo);
+
+      console.log('💬 Лила комментирует отчет');
 
       const responseMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: aiResponse,
-        toolInvocations: toolInvocations.length > 0 ? toolInvocations : undefined
+        content: spiritualCommentary
       };
 
-      setMessages(prev => [responseMessage, ...prev]); // Добавляем в начало
+      setMessages(prev => [responseMessage, ...prev]);
+
+      // Сохраняем отчет в фоне (не блокируя UI)
+      console.log('💾 Начинаем сохранение отчета в фоне...');
+      saveReportInBackground(userInput, spiritualCommentary);
+
+      // Показываем кубик для следующего хода через небольшую паузу
+      setTimeout(() => {
+        console.log('🎲 Показываем кубик для следующего хода...');
+        
+        const nextStepMessage = currentPlayer.plan === 68 && currentPlayer.isFinished 
+          ? "🎉 Вы достигли Космического Сознания! Готовы начать новый путь самопознания?"
+          : "Отлично! Теперь вы готовы к следующему шагу на пути самопознания.";
+          
+        const diceMessage = currentPlayer.plan === 68 && currentPlayer.isFinished
+          ? "🎲 Бросьте 6, чтобы начать новый путь самопознания!"
+          : "🎲 Готовы к следующему шагу? Бросьте кубик для продолжения путешествия!";
+
+        const nextDiceMessage: Message = {
+          id: `post-report-dice-${Date.now()}`,
+          role: 'assistant',
+          content: nextStepMessage,
+          toolInvocations: [{
+            toolCallId: `post-report-dice-tool-${Date.now()}`,
+            toolName: 'showDice',
+            state: 'result',
+            result: {
+              message: diceMessage,
+              disabled: false
+            }
+          }]
+        };
+        
+        setMessages(prev => [nextDiceMessage, ...prev]);
+      }, 1500); // Небольшая пауза для лучшего UX
+
+      return; // Выходим, так как это был отчет
+    }
+
+    // Обычная обработка сообщений (если отчет не нужен)
+    console.log('💭 Обрабатываем обычное сообщение');
+    
+    // Используем мок ответ вместо API
+    const mockResponse = generateMockResponse(userInput);
+    setMessages(prev => [mockResponse, ...prev]);
+    
+    // Сохраняем обычный диалог в истории чата в фоне
+    if (user) {
+      saveHistoryInBackground(userInput, mockResponse.content, 'question');
+    }
+  };
+
+  // Функция для сохранения отчета в фоне
+  const saveReportInBackground = async (userInput: string, aiResponse: string) => {
+    if (!user || !currentPlayer) return;
+
+    try {
+      console.log('🔄 Фоновое сохранение отчета...');
+      
+      // Пытаемся сохранить отчет с коротким таймаутом
+      const reportSavePromise = supabase
+        .from("reports")
+        .insert({
+          user_id: user.id,
+          plan_number: currentPlayer.plan,
+          content: userInput,
+          likes: 0,
+          comments: 0
+        })
+        .select()
+        .single();
+
+      const reportTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Background save timeout')), 2000);
+      });
+
+      const { data: reportData } = await Promise.race([
+        reportSavePromise,
+        reportTimeoutPromise
+      ]) as any;
+
+      console.log('✅ Отчет сохранен в фоне:', reportData?.id);
+
+      // Сохраняем диалог в истории
+      await supabase
+        .from("chat_history")
+        .insert({
+          user_id: user.id,
+          plan_number: currentPlayer.plan,
+          user_message: userInput,
+          ai_response: aiResponse,
+          report_id: reportData?.id,
+          message_type: 'report'
+        });
+
+      console.log('✅ История диалога сохранена в фоне');
+
     } catch (error) {
-      console.error('Ошибка ИИ:', error);
-      // Fallback к мок ответам только в случае ошибки
-      const mockResponse = generateMockResponse(userInput);
-      setMessages(prev => [mockResponse, ...prev]); // Добавляем в начало
-    } finally {
-      setIsLoading(false);
+      console.warn('⚠️ Фоновое сохранение не удалось (не критично):', error);
+      // Можно добавить в очередь для повторной попытки позже
+    }
+  };
+
+  // Функция для сохранения истории в фоне
+  const saveHistoryInBackground = async (userInput: string, aiResponse: string, messageType: string) => {
+    if (!user || !currentPlayer) return;
+
+    try {
+      console.log('🔄 Фоновое сохранение истории...');
+      
+      const historySavePromise = supabase
+        .from("chat_history")
+        .insert({
+          user_id: user.id,
+          plan_number: currentPlayer.plan || 1,
+          user_message: userInput,
+          ai_response: aiResponse,
+          message_type: messageType
+        });
+
+      const historyTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Background history save timeout')), 2000);
+      });
+
+      await Promise.race([historySavePromise, historyTimeoutPromise]);
+      console.log('✅ История сохранена в фоне');
+
+    } catch (error) {
+      console.warn('⚠️ Фоновое сохранение истории не удалось (не критично):', error);
     }
   };
 
@@ -556,6 +554,64 @@ export const ChatBot = () => {
       content,
       toolInvocations: toolInvocations.length > 0 ? toolInvocations : undefined
     };
+  };
+
+  // Функция для генерации духовного комментария Лилы к отчету
+  const generateSpiritualCommentary = (userReport: string, planNumber: number, planInfo: any): string => {
+    const reportLength = userReport.length;
+    const hasDeepReflection = userReport.toLowerCase().includes('чувствую') || 
+                             userReport.toLowerCase().includes('понимаю') || 
+                             userReport.toLowerCase().includes('осознаю') ||
+                             userReport.toLowerCase().includes('ощущаю');
+    
+    // Базовые духовные комментарии в зависимости от плана
+    const spiritualWisdom = [
+      `🙏 Намасте! Ваш отчет о плане ${planNumber} "${planInfo.name}" наполнен искренностью.`,
+      `✨ Благодарю за ваши размышления о "${planInfo.name}". Каждое слово отражает ваш внутренний путь.`,
+      `🕉️ Ваш опыт на плане ${planNumber} показывает глубину вашего самопознания.`,
+      `🌟 Прекрасно! Ваши мысли о "${planInfo.name}" раскрывают мудрость души.`
+    ];
+
+    // Дополнительные комментарии в зависимости от качества отчета
+    const qualityComments = reportLength > 100 && hasDeepReflection 
+      ? [
+          "Ваша глубокая рефлексия показывает истинное понимание духовного пути.",
+          "Я вижу, как вы искренне исследуете свое внутреннее состояние.",
+          "Ваша осознанность на этом плане поможет вам в дальнейшем путешествии."
+        ]
+      : [
+          "Каждый шаг на пути самопознания ценен, даже самый маленький.",
+          "Продолжайте наблюдать за своими внутренними процессами.",
+          "Ваша искренность важнее длины отчета."
+        ];
+
+    // Мудрость в зависимости от номера плана
+    const planWisdom = planNumber <= 9 
+      ? "На начальных планах важно заложить крепкий фундамент самопознания."
+      : planNumber <= 36 
+      ? "Вы проходите важные уроки эмоционального и ментального развития."
+      : planNumber <= 54
+      ? "Эти планы учат вас балансу между материальным и духовным."
+      : "Вы приближаетесь к высшим планам сознания. Каждый шаг теперь особенно важен.";
+
+    // Заключительная мотивация
+    const motivation = [
+      "Продолжайте свой путь с открытым сердцем! 💖",
+      "Каждый ваш шаг приближает к космическому сознанию! 🌌",
+      "Ваша душа растет и развивается с каждым планом! 🌱",
+      "Доверьтесь процессу - Вселенная ведет вас к истине! ✨"
+    ];
+
+    // Собираем финальный комментарий
+    const randomWisdom = spiritualWisdom[Math.floor(Math.random() * spiritualWisdom.length)];
+    const randomQuality = qualityComments[Math.floor(Math.random() * qualityComments.length)];
+    const randomMotivation = motivation[Math.floor(Math.random() * motivation.length)];
+
+    return `${randomWisdom}
+
+${randomQuality} ${planWisdom}
+
+${randomMotivation}`;
   };
 
   const renderToolInvocation = (toolInvocation: ToolInvocation) => {
@@ -606,16 +662,23 @@ export const ChatBot = () => {
 
   // Обработчик броска кубика
   const handleDiceRoll = async (): Promise<number> => {
-    if (!user || !currentPlayer) return 1;
+    console.log('🎲 [ChatBot] handleDiceRoll: начало функции', { user: !!user, currentPlayer: !!currentPlayer });
+    
+    if (!user || !currentPlayer) {
+      console.log('🎲 [ChatBot] handleDiceRoll: нет пользователя или игрока, возвращаем 1');
+      return 1;
+    }
 
     const roll = Math.floor(Math.random() * 6) + 1;
+    console.log('🎲 [ChatBot] handleDiceRoll: сгенерирован бросок:', roll);
     setLastRoll(roll);
 
     try {
-      console.log(`🎲 Бросок кубика: ${roll}, текущая позиция: ${currentPlayer.plan}`);
+      console.log(`🎲 [ChatBot] Бросок кубика: ${roll}, текущая позиция: ${currentPlayer.plan}`);
       
+      console.log('🎲 [ChatBot] вызываем processGameStep...');
       const result = await processGameStep(roll, user.id);
-      console.log('🎮 Результат хода:', result);
+      console.log('🎮 [ChatBot] Результат хода:', result);
       
       // Обновляем состояние в localStorage и Apollo
       const updatedPlayer = {
@@ -628,16 +691,51 @@ export const ChatBot = () => {
         needsReport: result.gameStep.loka !== result.gameStep.previous_loka && !result.gameStep.is_finished,
         message: result.message
       };
-      updatePlayerInStorage(updatedPlayer);
       
-      // Добавляем только сообщение о результате броска (карточка плана покажется автоматически через useEffect)
+      console.log('🎲 [ChatBot] обновляем состояние игрока:', updatedPlayer);
+      updatePlayerState(updatedPlayer);
+      
+      // Добавляем сообщение о результате броска
       const resultMessage: Message = {
         id: `dice-result-${Date.now()}`,
         role: 'assistant',
         content: `🎲 Выпало ${roll}! ${result.message}`
       };
       
+      console.log('🎲 [ChatBot] добавляем сообщение о результате:', resultMessage);
       setMessages(prev => [resultMessage, ...prev]);
+      
+      // Через небольшую задержку показываем следующий кубик или запрос отчета
+      setTimeout(() => {
+        if (updatedPlayer.needsReport) {
+          // Если нужен отчет, показываем запрос
+          const planInfo = getPlanInfo(updatedPlayer.plan);
+          const prompt = getPlanPrompt(updatedPlayer.plan);
+          const reportMessage: Message = {
+            id: `report-request-${Date.now()}`,
+            role: 'assistant',
+            content: `📝 Время для отчета о плане ${updatedPlayer.plan}: "${planInfo.name}"\n\n${prompt}\n\n💡 Напишите ваши размышления и наблюдения в чате. После отправки отчета вы сможете продолжить игру.`
+          };
+          setMessages(prev => [reportMessage, ...prev]);
+        } else {
+          // Если отчет не нужен, сразу показываем кубик для следующего хода
+          const nextDiceMessage: Message = {
+            id: `post-report-dice-${Date.now()}`,
+            role: 'assistant',
+            content: "Отлично! Теперь вы готовы к следующему шагу на пути самопознания.",
+            toolInvocations: [{
+              toolCallId: `post-report-dice-tool-${Date.now()}`,
+              toolName: 'showDice',
+              state: 'result',
+              result: {
+                message: `🎲 Готовы к следующему шагу? Бросьте кубик для продолжения путешествия!`,
+                disabled: false
+              }
+            }]
+          };
+          setMessages(prev => [nextDiceMessage, ...prev]);
+        }
+      }, 1000); // Задержка 1 секунда для плавности
       
     } catch (error) {
       console.error('Ошибка при броске кубика:', error);
@@ -699,21 +797,21 @@ export const ChatBot = () => {
         
         {messages.map((msg) => (
           <View key={msg.id}>
-            <View 
+          <View 
               className={`mb-3 ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-row`}
-            >
-              <View 
-                className={`rounded-lg px-4 py-2 max-w-[85%] ${
+          >
+            <View 
+              className={`rounded-lg px-4 py-2 max-w-[85%] ${
                   msg.role === 'user' 
-                    ? 'bg-blue-500 ml-auto shadow-sm' 
+                  ? 'bg-blue-500 ml-auto shadow-sm' 
                     : 'bg-gradient-to-r from-purple-100 to-blue-100 shadow-sm'
-                }`}
-              >
-                <Text 
+              }`}
+            >
+              <Text 
                   className={msg.role === 'user' ? 'text-white' : 'text-gray-800'}
-                >
+              >
                   {msg.content}
-                </Text>
+              </Text>
               </View>
             </View>
 
@@ -729,7 +827,7 @@ export const ChatBot = () => {
       
       <View className="border-t border-gray-100 p-3">
         <View className="flex-row items-center">
-          <TextInput
+        <TextInput
             value={input}
             onChangeText={setInput}
             placeholder={
@@ -737,12 +835,12 @@ export const ChatBot = () => {
                 ? "Напишите ваш отчет о духовном опыте..."
                 : "Спросите о плане или поделитесь мыслями..."
             }
-            placeholderTextColor="rgba(107,114,128,0.5)"
-            className="flex-1 bg-gray-50 rounded-full px-4 py-2 mr-2 text-gray-700"
+          placeholderTextColor="rgba(107,114,128,0.5)"
+          className="flex-1 bg-gray-50 rounded-full px-4 py-2 mr-2 text-gray-700"
             editable={!isLoading}
             onSubmitEditing={handleSubmit}
-          />
-          <TouchableOpacity 
+        />
+        <TouchableOpacity 
             onPress={handleSubmit} 
             disabled={isLoading}
             className={`rounded-full p-2 shadow-sm ${
@@ -754,7 +852,7 @@ export const ChatBot = () => {
               size={16} 
               color="white" 
             />
-          </TouchableOpacity>
+        </TouchableOpacity>
         </View>
       </View>
     </View>

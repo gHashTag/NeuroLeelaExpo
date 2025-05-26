@@ -11,7 +11,7 @@ import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 import { ChatBot } from '@/components/chat/ChatBot';
 import { processGameStep } from '@/services/GameService';
 import { GameMessageService } from '@/services/GameMessageService';
-import { updatePlayerInStorage } from '@/lib/apollo-drizzle-client';
+import { updatePlayerState } from '@/lib/apollo-drizzle-client';
 // import { useTranslation } from 'react-i18next'
 // import { useAccount } from 'store'
 
@@ -57,9 +57,9 @@ const GameScreen: React.FC = () => {
     // Extra large displays
     if (windowWidth > 1600) {
       return {
-        leftColumn: "w-1/5", 
-        centerColumn: "w-3/5", 
-        rightColumn: "w-1/5",
+        leftColumn: "hidden", // Убираем левую колонку
+        centerColumn: "w-2/5", // Уменьшаем центральную колонку
+        rightColumn: "w-3/5", // Расширяем правую колонку для чата
         padding: "p-5",
         gameBoardPadding: "p-4",
         maxWidth: "max-w-[1600px]"
@@ -68,9 +68,9 @@ const GameScreen: React.FC = () => {
     // Large displays
     else if (windowWidth > 1200) {
       return {
-        leftColumn: "w-1/4", 
-        centerColumn: "w-2/4", 
-        rightColumn: "w-1/4",
+        leftColumn: "hidden", // Убираем левую колонку
+        centerColumn: "w-2/5", // Уменьшаем центральную колонку
+        rightColumn: "w-3/5", // Расширяем правую колонку для чата
         padding: "p-4",
         gameBoardPadding: "p-3",
         maxWidth: "max-w-[1400px]"
@@ -79,9 +79,9 @@ const GameScreen: React.FC = () => {
     // Medium displays
     else if (windowWidth > 992) {
       return {
-        leftColumn: "w-1/5", 
-        centerColumn: "w-3/5", 
-        rightColumn: "w-1/5",
+        leftColumn: "hidden", // Убираем левую колонку
+        centerColumn: "w-2/5", // Уменьшаем центральную колонку
+        rightColumn: "w-3/5", // Расширяем правую колонку для чата
         padding: "p-3",
         gameBoardPadding: "p-2",
         maxWidth: "max-w-[1200px]"
@@ -90,9 +90,9 @@ const GameScreen: React.FC = () => {
     // Small displays
     else if (windowWidth > 768) {
       return {
-        leftColumn: "w-1/6", 
-        centerColumn: "w-4/6", 
-        rightColumn: "w-1/6",
+        leftColumn: "hidden", // Убираем левую колонку
+        centerColumn: "w-2/5", // Уменьшаем центральную колонку
+        rightColumn: "w-3/5", // Расширяем правую колонку для чата
         padding: "p-3",
         gameBoardPadding: "p-2",
         maxWidth: "max-w-full"
@@ -101,9 +101,9 @@ const GameScreen: React.FC = () => {
     // Tablets and mobile (landscape) 
     else if (windowWidth > 640 || isLandscape) {
       return {
-        leftColumn: "w-1/6", 
-        centerColumn: "w-4/6", 
-        rightColumn: "w-1/6",
+        leftColumn: "hidden", // Убираем левую колонку
+        centerColumn: "w-2/5", // Уменьшаем центральную колонку
+        rightColumn: "w-3/5", // Расширяем правую колонку для чата
         padding: "p-2",
         gameBoardPadding: "p-1",
         maxWidth: "max-w-full"
@@ -126,34 +126,45 @@ const GameScreen: React.FC = () => {
   
   // Функция броска кубика через Apollo Drizzle и GameService
   const rollDice = () => {
+    console.log('🎲 [GameScreen] rollDice: НАЧАЛО ФУНКЦИИ');
+    console.log('🎲 [GameScreen] rollDice: currentPlayer =', currentPlayer);
+    console.log('🎲 [GameScreen] rollDice: userData =', userData);
+    
     if (!currentPlayer) {
-      console.error('Игрок не найден - не могу бросить кубик');
+      console.error('🎲 [GameScreen] rollDice: Игрок не найден - не могу бросить кубик');
       return 0;
     }
     
     // Проверяем, нужен ли отчет перед следующим ходом
     if (currentPlayer.needsReport) {
-      console.log('[Dice Roll] Требуется отчет перед следующим ходом');
+      console.log('🎲 [GameScreen] rollDice: Требуется отчет перед следующим ходом');
       setCurrentMessage("📝 Сначала напишите отчет в чате о вашем текущем состоянии!");
+      return 0;
+    }
+    
+    // Проверяем наличие userData для получения user.id
+    if (!userData?.user_id) {
+      console.error('🎲 [GameScreen] rollDice: userData.user_id не найден!', userData);
+      setCurrentMessage("❌ Ошибка: пользователь не авторизован");
       return 0;
     }
     
     try {
       // Генерируем случайное число от 1 до 6
       const roll = Math.floor(Math.random() * 6) + 1;
-      console.log(`[Dice Roll] Бросок кубика: ${roll}, текущая позиция: ${currentPlayer.plan}, isFinished: ${currentPlayer.isFinished}`);
+      console.log(`🎲 [GameScreen] rollDice: Бросок кубика: ${roll}, текущая позиция: ${currentPlayer.plan}, isFinished: ${currentPlayer.isFinished}`);
       
       // Обновляем отображаемое значение кубика
       setLastRoll(roll);
       
       // Вызываем функцию processGameStep для обработки хода по правилам игры
-      console.log(`[Dice Roll] Вызываем processGameStep с roll=${roll}, id=${currentPlayer.id}`);
+      console.log(`🎲 [GameScreen] rollDice: Вызываем processGameStep с roll=${roll}, id=${userData.user_id}`);
       
-      processGameStep(roll, currentPlayer.id)
+      processGameStep(roll, userData.user_id)
         .then(({ gameStep, direction, message }) => {
-          console.log(`[Dice Roll] Результат processGameStep:`, gameStep);
-          console.log(`[Dice Roll] Новая позиция: ${gameStep.loka}, направление: ${direction}, isFinished: ${gameStep.is_finished}`);
-          console.log(`[Dice Roll] Сообщение: ${message}`);
+          console.log(`🎲 [GameScreen] rollDice: Результат processGameStep:`, gameStep);
+          console.log(`🎲 [GameScreen] rollDice: Новая позиция: ${gameStep.loka}, направление: ${direction}, isFinished: ${gameStep.is_finished}`);
+          console.log(`🎲 [GameScreen] rollDice: Сообщение: ${message}`);
           
           // Обновляем сообщение
           setCurrentMessage(message);
@@ -162,8 +173,7 @@ const GameScreen: React.FC = () => {
           const needsReport = gameStep.loka !== gameStep.previous_loka && !gameStep.is_finished;
           
           // Обновляем локальное состояние Apollo со всеми данными из gameStep
-          const updatedPlayer = {
-            ...currentPlayer,
+          const updates = {
             plan: gameStep.loka,
             previous_plan: gameStep.previous_loka,
             isFinished: gameStep.is_finished,
@@ -173,23 +183,31 @@ const GameScreen: React.FC = () => {
             message: message
           };
           
-          // Используем updatePlayerInStorage для обновления состояния
-          updatePlayerInStorage(updatedPlayer);
-          console.log('[Dice Roll] Локальное состояние Apollo обновлено через updatePlayerInStorage:', updatedPlayer);
+          // Используем updatePlayerState для обновления состояния
+          updatePlayerState(updates);
+          console.log('🎲 [GameScreen] rollDice: Локальное состояние Apollo обновлено через updatePlayerState:', updates);
+          
+          // Проверяем, что состояние действительно обновилось
+          setTimeout(() => {
+            const verifyPlayer = currentPlayer;
+            console.log('🎲 [GameScreen] rollDice: ПРОВЕРКА ЧЕРЕЗ 100ms - текущее состояние:', verifyPlayer);
+          }, 100);
           
           // Если нужен отчет, показываем сообщение в чате
           if (needsReport) {
-            console.log('[Dice Roll] Требуется отчет, показываем сообщение в чате');
+            console.log('🎲 [GameScreen] rollDice: Требуется отчет, показываем сообщение в чате');
             setCurrentMessage("📝 Напишите отчет в чате о вашем новом состоянии!");
           }
         })
         .catch(error => {
-          console.error('[Dice Roll] Ошибка при обработке хода:', error);
+          console.error('🎲 [GameScreen] rollDice: Ошибка при обработке хода:', error);
+          setCurrentMessage(`❌ Ошибка при обработке хода: ${error.message}`);
         });
       
       return roll;
     } catch (error) {
-      console.error('[Dice Roll] Критическая ошибка при броске кубика:', error);
+      console.error('🎲 [GameScreen] rollDice: Критическая ошибка при броске кубика:', error);
+      setCurrentMessage(`❌ Критическая ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
       return 0;
     }
   };
@@ -263,13 +281,23 @@ const GameScreen: React.FC = () => {
                 <Dice rollDice={rollDice} lastRoll={lastRoll} size="extra-small" />
               </View>
               
-              {/* Consolidated Player Info component */}
-              <View className="mb-2">
-                <PlayerInfoConsolidated />
+              {/* Компактная информация об игроке */}
+              <View className="bg-white rounded-lg shadow-sm p-3 mb-2">
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-sm text-gray-600">Текущий план:</Text>
+                  <View className="bg-blue-500 px-3 py-1 rounded-full">
+                    <Text className="font-bold text-white text-sm">{currentPlayer?.plan || 1}</Text>
+                  </View>
+                </View>
+                {currentPlayer?.needsReport && (
+                  <Text className="text-xs text-orange-600 mt-2 text-center">
+                    📝 Напишите отчет в чате о вашем духовном опыте
+                  </Text>
+                )}
               </View>
 
-              {/* ChatBot component */}
-              <View className="h-[400px] bg-white rounded-lg shadow-sm">
+              {/* ChatBot component - увеличиваем высоту */}
+              <View className="h-[500px] bg-white rounded-lg shadow-sm">
                 <ChatBot />
               </View>
             </View>
@@ -284,15 +312,6 @@ const GameScreen: React.FC = () => {
         <AppHeader />
         
         <View className={`flex-1 flex-row ${layout.padding} mx-auto ${layout.maxWidth} space-x-2`}>
-          {/* Левая колонка */}
-          {(windowWidth >= 768) && (
-            <View className={`${layout.leftColumn} space-y-2`}>
-              <View className="bg-white rounded-lg shadow-sm p-2 flex-1">
-                <PlayerInfoConsolidated />
-              </View>
-            </View>
-          )}
-
           {/* Центральная колонка */}
           <View className={`${layout.centerColumn} flex flex-col space-y-2`}>
             {/* GameBoard Container */}
@@ -304,9 +323,24 @@ const GameScreen: React.FC = () => {
             <View className="items-center justify-center w-full">
               <Dice rollDice={rollDice} lastRoll={lastRoll} size="extra-small" />
             </View>
+            
+            {/* Компактная информация об игроке под кубиком */}
+            <View className="bg-white rounded-lg shadow-sm p-2">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-sm text-gray-600">План:</Text>
+                <View className="bg-blue-500 px-3 py-1 rounded-full">
+                  <Text className="font-bold text-white text-sm">{currentPlayer?.plan || 1}</Text>
+                </View>
+              </View>
+              {currentPlayer?.needsReport && (
+                <Text className="text-xs text-orange-600 mt-1 text-center">
+                  📝 Напишите отчет в чате
+                </Text>
+              )}
+            </View>
           </View>
 
-          {/* Правая колонка */}
+          {/* Правая колонка - расширенный чат */}
           {(windowWidth >= 768) && (
             <View className={`${layout.rightColumn} flex flex-col`}>
               <View className="bg-white rounded-lg shadow-sm flex-1 overflow-hidden">
@@ -336,13 +370,23 @@ const GameScreen: React.FC = () => {
             <Dice rollDice={rollDice} lastRoll={lastRoll} size="extra-small" />
           </View>
           
-          {/* Consolidated Player Info component */}
-          <View className="mb-2">
-            <PlayerInfoConsolidated />
+          {/* Компактная информация об игроке */}
+          <View className="bg-white rounded-lg shadow-sm p-3 mb-2">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-sm text-gray-600">Текущий план:</Text>
+              <View className="bg-blue-500 px-3 py-1 rounded-full">
+                <Text className="font-bold text-white text-sm">{currentPlayer?.plan || 1}</Text>
+              </View>
+            </View>
+            {currentPlayer?.needsReport && (
+              <Text className="text-xs text-orange-600 mt-2 text-center">
+                📝 Напишите отчет в чате о вашем духовном опыте
+              </Text>
+            )}
           </View>
           
-          {/* Блок чат-бота */}
-          <View className="bg-white rounded-lg shadow-sm p-2 mb-3">
+          {/* Блок чат-бота - увеличиваем высоту */}
+          <View className="bg-white rounded-lg shadow-sm p-2 mb-3 h-[450px]">
             <ChatBot />
           </View>
         </View>

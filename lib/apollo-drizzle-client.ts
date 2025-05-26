@@ -147,45 +147,77 @@ export const loadPlayerData = async (userId: string) => {
 
 // Функция для обновления данных игрока
 export const updatePlayerInStorage = (updatedPlayer: Player) => {
+  console.log('[Apollo] updatePlayerInStorage вызвана с данными:', updatedPlayer);
   currentPlayerVar(updatedPlayer);
   savePlayerToStorage(updatedPlayer);
+  console.log('[Apollo] Состояние обновлено в Apollo и localStorage');
+};
+
+// Централизованная функция для обновления состояния игрока
+export const updatePlayerState = (updates: Partial<Player>) => {
+  console.log('[Apollo] updatePlayerState: НАЧАЛО ФУНКЦИИ');
+  const currentPlayer = currentPlayerVar();
+  console.log('[Apollo] updatePlayerState: currentPlayer =', currentPlayer);
+  
+  if (!currentPlayer) {
+    console.error('[Apollo] updatePlayerState: Игрок не найден');
+    return;
+  }
+  
+  const updatedPlayer = {
+    ...currentPlayer,
+    ...updates
+  };
+  
+  console.log('[Apollo] updatePlayerState: обновляем состояние', {
+    from: currentPlayer,
+    updates,
+    to: updatedPlayer
+  });
+  
+  // Обновляем реактивную переменную
+  currentPlayerVar(updatedPlayer);
+  console.log('[Apollo] updatePlayerState: currentPlayerVar обновлена');
+  
+  // Сохраняем в localStorage
+  savePlayerToStorage(updatedPlayer);
+  console.log('[Apollo] updatePlayerState: данные сохранены в localStorage');
+  
+  // Проверяем, что обновление прошло успешно
+  const verifyPlayer = currentPlayerVar();
+  console.log('[Apollo] updatePlayerState: ПРОВЕРКА - новое состояние:', verifyPlayer);
 };
 
 // Функция для отметки о завершении отчета
 export const markReportCompleted = async (userId: string) => {
   try {
-    const currentPlayer = currentPlayerVar();
-    if (!currentPlayer) {
-      throw new Error('Игрок не найден');
-    }
+    console.log('[Apollo] markReportCompleted: сбрасываем needsReport для userId:', userId);
     
-    // Обновляем локальное состояние
-    const updatedPlayer = {
-      ...currentPlayer,
-      needsReport: false
-    };
+    // Сначала обновляем локальное состояние (быстро)
+    updatePlayerState({ needsReport: false });
+    console.log('[Apollo] Локальное состояние обновлено: needsReport = false');
     
-    updatePlayerInStorage(updatedPlayer);
-    
-    // Пытаемся обновить в Supabase
+    // Пытаемся обновить в Supabase с таймаутом
     try {
-      const { error } = await supabase
+      const supabaseUpdatePromise = supabase
         .from('players')
         .update({ needsReport: false })
         .eq('id', userId);
       
-      if (error) {
-        console.log('[Apollo] Не удалось обновить needsReport в Supabase, но локальное состояние обновлено');
-      } else {
-        console.log('[Apollo] needsReport успешно сброшен в Supabase');
-      }
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Supabase timeout')), 2000);
+      });
+      
+      await Promise.race([supabaseUpdatePromise, timeoutPromise]);
+      console.log('[Apollo] needsReport успешно сброшен в Supabase');
+      
     } catch (supabaseError) {
-      console.log('[Apollo] Supabase недоступен, используем только локальное состояние');
+      console.log('[Apollo] Supabase недоступен или медленный, используем только локальное состояние');
     }
     
   } catch (error) {
     console.error('[Apollo] Ошибка при сбросе needsReport:', error);
-    errorVar('Не удалось отметить отчет как завершенный');
+    // Не выбрасываем ошибку, так как локальное состояние уже обновлено
   }
 };
 
@@ -220,6 +252,33 @@ export const updatePlayerPosition = async (userId: string, newPosition: number) 
   } finally {
     isLoadingVar(false);
   }
+};
+
+// Функция для сброса игрока с проблемной позиции (временное решение)
+export const resetPlayerFromStuckPosition = () => {
+  const currentPlayer = currentPlayerVar();
+  if (!currentPlayer) {
+    console.error('[Apollo] resetPlayerFromStuckPosition: Игрок не найден');
+    return;
+  }
+  
+  console.log('[Apollo] resetPlayerFromStuckPosition: Сбрасываем игрока с позиции', currentPlayer.plan);
+  
+  // Сбрасываем на начальную позицию игры
+  const resetPlayer = {
+    ...currentPlayer,
+    plan: 68, // Возвращаем на стартовую позицию
+    previous_plan: currentPlayer.plan,
+    isFinished: true, // Игра завершена, нужно бросить 6 для старта
+    consecutiveSixes: 0,
+    positionBeforeThreeSixes: 0,
+    needsReport: false,
+    message: 'Игрок сброшен. Бросьте 6 чтобы начать заново!'
+  };
+  
+  currentPlayerVar(resetPlayer);
+  savePlayerToStorage(resetPlayer);
+  console.log('[Apollo] Игрок сброшен на начальную позицию:', resetPlayer);
 };
 
 // Создаем Apollo клиент

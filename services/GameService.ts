@@ -134,7 +134,10 @@ export const handleConsecutiveSixes = (
   newBeforeThreeSixes: number;
   direction?: string;
 } => {
+  console.log(`[GameService] handleConsecutiveSixes: ВХОД - roll=${roll}, currentLoka=${currentLoka}, consecutive=${consecutive}, positionBeforeThreeSixes=${positionBeforeThreeSixes}`);
+  
   if (roll !== MAX_ROLL) {
+    console.log(`[GameService] Не шестерка (${roll}), сбрасываем счетчик и двигаемся на ${currentLoka + roll}`);
     return { 
       newConsecutive: 0, 
       newPosition: currentLoka + roll,
@@ -143,9 +146,11 @@ export const handleConsecutiveSixes = (
   }
 
   const newConsecutive = consecutive + 1;
+  console.log(`[GameService] Шестерка! Новый счетчик: ${newConsecutive}`);
   
   // If this is the third consecutive six
   if (newConsecutive === 3) {
+    console.log(`[GameService] ТРЕТЬЯ ШЕСТЕРКА ПОДРЯД! Возвращаемся на позицию ${positionBeforeThreeSixes}`);
     return { 
       newConsecutive: 0, 
       newPosition: positionBeforeThreeSixes,
@@ -155,10 +160,14 @@ export const handleConsecutiveSixes = (
   }
   
   // First or second six
+  const newPosition = currentLoka + roll;
+  const newBeforeThreeSixes = consecutive === 0 ? currentLoka : positionBeforeThreeSixes;
+  console.log(`[GameService] ${newConsecutive === 1 ? 'Первая' : 'Вторая'} шестерка: ${currentLoka} -> ${newPosition}, запоминаем позицию ${newBeforeThreeSixes}`);
+  
   return { 
     newConsecutive, 
-    newPosition: currentLoka + roll,
-    newBeforeThreeSixes: consecutive === 0 ? currentLoka : positionBeforeThreeSixes 
+    newPosition: newPosition,
+    newBeforeThreeSixes: newBeforeThreeSixes 
   };
 };
 
@@ -173,6 +182,8 @@ export const getDirectionAndPosition = (
   direction: string; 
   isGameFinished: boolean; 
 } => {
+  console.log(`[GameService] getDirectionAndPosition: ВХОД - newLoka=${newLoka}, isFinished=${isFinished}, roll=${roll}, currentLoka=${currentLoka}`);
+  
   // Правило начала игры: игрок находится на позиции 68 (WIN_LOKA) и игра завершена
   if (currentLoka === WIN_LOKA && isFinished) {
     // Если выпало 6, переносим игрока на позицию START_LOKA (6)
@@ -194,9 +205,11 @@ export const getDirectionAndPosition = (
   }
 
   // Для общего случая, когда игра активна (isFinished = false)
+  console.log(`[GameService] Обычная игра: проверяем позицию ${newLoka}`);
   
   // Win condition
   if (newLoka === WIN_LOKA) {
+    console.log(`[GameService] ПОБЕДА! Достигнута позиция ${WIN_LOKA}`);
     return { 
       finalLoka: newLoka, 
       direction: 'win 🕉', 
@@ -229,6 +242,7 @@ export const getDirectionAndPosition = (
   };
 
   if (snakePositions[newLoka]) {
+    console.log(`[GameService] ЗМЕЯ! Позиция ${newLoka} -> ${snakePositions[newLoka]}`);
     return { 
       finalLoka: snakePositions[newLoka], 
       direction: 'snake 🐍', 
@@ -251,8 +265,10 @@ export const getDirectionAndPosition = (
   };
 
   if (arrowPositions[newLoka]) {
+    console.log(`[GameService] СТРЕЛА! Позиция ${newLoka} -> ${arrowPositions[newLoka]}`);
     // Special case - if arrow leads to win position
     if (arrowPositions[newLoka] === WIN_LOKA) {
+      console.log(`[GameService] Стрела ведет к победе!`);
       return { 
         finalLoka: arrowPositions[newLoka], 
         direction: 'arrow 🏹', 
@@ -267,6 +283,16 @@ export const getDirectionAndPosition = (
   }
 
   // Regular move
+  console.log(`[GameService] Обычный ход: ${currentLoka} -> ${newLoka}`);
+  
+  // Специальная диагностика для позиции 51
+  if (currentLoka === 51 || newLoka === 51) {
+    console.log(`[GameService] ДИАГНОСТИКА ПОЗИЦИИ 51: currentLoka=${currentLoka}, newLoka=${newLoka}, roll=${roll}`);
+    console.log(`[GameService] Проверяем змей и стрел для позиции ${newLoka}:`);
+    console.log(`[GameService] - Змеи:`, snakePositions);
+    console.log(`[GameService] - Стрелы:`, arrowPositions);
+  }
+  
   return { 
     finalLoka: newLoka, 
     direction: 'step 🚶🏼', 
