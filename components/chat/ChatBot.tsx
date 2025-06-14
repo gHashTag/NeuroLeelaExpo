@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PlanCard } from './PlanCard';
 import { DiceInChat } from './DiceInChat';
 import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 import { processGameStep } from '@/services/GameService';
 import { markReportCompleted } from '@/lib/apollo-drizzle-client';
-import { supabase } from '@/config/supabase';
+import { supabase } from '@/lib/supabase';
 import { useSupabase } from '@/context/supabase-provider';
 
 interface Message {
@@ -18,7 +18,7 @@ interface Message {
 
 interface ToolInvocation {
   toolCallId: string;
-  toolName: 'createPlanCard' | 'showDice' | 'gameStatus';
+  toolName: 'createPlanCard' | 'showDice' | 'gameStatus' | 'showDiceButton' | 'showReportButton' | 'showGameResult';
   state: 'partial-call' | 'call' | 'result' | 'error';
   args?: any;
   result?: any;
@@ -229,12 +229,47 @@ export const ChatBot = () => {
     }
   };
 
-  // Загружаем историю чата при инициализации
+  // Инициализация чата при загрузке
   useEffect(() => {
-    if (user && !historyLoaded) {
+    if (!historyLoaded && currentPlayer) {
+      console.log('🔄 [ChatBot] Инициализация чата...');
+      
+      // Загружаем историю чата
       loadChatHistory();
+      
+      // Показываем приветственное сообщение
+      const welcomeMessage: Message = {
+        id: 'welcome',
+        role: 'assistant',
+        content: 'Намасте! 🙏 Я - Лила, богиня игры самопознания. Добро пожаловать на путь духовного развития!'
+      };
+      
+      setMessages(prev => {
+        // Проверяем, есть ли уже приветственное сообщение
+        if (prev.some(msg => msg.id === 'welcome')) {
+          return prev;
+        }
+        return [welcomeMessage, ...prev];
+      });
+
+      // Если игрок готов к игре, показываем кнопку броска
+      if (currentPlayer && !currentPlayer.needsReport) {
+        setTimeout(() => {
+          startGameTurn();
+        }, 1000);
+      } else if (currentPlayer?.needsReport) {
+        // Если нужен отчет, показываем кнопку отчета
+        setTimeout(() => {
+          addGameMessage('showReportButton', {
+            planNumber: currentPlayer.plan,
+            disabled: false
+          });
+        }, 1000);
+      }
+      
+      setHistoryLoaded(true);
     }
-  }, [user, historyLoaded]);
+  }, [currentPlayer, historyLoaded]);
 
   // Добавляем игровые сообщения при изменении состояния игрока
   useEffect(() => {
@@ -660,34 +695,51 @@ ${randomQuality} ${planWisdom}
 ${randomMotivation}`;
   };
 
-  // Обработчик броска кубика - ПЕРЕМЕЩЕН ВЫШЕ renderToolInvocation
-  const handleDiceRoll = async (): Promise<number> => {
-    console.log('🎲 [ChatBot] ================ handleDiceRoll ВЫЗВАНА ================');
-    console.log('🎲 [ChatBot] handleDiceRoll: currentPlayer =', currentPlayer);
+  // Новая функция для начала хода - показывает кнопку броска кубика
+  const startGameTurn = () => {
+    console.log('🎮 [ChatBot] startGameTurn: Начинаем новый ход');
     
     if (!currentPlayer) {
-      console.error('🎲 [ChatBot] handleDiceRoll: нет currentPlayer, возвращаем 1');
-      return 1;
+      console.error('🎮 [ChatBot] startGameTurn: нет currentPlayer');
+      return;
+    }
+
+    const message = currentPlayer.plan === 68 && currentPlayer.isFinished
+      ? "🎲 Для начала новой игры бросьте 6!"
+      : "🎲 Готовы к следующему шагу на пути самопознания?";
+
+    addGameMessage('showDiceButton', {
+      message,
+      disabled: false
+    });
+  };
+
+  // Новая функция для обработки броска кубика
+  const handleNewDiceRoll = async (): Promise<void> => {
+    console.log('🎲 [ChatBot] handleNewDiceRoll: НАЧАЛО');
+    
+    if (!currentPlayer) {
+      console.error('🎲 [ChatBot] handleNewDiceRoll: нет currentPlayer');
+      return;
     }
 
     const roll = Math.floor(Math.random() * 6) + 1;
-    console.log('🎲 [ChatBot] handleDiceRoll: сгенерирован бросок:', roll);
+    console.log('🎲 [ChatBot] handleNewDiceRoll: сгенерирован бросок:', roll);
     
-    // НЕМЕДЛЕННО обновляем lastRoll для отображения в кубике
+    // НЕМЕДЛЕННО обновляем lastRoll для отображения
     setLastRoll(roll);
 
     try {
-      console.log(`🎲 [ChatBot] Бросок кубика: ${roll}, текущая позиция: ${currentPlayer.plan}`);
-      
-      // Определяем userId - используем user.id если есть, иначе тестового пользователя
+      // Определяем userId
       const userId = user?.id || userData?.user_id || 'test-user-demo';
-      console.log('🎲 [ChatBot] Используем userId:', userId);
+      console.log('🎲 [ChatBot] handleNewDiceRoll: используем userId:', userId);
       
-      console.log('🎲 [ChatBot] вызываем processGameStep...');
+      // Обрабатываем ход
+      console.log('🎲 [ChatBot] handleNewDiceRoll: вызываем processGameStep...');
       const result = await processGameStep(roll, userId);
-      console.log('🎮 [ChatBot] Результат хода:', result);
+      console.log('🎮 [ChatBot] handleNewDiceRoll: результат хода:', result);
       
-      // Обновляем состояние в localStorage и Apollo
+      // Обновляем состояние игрока
       const updatedPlayer = {
         ...currentPlayer,
         plan: result.gameStep.loka,
@@ -699,43 +751,57 @@ ${randomMotivation}`;
         message: result.message
       };
       
-      console.log('🎲 [ChatBot] обновляем состояние игрока:', updatedPlayer);
+      console.log('🎲 [ChatBot] handleNewDiceRoll: обновляем состояние игрока:', updatedPlayer);
       updatePlayerState(updatedPlayer);
       
-      console.log('🎲 [ChatBot] updatePlayerState вызвана, проверяем результат...');
-      
-      // Добавляем сообщение о результате броска с АКТУАЛЬНЫМИ данными
-      const resultMessage: Message = {
-        id: `dice-result-${Date.now()}`,
+      // Показываем результат броска
+      addGameMessage('showGameResult', {
+        roll,
+        fromPlan: result.gameStep.previous_loka,
+        toPlan: result.gameStep.loka,
+        direction: result.direction,
+        message: result.message
+      });
+
+      // Показываем описание плана
+      const planInfo = getPlanInfo(updatedPlayer.plan);
+      const planMessage: Message = {
+        id: `plan-description-${Date.now()}`,
         role: 'assistant',
-        content: `🎲 Выпало ${roll}! Переход с плана ${result.gameStep.previous_loka} на план ${result.gameStep.loka}. ${result.message}`
+        content: `📍 **План ${updatedPlayer.plan}: "${planInfo.name}"**\n\n${planInfo.description}\n\n💭 Размышляйте об этом состоянии сознания и его влиянии на ваш духовный путь.`,
+        toolInvocations: [{
+          toolCallId: `plan-card-${Date.now()}`,
+          toolName: 'createPlanCard',
+          state: 'result',
+          result: {
+            type: 'plan-card',
+            planNumber: updatedPlayer.plan,
+            planInfo,
+            isCurrentPosition: true,
+            timestamp: new Date().toISOString()
+          }
+        }]
       };
       
-      console.log('🎲 [ChatBot] добавляем сообщение о результате:', resultMessage);
-      setMessages(prev => [resultMessage, ...prev]);
-      
-      // НЕМЕДЛЕННО показываем следующий кубик или запрос отчета (БЕЗ ЗАДЕРЖКИ)
+      setMessages(prev => [planMessage, ...prev]);
+
+      // Если нужен отчет, показываем кнопку отчета
       if (updatedPlayer.needsReport) {
-        // Если нужен отчет, показываем запрос
-        const planInfo = getPlanInfo(updatedPlayer.plan);
-        const prompt = getPlanPrompt(updatedPlayer.plan);
-        const reportMessage: Message = {
-          id: `report-request-${Date.now()}`,
-          role: 'assistant',
-          content: `📝 Время для отчета о плане ${updatedPlayer.plan}: "${planInfo.name}"\n\n${prompt}\n\n💡 Напишите ваши размышления и наблюдения в чате. После отправки отчета вы сможете продолжить игру.`
-        };
-        setMessages(prev => [reportMessage, ...prev]);
+        setTimeout(() => {
+          addGameMessage('showReportButton', {
+            planNumber: updatedPlayer.plan,
+            disabled: false
+          });
+        }, 1000); // Небольшая пауза для чтения описания
       } else {
-        // Если отчет не нужен, сразу показываем кубик для следующего хода
-        console.log('🎲 [ChatBot] Показываем кубик для следующего хода через addGameMessage');
-        addGameMessage('showDice', {
-          message: `🎲 Готовы к следующему шагу? Текущий план: ${updatedPlayer.plan}. Бросьте кубик!`,
-          disabled: false
-        }, "Отлично! Теперь вы готовы к следующему шагу на пути самопознания.");
+        // Если отчет не нужен, сразу показываем кнопку следующего хода
+        setTimeout(() => {
+          startGameTurn();
+        }, 2000);
       }
       
     } catch (error) {
-      console.error('Ошибка при броске кубика:', error);
+      console.error('🎲 [ChatBot] handleNewDiceRoll: ошибка:', error);
       const errorMessage: Message = {
         id: `dice-error-${Date.now()}`,
         role: 'assistant',
@@ -743,8 +809,27 @@ ${randomMotivation}`;
       };
       setMessages(prev => [errorMessage, ...prev]);
     }
+  };
 
-    return roll;
+  // Новая функция для начала написания отчета
+  const startReportWriting = () => {
+    console.log('📝 [ChatBot] startReportWriting: Начинаем написание отчета');
+    
+    if (!currentPlayer) {
+      console.error('📝 [ChatBot] startReportWriting: нет currentPlayer');
+      return;
+    }
+
+    const planInfo = getPlanInfo(currentPlayer.plan);
+    const prompt = getPlanPrompt(currentPlayer.plan);
+    
+    const reportMessage: Message = {
+      id: `report-request-${Date.now()}`,
+      role: 'assistant',
+      content: `📝 **Время для отчета о плане ${currentPlayer.plan}: "${planInfo.name}"**\n\n${prompt}\n\n💡 Напишите ваши размышления и наблюдения в чате. После отправки отчета вы сможете продолжить игру.`
+    };
+    
+    setMessages(prev => [reportMessage, ...prev]);
   };
 
   const renderToolInvocation = (toolInvocation: ToolInvocation) => {
@@ -780,10 +865,42 @@ ${randomMotivation}`;
           return (
             <DiceInChat
               key={toolInvocation.toolCallId}
-              onRoll={handleDiceRoll}
+              onRoll={handleNewDiceRoll}
               lastRoll={lastRoll}
               disabled={finalDisabled}
               message={result.message}
+            />
+          );
+
+        case 'showDiceButton':
+          return (
+            <DiceButton
+              key={toolInvocation.toolCallId}
+              onRoll={handleNewDiceRoll}
+              disabled={result.disabled}
+              message={result.message}
+            />
+          );
+
+        case 'showGameResult':
+          return (
+            <GameResult
+              key={toolInvocation.toolCallId}
+              roll={result.roll}
+              fromPlan={result.fromPlan}
+              toPlan={result.toPlan}
+              direction={result.direction}
+              message={result.message}
+            />
+          );
+
+        case 'showReportButton':
+          return (
+            <ReportButton
+              key={toolInvocation.toolCallId}
+              onReport={startReportWriting}
+              planNumber={result.planNumber}
+              disabled={result.disabled}
             />
           );
         
@@ -798,6 +915,9 @@ ${randomMotivation}`;
           <Text className="text-purple-600 text-sm">
             {toolName === 'createPlanCard' ? '🎴 Создаю карточку плана...' : 
              toolName === 'showDice' ? '🎲 Подготавливаю кубик...' :
+             toolName === 'showDiceButton' ? '🎲 Подготавливаю кнопку броска...' :
+             toolName === 'showGameResult' ? '🎮 Обрабатываю результат...' :
+             toolName === 'showReportButton' ? '📝 Подготавливаю форму отчета...' :
              'Обрабатываю...'}
           </Text>
         </View>
@@ -806,8 +926,6 @@ ${randomMotivation}`;
 
     return null;
   };
-
-
 
   // Функция для очистки истории чата (для тестирования)
   const clearChatHistory = () => {
@@ -819,6 +937,97 @@ ${randomMotivation}`;
       },
     ]);
     setHistoryLoaded(false);
+  };
+
+  // Компонент кнопки для броска кубика
+  const DiceButton: React.FC<{ onRoll: () => Promise<void>; disabled?: boolean; message?: string }> = ({ 
+    onRoll, 
+    disabled = false, 
+    message = "🎲 Готовы бросить кубик?" 
+  }) => {
+    const [isRolling, setIsRolling] = useState(false);
+
+    const handleRoll = async () => {
+      if (disabled || isRolling) return;
+      
+      setIsRolling(true);
+      try {
+        await onRoll();
+      } catch (error) {
+        console.error('Ошибка при броске кубика:', error);
+      } finally {
+        setIsRolling(false);
+      }
+    };
+
+    return (
+      <View className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg p-4 m-2">
+        <Text className="text-white text-center mb-3">{message}</Text>
+        <TouchableOpacity
+          onPress={handleRoll}
+          disabled={disabled || isRolling}
+          className={`bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg py-3 px-6 ${
+            disabled || isRolling ? 'opacity-50' : ''
+          }`}
+        >
+          <Text className="text-white text-center font-semibold">
+            {isRolling ? '🎲 Бросаю...' : '🎲 Бросить кубик'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  // Компонент для отображения результата броска
+  const GameResult: React.FC<{ 
+    roll: number; 
+    fromPlan: number; 
+    toPlan: number; 
+    direction: string;
+    message: string;
+  }> = ({ roll, fromPlan, toPlan, direction, message }) => {
+    return (
+      <View className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 m-2 border border-green-200">
+        <Text className="text-lg font-bold text-green-800 text-center mb-2">
+          🎲 Выпало: {roll}
+        </Text>
+        <Text className="text-gray-700 text-center mb-2">
+          Переход: План {fromPlan} → План {toPlan}
+        </Text>
+        <Text className="text-gray-600 text-center text-sm mb-2">
+          Направление: {direction}
+        </Text>
+        <Text className="text-gray-700 text-center">
+          {message}
+        </Text>
+      </View>
+    );
+  };
+
+  // Компонент кнопки для написания отчета
+  const ReportButton: React.FC<{ onReport: () => void; planNumber: number; disabled?: boolean }> = ({ 
+    onReport, 
+    planNumber, 
+    disabled = false 
+  }) => {
+    return (
+      <View className="bg-gradient-to-r from-orange-50 to-yellow-50 rounded-lg p-4 m-2">
+        <Text className="text-gray-700 text-center mb-3">
+          📝 Время для размышлений о плане {planNumber}
+        </Text>
+        <TouchableOpacity
+          onPress={onReport}
+          disabled={disabled}
+          className={`bg-gradient-to-r from-orange-500 to-yellow-500 rounded-lg py-3 px-6 ${
+            disabled ? 'opacity-50' : ''
+          }`}
+        >
+          <Text className="text-white text-center font-semibold">
+            📝 Написать отчет
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
   };
 
   return (

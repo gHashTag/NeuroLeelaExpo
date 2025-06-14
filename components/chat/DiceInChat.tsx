@@ -3,7 +3,7 @@ import { View, Text, Animated, Easing, Pressable, StyleSheet } from 'react-nativ
 import { vs } from 'react-native-size-matters';
 
 interface DiceInChatProps {
-  onRoll: () => Promise<number>;
+  onRoll: () => Promise<void>;
   lastRoll: number;
   disabled?: boolean;
   message?: string;
