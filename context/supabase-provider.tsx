@@ -74,6 +74,13 @@ export const SupabaseProvider = ({ children }: SupabaseProviderProps) => {
   const prevSession = useRef<Session | null>(null);
   const prevUserData = useRef<UserData | null>(null);
 
+  // Добавляем логирование для диагностики
+  console.log('🔐 [SupabaseProvider] Текущее состояние авторизации:');
+  console.log('🔐 [SupabaseProvider] user:', user);
+  console.log('🔐 [SupabaseProvider] session:', session);
+  console.log('🔐 [SupabaseProvider] userData:', userData);
+  console.log('🔐 [SupabaseProvider] initialized:', initialized);
+
   const createUserRecord = async (userId: string) => {
     const { error } = await supabase.from("users").insert([{ user_id: userId }]);
 

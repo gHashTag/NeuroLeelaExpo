@@ -20,20 +20,34 @@ const Dice = ({
   const opacityValue = useRef(new Animated.Value(1)).current;
   const [isAnimating, setIsAnimating] = useState(false);
 
+  // Добавляем логирование для диагностики
+  console.log('🎲 [Dice] Компонент рендерится с параметрами:', {
+    disabled,
+    lastRoll,
+    size,
+    isAnimating,
+    rollDice: typeof rollDice
+  });
+
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "360deg"],
   });
 
   const animateDice = (): void => {
+    console.log('🎲 [Dice] animateDice вызвана, disabled:', disabled, 'isAnimating:', isAnimating);
+    
     if (disabled || isAnimating) {
+      console.log('🎲 [Dice] animateDice заблокирована - disabled:', disabled, 'isAnimating:', isAnimating);
       return;
     }
 
+    console.log('🎲 [Dice] Начинаем анимацию кубика');
     setIsAnimating(true);
     
     // Сначала вызываем rollDice() для обновления положения игрока
     // Это позволяет сразу обновить состояние игры, не дожидаясь анимации
+    console.log('🎲 [Dice] Вызываем rollDice()');
     rollDice();
     
     // Затем запускаем анимацию вращения кубика
@@ -45,6 +59,7 @@ const Dice = ({
       useNativeDriver: true,
     }).start(() => {
       // По окончании анимации сбрасываем состояние
+      console.log('🎲 [Dice] Анимация завершена');
       spinValue.setValue(0);
       setIsAnimating(false);
     });
@@ -109,6 +124,8 @@ const Dice = ({
   // Используем pointerEvents для контроля взаимодействия вместо preventDefault
   const pointerEventsValue = disabled || isAnimating ? 'none' : 'auto';
   
+  console.log('🎲 [Dice] pointerEventsValue:', pointerEventsValue);
+  
   return (
     <View 
       style={[styles.diceContainer, { 
@@ -118,7 +135,15 @@ const Dice = ({
       testID="dice-component"
       pointerEvents={pointerEventsValue}
     >
-      <Pressable onPress={animateDice} style={styles.pressableArea}>
+      <Pressable 
+        onPress={() => {
+          console.log('🎲 [Dice] Pressable onPress сработал!');
+          animateDice();
+        }} 
+        style={styles.pressableArea}
+        onPressIn={() => console.log('🎲 [Dice] Pressable onPressIn')}
+        onPressOut={() => console.log('🎲 [Dice] Pressable onPressOut')}
+      >
         <Animated.Image
           style={[
             styles.image,

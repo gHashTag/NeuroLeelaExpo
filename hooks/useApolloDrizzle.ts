@@ -11,6 +11,24 @@ export const useApolloDrizzle = () => {
   const error = useReactiveVar(errorVar);
   const isMounted = useRef(true);
 
+  // Добавляем логирование для диагностики
+  console.log('�� [useApolloDrizzle] Хук вызван, текущее состояние:');
+  console.log('🔄 [useApolloDrizzle] user:', user);
+  console.log('🔄 [useApolloDrizzle] currentPlayer:', currentPlayer);
+  console.log('🔄 [useApolloDrizzle] isLoading:', isLoading);
+  console.log('🔄 [useApolloDrizzle] error:', error);
+
+  // Отслеживаем изменения currentPlayer
+  useEffect(() => {
+    console.log('🔥 [useApolloDrizzle] currentPlayer ИЗМЕНИЛСЯ!');
+    console.log('🔥 [useApolloDrizzle] Новое значение currentPlayer:', currentPlayer);
+    if (currentPlayer) {
+      console.log('🔥 [useApolloDrizzle] План игрока:', currentPlayer.plan);
+      console.log('🔥 [useApolloDrizzle] isFinished:', currentPlayer.isFinished);
+      console.log('🔥 [useApolloDrizzle] needsReport:', currentPlayer.needsReport);
+    }
+  }, [currentPlayer]);
+
   // Устанавливаем флаг размонтирования
   useEffect(() => {
     isMounted.current = true;
@@ -24,6 +42,7 @@ export const useApolloDrizzle = () => {
     let isSubscribed = true;
     
     if (user) {
+      console.log('🔄 [useApolloDrizzle] Пользователь найден, загружаем данные для:', user.id);
       const fetchData = async () => {
         try {
           await loadPlayerData(user.id);
@@ -32,6 +51,22 @@ export const useApolloDrizzle = () => {
           // Только если компонент все еще смонтирован
           if (isSubscribed && isMounted.current) {
             errorVar(error instanceof Error ? error.message : 'Ошибка загрузки данных');
+          }
+        }
+      };
+      
+      fetchData();
+    } else {
+      console.log('🔄 [useApolloDrizzle] Пользователь НЕ найден, создаем тестового пользователя');
+      // Временное решение: создаем тестового пользователя для демонстрации
+      const testUserId = 'test-user-demo';
+      const fetchData = async () => {
+        try {
+          await loadPlayerData(testUserId);
+        } catch (error) {
+          console.error('Error loading test player data:', error);
+          if (isSubscribed && isMounted.current) {
+            errorVar(error instanceof Error ? error.message : 'Ошибка загрузки тестовых данных');
           }
         }
       };
@@ -46,7 +81,7 @@ export const useApolloDrizzle = () => {
 
   // Функция для обновления позиции игрока
   const movePlayer = async (newPosition: number, isFinishedFlag?: boolean) => {
-    if (!user || !isMounted.current) return;
+    if (!isMounted.current) return;
     
     try {
       const currentPlayer = currentPlayerVar();
@@ -94,11 +129,38 @@ export const useApolloDrizzle = () => {
     }
   };
 
+  // Функция для полного обновления состояния игрока
+  const updatePlayerState = (updates: Partial<Player>) => {
+    if (!isMounted.current) return;
+    
+    try {
+      const currentPlayer = currentPlayerVar();
+      if (!currentPlayer) {
+        console.error('[Apollo Drizzle] Игрок не найден при попытке обновить состояние');
+        return;
+      }
+      
+      console.log('[Apollo Drizzle] Полное обновление состояния игрока:', updates);
+      
+      // Создаем обновленного игрока с новыми данными
+      const updatedPlayer = { ...currentPlayer, ...updates };
+      
+      currentPlayerVar(updatedPlayer);
+      console.log('[Apollo Drizzle] Состояние игрока полностью обновлено:', updatedPlayer);
+    } catch (error) {
+      console.error('[Apollo Drizzle] Ошибка при полном обновлении состояния:', error);
+      if (isMounted.current) {
+        errorVar(error instanceof Error ? error.message : 'Ошибка обновления состояния');
+      }
+    }
+  };
+
   return {
     currentPlayer,
     isLoading,
     error,
     movePlayer,
+    updatePlayerState,
     loadPlayer: () => {
       if (user && isMounted.current) {
         return loadPlayerData(user.id);

@@ -1,10 +1,25 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { Image, View, StyleSheet, Platform, useWindowDimensions } from "react-native";
 import { GameBoardProps, GemT } from "../../types/index";
 import { GameBoardImage } from "@/assets/gameboard/index";
 import { Gem } from "@components/ui/gem";
 
 function GameBoard({ players, customScale }: GameBoardProps & { customScale?: number }) {
+  // Добавляем логирование для диагностики
+  console.log('🎯 [GameBoard] Компонент рендерится');
+  console.log('🎯 [GameBoard] Получены players:', players);
+  console.log('🎯 [GameBoard] Количество игроков:', players?.length || 0);
+  
+  // Отслеживаем изменения players
+  useEffect(() => {
+    console.log('🔥 [GameBoard] players ИЗМЕНИЛИСЬ!');
+    console.log('🔥 [GameBoard] Новые players:', players);
+    if (players && players.length > 0) {
+      const player = players[0];
+      console.log('🔥 [GameBoard] Первый игрок - план:', player.plan, 'id:', player.id);
+    }
+  }, [players]);
+  
   // Используем размер окна для адаптивности
   const { width: windowWidth } = useWindowDimensions();
   
@@ -48,11 +63,26 @@ function GameBoard({ players, customScale }: GameBoardProps & { customScale?: nu
   }, [scheme]);
 
   const getPlayer = (b: number): GemT | undefined => {
-    const player = players.find((pl) => pl.plan.toString() === b.toString());
+    // Логирование для диагностики поиска
+    if (players && players.length > 0) {
+      console.log(`🎯 [GameBoard] getPlayer: Ищем игрока на позиции ${b}`);
+      console.log(`🎯 [GameBoard] getPlayer: Доступные игроки:`, players.map(p => ({ id: p.id, plan: p.plan, type: typeof p.plan })));
+    }
+    
+    // Исправляем сравнение - приводим оба значения к числу
+    const player = players.find((pl) => Number(pl.plan) === Number(b));
+    
+    // Логирование для диагностики
+    if (player) {
+      console.log(`🎯 [GameBoard] getPlayer: Найден игрок на позиции ${b}:`, player);
+    } else if (players && players.length > 0) {
+      console.log(`🎯 [GameBoard] getPlayer: Игрок НЕ найден на позиции ${b}`);
+    }
+    
     return player
       ? {
           id: player.id,
-          plan: player.plan,
+          plan: Number(player.plan), // Приводим к числу
           avatar: player.avatar,
         }
       : undefined;

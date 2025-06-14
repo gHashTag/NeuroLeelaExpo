@@ -26,15 +26,25 @@ const savePlayerToStorage = (playerData: Player) => {
 // Функция для загрузки данных игрока из localStorage
 const loadPlayerFromStorage = (userId: string): Player | null => {
   try {
+    console.log('[Apollo] loadPlayerFromStorage: НАЧАЛО для userId:', userId);
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(PLAYER_STORAGE_KEY);
+      console.log('[Apollo] loadPlayerFromStorage: Данные из localStorage:', stored);
       if (stored) {
         const playerData = JSON.parse(stored);
+        console.log('[Apollo] loadPlayerFromStorage: Распарсенные данные:', playerData);
+        console.log('[Apollo] loadPlayerFromStorage: playerData.id:', playerData.id, 'userId:', userId);
         if (playerData.id === userId) {
           console.log('[Apollo] Данные игрока загружены из localStorage:', playerData);
           return playerData;
+        } else {
+          console.log('[Apollo] loadPlayerFromStorage: ID не совпадает');
         }
+      } else {
+        console.log('[Apollo] loadPlayerFromStorage: localStorage пуст');
       }
+    } else {
+      console.log('[Apollo] loadPlayerFromStorage: window не определен');
     }
   } catch (error) {
     console.error('[Apollo] Ошибка при загрузке из localStorage:', error);
@@ -45,6 +55,7 @@ const loadPlayerFromStorage = (userId: string): Player | null => {
 // Функция для загрузки данных игрока из Supabase
 export const loadPlayerData = async (userId: string) => {
   try {
+    console.log('[Apollo] loadPlayerData: НАЧАЛО ФУНКЦИИ для userId:', userId);
     isLoadingVar(true);
     errorVar(null);
     
@@ -53,9 +64,13 @@ export const loadPlayerData = async (userId: string) => {
     // Сначала пытаемся загрузить из localStorage
     const storedPlayer = loadPlayerFromStorage(userId);
     if (storedPlayer) {
+      console.log('[Apollo] loadPlayerData: Данные найдены в localStorage:', storedPlayer);
       currentPlayerVar(storedPlayer);
       console.log('[Apollo] Используем данные из localStorage');
+      isLoadingVar(false); // Добавляем сброс флага загрузки
       return;
+    } else {
+      console.log('[Apollo] loadPlayerData: Данные НЕ найдены в localStorage');
     }
     
     // Если в localStorage нет данных, пытаемся загрузить из Supabase
@@ -155,12 +170,14 @@ export const updatePlayerInStorage = (updatedPlayer: Player) => {
 
 // Централизованная функция для обновления состояния игрока
 export const updatePlayerState = (updates: Partial<Player>) => {
-  console.log('[Apollo] updatePlayerState: НАЧАЛО ФУНКЦИИ');
+  console.log('🔥 [Apollo] updatePlayerState: === НАЧАЛО ФУНКЦИИ ===');
+  console.log('🔥 [Apollo] updatePlayerState: входящие updates =', updates);
+  
   const currentPlayer = currentPlayerVar();
-  console.log('[Apollo] updatePlayerState: currentPlayer =', currentPlayer);
+  console.log('🔥 [Apollo] updatePlayerState: currentPlayer ДО обновления =', currentPlayer);
   
   if (!currentPlayer) {
-    console.error('[Apollo] updatePlayerState: Игрок не найден');
+    console.error('🔥 [Apollo] updatePlayerState: ОШИБКА - Игрок не найден!');
     return;
   }
   
@@ -169,36 +186,56 @@ export const updatePlayerState = (updates: Partial<Player>) => {
     ...updates
   };
   
-  console.log('[Apollo] updatePlayerState: обновляем состояние', {
-    from: currentPlayer,
-    updates,
-    to: updatedPlayer
-  });
+  console.log('🔥 [Apollo] updatePlayerState: updatedPlayer (результат слияния) =', updatedPlayer);
+  console.log('🔥 [Apollo] updatePlayerState: КЛЮЧЕВЫЕ ИЗМЕНЕНИЯ:');
+  console.log('🔥 [Apollo] updatePlayerState: plan:', currentPlayer.plan, '->', updatedPlayer.plan);
+  console.log('🔥 [Apollo] updatePlayerState: previous_plan:', currentPlayer.previous_plan, '->', updatedPlayer.previous_plan);
+  console.log('🔥 [Apollo] updatePlayerState: isFinished:', currentPlayer.isFinished, '->', updatedPlayer.isFinished);
+  console.log('🔥 [Apollo] updatePlayerState: needsReport:', currentPlayer.needsReport, '->', updatedPlayer.needsReport);
   
   // Обновляем реактивную переменную
+  console.log('🔥 [Apollo] updatePlayerState: ВЫЗЫВАЕМ currentPlayerVar(updatedPlayer)...');
   currentPlayerVar(updatedPlayer);
-  console.log('[Apollo] updatePlayerState: currentPlayerVar обновлена');
+  console.log('🔥 [Apollo] updatePlayerState: currentPlayerVar обновлена');
   
   // Сохраняем в localStorage
+  console.log('🔥 [Apollo] updatePlayerState: СОХРАНЯЕМ в localStorage...');
   savePlayerToStorage(updatedPlayer);
-  console.log('[Apollo] updatePlayerState: данные сохранены в localStorage');
+  console.log('🔥 [Apollo] updatePlayerState: данные сохранены в localStorage');
   
   // Проверяем, что обновление прошло успешно
   const verifyPlayer = currentPlayerVar();
-  console.log('[Apollo] updatePlayerState: ПРОВЕРКА - новое состояние:', verifyPlayer);
+  console.log('🔥 [Apollo] updatePlayerState: ПРОВЕРКА - новое состояние currentPlayerVar() =', verifyPlayer);
+  console.log('🔥 [Apollo] updatePlayerState: ПРОВЕРКА - план изменился?', verifyPlayer?.plan === updatedPlayer.plan ? '✅ ДА' : '❌ НЕТ');
+  console.log('🔥 [Apollo] updatePlayerState: === КОНЕЦ ФУНКЦИИ ===');
 };
 
 // Функция для отметки о завершении отчета
 export const markReportCompleted = async (userId: string) => {
   try {
-    console.log('[Apollo] markReportCompleted: сбрасываем needsReport для userId:', userId);
+    console.log('💫 [Apollo] markReportCompleted: === НАЧАЛО ФУНКЦИИ ===');
+    console.log('💫 [Apollo] markReportCompleted: userId =', userId);
+    
+    // Проверяем текущее состояние ДО изменения
+    const playerBefore = currentPlayerVar();
+    console.log('💫 [Apollo] markReportCompleted: состояние ДО изменения =', playerBefore);
+    console.log('💫 [Apollo] markReportCompleted: needsReport ДО =', playerBefore?.needsReport);
     
     // Сначала обновляем локальное состояние (быстро)
+    console.log('💫 [Apollo] markReportCompleted: ВЫЗЫВАЕМ updatePlayerState({ needsReport: false })...');
     updatePlayerState({ needsReport: false });
-    console.log('[Apollo] Локальное состояние обновлено: needsReport = false');
+    
+    // Проверяем состояние ПОСЛЕ локального изменения
+    const playerAfter = currentPlayerVar();
+    console.log('💫 [Apollo] markReportCompleted: состояние ПОСЛЕ локального изменения =', playerAfter);
+    console.log('💫 [Apollo] markReportCompleted: needsReport ПОСЛЕ =', playerAfter?.needsReport);
+    console.log('💫 [Apollo] markReportCompleted: изменение успешно?', playerAfter?.needsReport === false ? '✅ ДА' : '❌ НЕТ');
+    
+    console.log('💫 [Apollo] markReportCompleted: Локальное состояние обновлено: needsReport = false');
     
     // Пытаемся обновить в Supabase с таймаутом
     try {
+      console.log('💫 [Apollo] markReportCompleted: Пытаемся обновить Supabase...');
       const supabaseUpdatePromise = supabase
         .from('players')
         .update({ needsReport: false })
@@ -209,14 +246,17 @@ export const markReportCompleted = async (userId: string) => {
       });
       
       await Promise.race([supabaseUpdatePromise, timeoutPromise]);
-      console.log('[Apollo] needsReport успешно сброшен в Supabase');
+      console.log('💫 [Apollo] markReportCompleted: needsReport успешно сброшен в Supabase');
       
     } catch (supabaseError) {
-      console.log('[Apollo] Supabase недоступен или медленный, используем только локальное состояние');
+      console.log('💫 [Apollo] markReportCompleted: Supabase недоступен или медленный, используем только локальное состояние');
+      console.log('💫 [Apollo] markReportCompleted: Ошибка Supabase:', supabaseError);
     }
     
+    console.log('💫 [Apollo] markReportCompleted: === КОНЕЦ ФУНКЦИИ ===');
+    
   } catch (error) {
-    console.error('[Apollo] Ошибка при сбросе needsReport:', error);
+    console.error('💫 [Apollo] markReportCompleted: КРИТИЧЕСКАЯ ОШИБКА:', error);
     // Не выбрасываем ошибку, так как локальное состояние уже обновлено
   }
 };

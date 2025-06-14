@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, ImageBackground, Platform, Text, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, Dimensions, useWindowDimensions } from "react-native";
-import { Display, Dice, GameBoard, PlayerInfoConsolidated } from "@components/ui/index";
+import { Display, GameBoard, PlayerInfoConsolidated } from "@components/ui/index";
 import { PlayerStats, PlayerInfoApollo } from "@components/ui/index";
 import { ApolloStatus } from "@/components/ui/ApolloStatus";
 import { router } from "expo-router";
@@ -11,7 +11,7 @@ import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 import { ChatBot } from '@/components/chat/ChatBot';
 import { processGameStep } from '@/services/GameService';
 import { GameMessageService } from '@/services/GameMessageService';
-import { updatePlayerState } from '@/lib/apollo-drizzle-client';
+
 // import { useTranslation } from 'react-i18next'
 // import { useAccount } from 'store'
 
@@ -30,7 +30,6 @@ const AppLogo = () => (
 );
 
 const GameScreen: React.FC = () => {
-  const [lastRoll, setLastRoll] = useState(1);
   const [currentMessage, setCurrentMessage] = useState<string>(GameMessageService.getWelcomeMessage());
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { userData, getAvatarUrl } = useSupabase();
@@ -38,7 +37,17 @@ const GameScreen: React.FC = () => {
   const isLandscape = windowWidth > windowHeight;
   
   // Apollo Drizzle — единый источник истины
-  const { currentPlayer, isLoading, error, movePlayer } = useApolloDrizzle();
+  const { currentPlayer, isLoading, error, movePlayer, updatePlayerState } = useApolloDrizzle();
+
+  // Отслеживаем изменения currentPlayer в GameScreen
+  useEffect(() => {
+    console.log('🔥 [GameScreen] currentPlayer ИЗМЕНИЛСЯ в GameScreen!');
+    console.log('🔥 [GameScreen] Новое значение currentPlayer:', currentPlayer);
+    if (currentPlayer) {
+      console.log('🔥 [GameScreen] План игрока в GameScreen:', currentPlayer.plan);
+      console.log('🔥 [GameScreen] isFinished в GameScreen:', currentPlayer.isFinished);
+    }
+  }, [currentPlayer]);
 
   // Обновляем сообщение при изменении состояния игрока
   useEffect(() => {
@@ -144,6 +153,72 @@ const GameScreen: React.FC = () => {
     
     // Проверяем наличие userData для получения user.id
     if (!userData?.user_id) {
+      console.log('🎲 [GameScreen] rollDice: userData.user_id не найден, используем тестового пользователя');
+      // Временное решение: используем тестового пользователя
+      const testUserId = 'test-user-demo';
+      
+      try {
+        // Генерируем случайное число от 1 до 6
+        const roll = Math.floor(Math.random() * 6) + 1;
+        console.log(`🎲 [GameScreen] rollDice: Бросок кубика: ${roll}, текущая позиция: ${currentPlayer.plan}, isFinished: ${currentPlayer.isFinished}`);
+        
+        // Вызываем функцию processGameStep для обработки хода по правилам игры
+        console.log(`🎲 [GameScreen] rollDice: Вызываем processGameStep с roll=${roll}, id=${testUserId}`);
+        
+        processGameStep(roll, testUserId)
+          .then(({ gameStep, direction, message }) => {
+            console.log(`🎲 [GameScreen] rollDice: Результат processGameStep:`, gameStep);
+            console.log(`🎲 [GameScreen] rollDice: Новая позиция: ${gameStep.loka}, направление: ${direction}, isFinished: ${gameStep.is_finished}`);
+            console.log(`🎲 [GameScreen] rollDice: Сообщение: ${message}`);
+            
+            // Обновляем сообщение
+            setCurrentMessage(message);
+            
+            // Определяем, нужен ли отчет - если позиция изменилась и игра активна
+            const needsReport = gameStep.loka !== gameStep.previous_loka && !gameStep.is_finished;
+            
+            // Обновляем локальное состояние Apollo со всеми данными из gameStep
+            const updates = {
+              plan: gameStep.loka,
+              previous_plan: gameStep.previous_loka,
+              isFinished: gameStep.is_finished,
+              consecutiveSixes: gameStep.consecutive_sixes,
+              positionBeforeThreeSixes: gameStep.position_before_three_sixes,
+              needsReport: needsReport, // Устанавливаем флаг необходимости отчета
+              message: message
+            };
+            
+            // Используем updatePlayerState для полного обновления состояния
+            updatePlayerState(updates);
+            console.log('🎲 [GameScreen] rollDice: Локальное состояние Apollo обновлено через updatePlayerState:', updates);
+            
+            // Проверяем, что состояние действительно обновилось
+            setTimeout(() => {
+              const verifyPlayer = currentPlayer;
+              console.log('🎲 [GameScreen] rollDice: ПРОВЕРКА ЧЕРЕЗ 100ms - текущее состояние:', verifyPlayer);
+            }, 100);
+            
+            // Если нужен отчет, показываем сообщение в чате
+            if (needsReport) {
+              console.log('🎲 [GameScreen] rollDice: Требуется отчет, показываем сообщение в чате');
+              setCurrentMessage("📝 Напишите отчет в чате о вашем новом состоянии!");
+            }
+          })
+          .catch(error => {
+            console.error('🎲 [GameScreen] rollDice: Ошибка при обработке хода:', error);
+            setCurrentMessage(`❌ Ошибка при обработке хода: ${error.message}`);
+          });
+        
+        return roll;
+      } catch (error) {
+        console.error('🎲 [GameScreen] rollDice: Критическая ошибка при броске кубика:', error);
+        setCurrentMessage(`❌ Критическая ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+        return 0;
+      }
+    }
+    
+    // Основная логика для авторизованного пользователя
+    if (!userData?.user_id) {
       console.error('🎲 [GameScreen] rollDice: userData.user_id не найден!', userData);
       setCurrentMessage("❌ Ошибка: пользователь не авторизован");
       return 0;
@@ -153,9 +228,6 @@ const GameScreen: React.FC = () => {
       // Генерируем случайное число от 1 до 6
       const roll = Math.floor(Math.random() * 6) + 1;
       console.log(`🎲 [GameScreen] rollDice: Бросок кубика: ${roll}, текущая позиция: ${currentPlayer.plan}, isFinished: ${currentPlayer.isFinished}`);
-      
-      // Обновляем отображаемое значение кубика
-      setLastRoll(roll);
       
       // Вызываем функцию processGameStep для обработки хода по правилам игры
       console.log(`🎲 [GameScreen] rollDice: Вызываем processGameStep с roll=${roll}, id=${userData.user_id}`);
@@ -183,7 +255,7 @@ const GameScreen: React.FC = () => {
             message: message
           };
           
-          // Используем updatePlayerState для обновления состояния
+          // Используем updatePlayerState для полного обновления состояния
           updatePlayerState(updates);
           console.log('🎲 [GameScreen] rollDice: Локальное состояние Apollo обновлено через updatePlayerState:', updates);
           
@@ -258,6 +330,12 @@ const GameScreen: React.FC = () => {
       }
     : null;
 
+  // Добавляем логирование для диагностики
+  console.log('🎮 [GameScreen] Диагностика данных игрока:');
+  console.log('🎮 [GameScreen] currentPlayer:', currentPlayer);
+  console.log('🎮 [GameScreen] safePlayer:', safePlayer);
+  console.log('🎮 [GameScreen] Передаем в GameBoard players:', safePlayer ? [safePlayer] : []);
+
   // Адаптивный макет для Web и Mobile
   if (isWeb) {
     // Мобильный web в портретной ориентации - показываем мобильную версию интерфейса
@@ -271,14 +349,9 @@ const GameScreen: React.FC = () => {
           
           <ScrollView>
             <View className="p-2 pb-4">
-              {/* Блок с игровым полем - возвращаем нормальное поле без масштабирования */}
+              {/* Блок с игровым полем */}
               <View className="bg-white rounded-lg shadow-sm mb-2 p-1">
                 <GameBoard players={safePlayer ? [safePlayer] : []} />
-              </View>
-              
-              {/* Кубик полностью без фона, внешне сзади элементов */}
-              <View className="items-center justify-center mb-2 mx-auto w-full">
-                <Dice rollDice={rollDice} lastRoll={lastRoll} size="extra-small" />
               </View>
               
               {/* Компактная информация об игроке */}
@@ -319,12 +392,7 @@ const GameScreen: React.FC = () => {
               <GameBoard players={safePlayer ? [safePlayer] : []} />
             </View>
             
-            {/* Dice Container */}
-            <View className="items-center justify-center w-full">
-              <Dice rollDice={rollDice} lastRoll={lastRoll} size="extra-small" />
-            </View>
-            
-            {/* Компактная информация об игроке под кубиком */}
+            {/* Компактная информация об игроке */}
             <View className="bg-white rounded-lg shadow-sm p-2">
               <View className="flex-row items-center justify-between">
                 <Text className="text-sm text-gray-600">План:</Text>
@@ -360,14 +428,9 @@ const GameScreen: React.FC = () => {
       
       <ScrollView>
         <View className="p-2 pb-3">
-          {/* Блок с игровым полем - возвращаем нормальное поле без масштабирования */}
+          {/* Блок с игровым полем */}
           <View className="bg-white rounded-lg overflow-hidden shadow-sm mb-1 p-1">
             <GameBoard players={safePlayer ? [safePlayer] : []} />
-          </View>
-          
-          {/* Кубик полностью без фона, внешне сзади элементов */}
-          <View className="items-center justify-center mb-2 mx-auto w-full">
-            <Dice rollDice={rollDice} lastRoll={lastRoll} size="extra-small" />
           </View>
           
           {/* Компактная информация об игроке */}
