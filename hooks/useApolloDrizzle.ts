@@ -140,13 +140,31 @@ export const useApolloDrizzle = () => {
         return;
       }
       
-      console.log('[Apollo Drizzle] Полное обновление состояния игрока:', updates);
+      console.log('[Apollo Drizzle] ================ updatePlayerState ВЫЗВАНА ================');
+      console.log('[Apollo Drizzle] Текущее состояние игрока:', currentPlayer);
+      console.log('[Apollo Drizzle] Обновления для применения:', updates);
       
       // Создаем обновленного игрока с новыми данными
       const updatedPlayer = { ...currentPlayer, ...updates };
       
+      console.log('[Apollo Drizzle] НОВОЕ состояние игрока:', updatedPlayer);
+      console.log('[Apollo Drizzle] Ключевые изменения:');
+      console.log('[Apollo Drizzle] - plan:', currentPlayer.plan, '->', updatedPlayer.plan);
+      console.log('[Apollo Drizzle] - previous_plan:', currentPlayer.previous_plan, '->', updatedPlayer.previous_plan);
+      console.log('[Apollo Drizzle] - needsReport:', currentPlayer.needsReport, '->', updatedPlayer.needsReport);
+      console.log('[Apollo Drizzle] - isFinished:', currentPlayer.isFinished, '->', updatedPlayer.isFinished);
+      console.log('[Apollo Drizzle] - message:', currentPlayer.message, '->', updatedPlayer.message);
+      
       currentPlayerVar(updatedPlayer);
-      console.log('[Apollo Drizzle] Состояние игрока полностью обновлено:', updatedPlayer);
+      console.log('[Apollo Drizzle] ✅ Состояние игрока полностью обновлено в Apollo');
+      
+      // Проверяем, что обновление действительно применилось
+      setTimeout(() => {
+        const verifyPlayer = currentPlayerVar();
+        console.log('[Apollo Drizzle] 🔍 ПРОВЕРКА ЧЕРЕЗ 50ms - состояние в Apollo:', verifyPlayer);
+        console.log('[Apollo Drizzle] 🔍 План после обновления:', verifyPlayer?.plan);
+      }, 50);
+      
     } catch (error) {
       console.error('[Apollo Drizzle] Ошибка при полном обновлении состояния:', error);
       if (isMounted.current) {

@@ -410,12 +410,9 @@ export const ChatBot = () => {
         await markReportCompleted(user.id);
         console.log('✅ [ChatBot] handleSubmitCore: markReportCompleted ВЫПОЛНЕНА УСПЕШНО');
         
-        // Проверяем, изменилось ли состояние
+        // Проверяем, изменилось ли состояние НЕМЕДЛЕННО
         console.log('🔍 [ChatBot] handleSubmitCore: Проверяем состояние после markReportCompleted');
-        // Даем немного времени для обновления состояния
-        setTimeout(() => {
-          console.log('🔍 [ChatBot] handleSubmitCore: currentPlayer?.needsReport после markReportCompleted =', currentPlayer?.needsReport);
-        }, 100);
+        console.log('🔍 [ChatBot] handleSubmitCore: currentPlayer?.needsReport после markReportCompleted =', currentPlayer?.needsReport);
         
       } catch (markError) {
         console.error('⚠️ [ChatBot] handleSubmitCore: ОШИБКА markReportCompleted:', markError);
@@ -439,28 +436,26 @@ export const ChatBot = () => {
       console.log('💾 [ChatBot] handleSubmitCore: Начинаем сохранение отчета в фоне...');
       saveReportInBackground(userInput, spiritualCommentary);
 
-      // Показываем кубик для следующего хода через небольшую паузу
-      setTimeout(() => {
-        console.log('🎲 [ChatBot] handleSubmitCore: Показываем кубик для следующего хода...');
-        console.log('🎲 [ChatBot] handleSubmitCore: currentPlayer.plan =', currentPlayer.plan);
-        console.log('🎲 [ChatBot] handleSubmitCore: currentPlayer.isFinished =', currentPlayer.isFinished);
+      // Показываем кубик для следующего хода НЕМЕДЛЕННО
+      console.log('🎲 [ChatBot] handleSubmitCore: Показываем кубик для следующего хода...');
+      console.log('🎲 [ChatBot] handleSubmitCore: currentPlayer.plan =', currentPlayer.plan);
+      console.log('🎲 [ChatBot] handleSubmitCore: currentPlayer.isFinished =', currentPlayer.isFinished);
+      
+      const nextStepMessage = currentPlayer.plan === 68 && currentPlayer.isFinished 
+        ? "🎉 Вы достигли Космического Сознания! Готовы начать новый путь самопознания?"
+        : "Отлично! Теперь вы готовы к следующему шагу на пути самопознания.";
         
-        const nextStepMessage = currentPlayer.plan === 68 && currentPlayer.isFinished 
-          ? "🎉 Вы достигли Космического Сознания! Готовы начать новый путь самопознания?"
-          : "Отлично! Теперь вы готовы к следующему шагу на пути самопознания.";
-          
-        const diceMessage = currentPlayer.plan === 68 && currentPlayer.isFinished
-          ? "🎲 Бросьте 6, чтобы начать новый путь самопознания!"
-          : "🎲 Готовы к следующему шагу? Бросьте кубик для продолжения путешествия!";
+      const diceMessage = currentPlayer.plan === 68 && currentPlayer.isFinished
+        ? "🎲 Бросьте 6, чтобы начать новый путь самопознания!"
+        : "🎲 Готовы к следующему шагу? Бросьте кубик для продолжения путешествия!";
 
-        console.log('🎲 [ChatBot] handleSubmitCore: Показываем кубик через addGameMessage');
-        console.log('🎲 [ChatBot] handleSubmitCore: diceMessage =', diceMessage);
-        
-        addGameMessage('showDice', {
-          message: diceMessage,
-          disabled: false
-        }, nextStepMessage);
-      }, 1500); // Небольшая пауза для лучшего UX
+      console.log('🎲 [ChatBot] handleSubmitCore: Показываем кубик через addGameMessage');
+      console.log('🎲 [ChatBot] handleSubmitCore: diceMessage =', diceMessage);
+      
+      addGameMessage('showDice', {
+        message: diceMessage,
+        disabled: false
+      }, nextStepMessage);
 
       return; // Выходим, так как это был отчет
     } else {
@@ -667,10 +662,8 @@ ${randomMotivation}`;
 
   // Обработчик броска кубика - ПЕРЕМЕЩЕН ВЫШЕ renderToolInvocation
   const handleDiceRoll = async (): Promise<number> => {
-    console.log('🎲 [ChatBot] handleDiceRoll: НАЧАЛО ФУНКЦИИ');
-    console.log('🎲 [ChatBot] handleDiceRoll: user =', user);
+    console.log('🎲 [ChatBot] ================ handleDiceRoll ВЫЗВАНА ================');
     console.log('🎲 [ChatBot] handleDiceRoll: currentPlayer =', currentPlayer);
-    console.log('🎲 [ChatBot] handleDiceRoll: userData =', userData);
     
     if (!currentPlayer) {
       console.error('🎲 [ChatBot] handleDiceRoll: нет currentPlayer, возвращаем 1');
@@ -679,6 +672,8 @@ ${randomMotivation}`;
 
     const roll = Math.floor(Math.random() * 6) + 1;
     console.log('🎲 [ChatBot] handleDiceRoll: сгенерирован бросок:', roll);
+    
+    // НЕМЕДЛЕННО обновляем lastRoll для отображения в кубике
     setLastRoll(roll);
 
     try {
@@ -709,42 +704,35 @@ ${randomMotivation}`;
       
       console.log('🎲 [ChatBot] updatePlayerState вызвана, проверяем результат...');
       
-      // Проверяем, что состояние действительно обновилось
-      setTimeout(() => {
-        console.log('🎲 [ChatBot] ПРОВЕРКА ЧЕРЕЗ 100ms - текущее состояние currentPlayer:', currentPlayer);
-      }, 100);
-      
-      // Добавляем сообщение о результате броска
+      // Добавляем сообщение о результате броска с АКТУАЛЬНЫМИ данными
       const resultMessage: Message = {
         id: `dice-result-${Date.now()}`,
         role: 'assistant',
-        content: `🎲 Выпало ${roll}! ${result.message}`
+        content: `🎲 Выпало ${roll}! Переход с плана ${result.gameStep.previous_loka} на план ${result.gameStep.loka}. ${result.message}`
       };
       
       console.log('🎲 [ChatBot] добавляем сообщение о результате:', resultMessage);
       setMessages(prev => [resultMessage, ...prev]);
       
-      // Через небольшую задержку показываем следующий кубик или запрос отчета
-      setTimeout(() => {
-        if (updatedPlayer.needsReport) {
-          // Если нужен отчет, показываем запрос
-          const planInfo = getPlanInfo(updatedPlayer.plan);
-          const prompt = getPlanPrompt(updatedPlayer.plan);
-          const reportMessage: Message = {
-            id: `report-request-${Date.now()}`,
-            role: 'assistant',
-            content: `📝 Время для отчета о плане ${updatedPlayer.plan}: "${planInfo.name}"\n\n${prompt}\n\n💡 Напишите ваши размышления и наблюдения в чате. После отправки отчета вы сможете продолжить игру.`
-          };
-          setMessages(prev => [reportMessage, ...prev]);
-        } else {
-          // Если отчет не нужен, сразу показываем кубик для следующего хода
-          console.log('🎲 [ChatBot] Показываем кубик для следующего хода через addGameMessage');
-          addGameMessage('showDice', {
-            message: `🎲 Готовы к следующему шагу? Бросьте кубик для продолжения путешествия!`,
-            disabled: false
-          }, "Отлично! Теперь вы готовы к следующему шагу на пути самопознания.");
-        }
-      }, 1000); // Задержка 1 секунда для плавности
+      // НЕМЕДЛЕННО показываем следующий кубик или запрос отчета (БЕЗ ЗАДЕРЖКИ)
+      if (updatedPlayer.needsReport) {
+        // Если нужен отчет, показываем запрос
+        const planInfo = getPlanInfo(updatedPlayer.plan);
+        const prompt = getPlanPrompt(updatedPlayer.plan);
+        const reportMessage: Message = {
+          id: `report-request-${Date.now()}`,
+          role: 'assistant',
+          content: `📝 Время для отчета о плане ${updatedPlayer.plan}: "${planInfo.name}"\n\n${prompt}\n\n💡 Напишите ваши размышления и наблюдения в чате. После отправки отчета вы сможете продолжить игру.`
+        };
+        setMessages(prev => [reportMessage, ...prev]);
+      } else {
+        // Если отчет не нужен, сразу показываем кубик для следующего хода
+        console.log('🎲 [ChatBot] Показываем кубик для следующего хода через addGameMessage');
+        addGameMessage('showDice', {
+          message: `🎲 Готовы к следующему шагу? Текущий план: ${updatedPlayer.plan}. Бросьте кубик!`,
+          disabled: false
+        }, "Отлично! Теперь вы готовы к следующему шагу на пути самопознания.");
+      }
       
     } catch (error) {
       console.error('Ошибка при броске кубика:', error);

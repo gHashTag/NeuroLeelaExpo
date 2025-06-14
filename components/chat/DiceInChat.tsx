@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { View, Text, Animated, Easing, Pressable, StyleSheet } from 'react-native';
 import { vs } from 'react-native-size-matters';
 
@@ -21,26 +21,36 @@ export const DiceInChat: React.FC<DiceInChatProps> = ({
   console.log('🎲 [DiceInChat] disabled:', disabled);
   console.log('🎲 [DiceInChat] КРИТИЧЕСКИ ВАЖНО: disabled =', disabled);
 
+  const [isAnimating, setIsAnimating] = useState(false);
+
   // Добавляем анимацию ТОЧНО как в основном Dice компоненте
   const spinValue = useRef(new Animated.Value(0)).current;
   const scaleValue = useRef(new Animated.Value(1)).current;
   const opacityValue = useRef(new Animated.Value(1)).current;
-  const [isAnimating, setIsAnimating] = useState(false);
 
-  console.log('🎲 [DiceInChat] STATE:', {
-    disabled,
-    lastRoll,
-    isAnimating,
-    onRoll: typeof onRoll
-  });
+  // Диагностика изменений lastRoll
+  useEffect(() => {
+    console.log('🎲 [DiceInChat] ================ lastRoll ИЗМЕНИЛСЯ ================');
+    console.log('🎲 [DiceInChat] Новое значение lastRoll:', lastRoll);
+    console.log('🎲 [DiceInChat] disabled:', disabled);
+    console.log('🎲 [DiceInChat] isAnimating:', isAnimating);
+  }, [lastRoll]);
 
+  // Диагностика изменений disabled
+  useEffect(() => {
+    console.log('🎲 [DiceInChat] ================ disabled ИЗМЕНИЛСЯ ================');
+    console.log('🎲 [DiceInChat] Новое значение disabled:', disabled);
+  }, [disabled]);
+
+  // Создаем интерполяцию для вращения
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
+    outputRange: ['0deg', '360deg'],
   });
 
   // Функция для получения изображения кубика (ТОЧНО как в Dice компоненте)
   const getImage = (number: number) => {
+    console.log('🎲 [DiceInChat] getImage вызвана с number:', number);
     switch (number) {
       case 1:
         return require("../../assets/dice/1.png");
@@ -55,12 +65,13 @@ export const DiceInChat: React.FC<DiceInChatProps> = ({
       case 6:
         return require("../../assets/dice/6.png");
       default:
-        return null;
+        console.warn('🎲 [DiceInChat] getImage: неизвестное число:', number);
+        return require("../../assets/dice/1.png"); // fallback
     }
   };
 
   // ТОЧНАЯ КОПИЯ animateDice из основного Dice компонента
-  const animateDice = (): void => {
+  const animateDice = async (): Promise<void> => {
     console.log('🎲 [DiceInChat] ================== animateDice ВЫЗВАНА ==================');
     console.log('🎲 [DiceInChat] animateDice: disabled =', disabled);
     console.log('🎲 [DiceInChat] animateDice: isAnimating =', isAnimating);
@@ -78,49 +89,53 @@ export const DiceInChat: React.FC<DiceInChatProps> = ({
     console.log('✅ [DiceInChat] НАЧИНАЕМ АНИМАЦИЮ КУБИКА');
     setIsAnimating(true);
     
-    // Сначала вызываем onRoll() БЕЗ await (как rollDice в основном компоненте)
-    console.log('🎲 [DiceInChat] Вызываем onRoll()...');
-    
-    try {
-      onRoll(); // Убираем await!
-      console.log('✅ [DiceInChat] onRoll() вызван успешно');
-    } catch (error) {
-      console.error('❌ [DiceInChat] Ошибка при вызове onRoll():', error);
-    }
-    
-    // Затем запускаем анимацию вращения кубика
+    // Запускаем анимацию вращения СРАЗУ
     console.log('🎲 [DiceInChat] Запускаем анимацию вращения...');
     spinValue.setValue(0);
-    Animated.timing(spinValue, {
-      toValue: 1,
-      duration: 500,
-      easing: Easing.cubic,
-      useNativeDriver: true,
-    }).start(() => {
-      // По окончании анимации сбрасываем состояние
-      console.log('✅ [DiceInChat] Анимация вращения завершена');
-      spinValue.setValue(0);
-      setIsAnimating(false);
-    });
-
+    
     // Анимируем масштабирование
     console.log('🎲 [DiceInChat] Запускаем анимацию масштабирования...');
     scaleValue.setValue(1);
-    Animated.sequence([
-      Animated.timing(scaleValue, {
-        toValue: 1.2,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleValue, {
+    
+    // Запускаем обе анимации параллельно
+    Animated.parallel([
+      Animated.timing(spinValue, {
         toValue: 1,
-        duration: 250,
+        duration: 500,
+        easing: Easing.cubic,
         useNativeDriver: true,
       }),
-    ]).start();
-
-    // УБИРАЕМ анимацию прозрачности - она делает кубик невидимым
-    // opacityValue остается равным 1 всегда
+      Animated.sequence([
+        Animated.timing(scaleValue, {
+          toValue: 1.2,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleValue, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ])
+    ]).start(() => {
+      // По окончании анимации сбрасываем состояние
+      console.log('✅ [DiceInChat] Анимация завершена');
+      spinValue.setValue(0);
+      setIsAnimating(false);
+    });
+    
+    // Вызываем onRoll() ПОСЛЕ начала анимации
+    console.log('🎲 [DiceInChat] Вызываем onRoll()...');
+    
+    try {
+      await onRoll(); // Теперь с await!
+      console.log('✅ [DiceInChat] onRoll() выполнен успешно');
+    } catch (error) {
+      console.error('❌ [DiceInChat] Ошибка при вызове onRoll():', error);
+      // В случае ошибки тоже сбрасываем анимацию
+      setIsAnimating(false);
+      spinValue.setValue(0);
+    }
   };
 
   // Размер кубика для чата (немного меньше чем основной)
@@ -170,7 +185,7 @@ export const DiceInChat: React.FC<DiceInChatProps> = ({
       
       {lastRoll > 0 && (
         <Text style={styles.lastRollText}>
-          Последний бросок: {lastRoll}
+          Последний бросок: {lastRoll} (обновлено: {new Date().toLocaleTimeString()})
         </Text>
       )}
       
