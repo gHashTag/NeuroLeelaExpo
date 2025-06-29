@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { PlanCard } from './PlanCard';
 import { DiceInChat } from './DiceInChat';
 import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
-import { processGameStep } from '@/services/GameService';
+import { InngestEventService } from '@/services/InngestEventService';
 import { markReportCompleted } from '@/lib/apollo-drizzle-client';
 import { supabase } from '@/lib/supabase';
 import { useSupabase } from '@/context/supabase-provider';
@@ -455,9 +455,10 @@ export const ChatBot = () => {
 
       setMessages(prev => [...prev, responseMessage]); // Добавляем в конец
 
-      // Сохраняем отчет в фоне (не блокируя UI)
-      console.log('💾 [GAME_FLOW] handleSubmitCore: Начинаем сохранение отчета в фоне...');
-      saveReportInBackground(userInput, spiritualCommentary);
+      // ✨ НОВАЯ АРХИТЕКТУРА: Отправляем событие отчета в Inngest
+      console.log('💾 [EventDriven] handleSubmitCore: Отправляем событие отчета в Inngest...');
+      const userId = user?.id || userData?.user_id || 'test-user-demo';
+      InngestEventService.sendPlayerReport(userId, userInput, currentPlanForReport);
 
       // Флаг needsReport уже сброшен через markReportCompleted выше
 
@@ -498,91 +499,14 @@ export const ChatBot = () => {
     const mockResponse = generateMockResponse(userInput);
     setMessages(prev => [...prev, mockResponse]); // Добавляем в конец
     
-    // Сохраняем обычный диалог в истории чата в фоне
-    if (user) {
-      saveHistoryInBackground(userInput, mockResponse.content, 'question');
-    }
+    // ✨ TODO: В будущем можно добавить сохранение обычных диалогов через Inngest
+    // if (user) {
+    //   InngestEventService.sendChatHistory(user.id, userInput, mockResponse.content, 'question');
+    // }
   };
 
-  // Функция для сохранения отчета в фоне
-  const saveReportInBackground = async (userInput: string, aiResponse: string) => {
-    if (!user || !currentPlanForReport) return;
-
-    try {
-      console.log('🔄 Фоновое сохранение отчета для плана:', currentPlanForReport);
-      
-      // Пытаемся сохранить отчет с коротким таймаутом
-      const reportSavePromise = supabase
-        .from("reports")
-        .insert({
-          user_id: user.id,
-          plan_number: currentPlanForReport,
-          content: userInput,
-          likes: 0,
-          comments: 0
-        })
-        .select()
-        .single();
-
-      const reportTimeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Background save timeout')), 2000);
-      });
-
-      const { data: reportData } = await Promise.race([
-        reportSavePromise,
-        reportTimeoutPromise
-      ]) as any;
-
-      console.log('✅ Отчет сохранен в фоне:', reportData?.id);
-
-      // Сохраняем диалог в истории
-      await supabase
-        .from("chat_history")
-        .insert({
-          user_id: user.id,
-          plan_number: currentPlanForReport,
-          user_message: userInput,
-          ai_response: aiResponse,
-          report_id: reportData?.id,
-          message_type: 'report'
-        });
-
-      console.log('✅ История диалога сохранена в фоне');
-
-    } catch (error) {
-      console.warn('⚠️ Фоновое сохранение не удалось (не критично):', error);
-      // Можно добавить в очередь для повторной попытки позже
-    }
-  };
-
-  // Функция для сохранения истории в фоне
-  const saveHistoryInBackground = async (userInput: string, aiResponse: string, messageType: string) => {
-    if (!user || !currentPlayer) return;
-
-    try {
-      console.log('🔄 Фоновое сохранение истории...');
-      
-      const historySavePromise = supabase
-        .from("chat_history")
-        .insert({
-          user_id: user.id,
-          plan_number: currentPlayer.plan || 1,
-          user_message: userInput,
-          ai_response: aiResponse,
-          message_type: messageType
-        });
-
-      const historyTimeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Background history save timeout')), 2000);
-      });
-
-      await Promise.race([historySavePromise, historyTimeoutPromise]);
-      console.log('✅ История сохранена в фоне');
-
-    } catch (error) {
-      console.warn('⚠️ Фоновое сохранение истории не удалось (не критично):', error);
-    }
-  };
+  // ✨ REMOVED: Старые функции сохранения заменены на Inngest события
+  // saveReportInBackground и saveHistoryInBackground теперь обрабатываются в Inngest
 
   // Функция для генерации мок ответов от Лилы
   const generateMockResponse = (userInput: string): Message => {
@@ -758,143 +682,54 @@ export const ChatBot = () => {
 
   // Новая функция для обработки броска кубика
   const handleNewDiceRoll = async (): Promise<void> => {
-    console.log('🎲 [GAME_FLOW] ================ ЭТАП 1: БРОСОК КУБИКА ================');
-    console.log('🎲 [GAME_FLOW] handleNewDiceRoll: НАЧАЛО ЭТАПА БРОСКА');
-    console.log('🎲 [GAME_FLOW] handleNewDiceRoll: ДЕТАЛЬНАЯ ДИАГНОСТИКА ВХОДНЫХ ДАННЫХ:');
-    console.log('🎲 [GAME_FLOW] handleNewDiceRoll: currentPlayer =', JSON.stringify(currentPlayer, null, 2));
-    console.log('🎲 [GAME_FLOW] handleNewDiceRoll: needsReport =', needsReport);
-    console.log('🎲 [GAME_FLOW] handleNewDiceRoll: currentPlanForReport =', currentPlanForReport);
-    console.log('🎲 [GAME_FLOW] handleNewDiceRoll: isLoading =', isLoading);
-    console.log('🎲 [GAME_FLOW] handleNewDiceRoll: user =', user ? { id: user.id } : null);
-    console.log('🎲 [GAME_FLOW] handleNewDiceRoll: userData =', userData ? { user_id: userData.user_id } : null);
+    console.log('🎲 [EventDriven] ================ ОТПРАВКА СОБЫТИЯ БРОСКА КУБИКА ================');
+    console.log('🎲 [EventDriven] handleNewDiceRoll: НАЧАЛО - теперь только отправка события');
     
     if (!currentPlayer) {
-      console.error('🎲 [ChatBot] handleNewDiceRoll: КРИТИЧЕСКАЯ ОШИБКА - нет currentPlayer');
-      console.error('🎲 [ChatBot] handleNewDiceRoll: Проверяем все возможные причины:');
-      console.error('🎲 [ChatBot] handleNewDiceRoll: - currentPlayer =', currentPlayer);
-      console.error('🎲 [ChatBot] handleNewDiceRoll: - user =', user);
-      console.error('🎲 [ChatBot] handleNewDiceRoll: - userData =', userData);
+      console.error('🎲 [EventDriven] ОШИБКА - нет currentPlayer');
       addSimpleMessage('❌ ОШИБКА: Игрок не найден. Попробуйте перезагрузить страницу.');
       return;
     }
 
-    // СТРОГАЯ ПРОВЕРКА: Проверяем, нужен ли отчет
-    console.log('🎲 [ChatBot] handleNewDiceRoll: ПРОВЕРКА БЛОКИРОВКИ КУБИКА:');
-    console.log('🎲 [ChatBot] handleNewDiceRoll: needsReport =', needsReport);
-    console.log('🎲 [ChatBot] handleNewDiceRoll: currentPlayer.needsReport =', currentPlayer.needsReport);
-    console.log('🎲 [ChatBot] handleNewDiceRoll: Логика блокировки: needsReport =', needsReport);
-    
+    // Проверяем блокировку кубика
     if (needsReport) {
-      console.log('🎲 [ChatBot] handleNewDiceRoll: КУБИК ЗАБЛОКИРОВАН! needsReport =', needsReport);
-      console.log('🎲 [ChatBot] handleNewDiceRoll: Показываем сообщение о блокировке');
-      addSimpleMessage('🚫 Кубик заблокирован! Сначала напишите отчет о вашем текущем плане в чате, прежде чем бросать кубик снова!');
+      console.log('🎲 [EventDriven] КУБИК ЗАБЛОКИРОВАН! needsReport =', needsReport);
+      addSimpleMessage('🚫 Кубик заблокирован! Сначала напишите отчет о вашем текущем плане в чате!');
       return;
     }
 
-    console.log('🎲 [ChatBot] handleNewDiceRoll: КУБИК НЕ ЗАБЛОКИРОВАН, продолжаем обработку броска');
-
     try {
-      console.log('🎲 [ChatBot] handleNewDiceRoll: Устанавливаем isLoading = true');
       setIsLoading(true);
       
       // Генерируем случайное число от 1 до 6
       const roll = Math.floor(Math.random() * 6) + 1;
-      console.log('🎲 [ChatBot] handleNewDiceRoll: Сгенерированный бросок =', roll);
+      console.log('🎲 [EventDriven] Сгенерированный бросок =', roll);
       setLastRoll(roll);
-      console.log('🎲 [ChatBot] handleNewDiceRoll: setLastRoll выполнен');
       
-      console.log('🎲 [ChatBot] handleNewDiceRoll: currentPlayer.plan =', currentPlayer.plan);
-
       // Определяем userId
       const userId = user?.id || userData?.user_id || 'test-user-demo';
-      console.log('🎲 [ChatBot] handleNewDiceRoll: используем userId:', userId);
-      console.log('🎲 [ChatBot] handleNewDiceRoll: Вызываем processGameStep...');
+      console.log('🎲 [EventDriven] Отправляем событие в Inngest: userId =', userId, 'roll =', roll);
 
-      // Обрабатываем игровой шаг
-      const gameResult = await processGameStep(roll, userId);
-      console.log('🎲 [ChatBot] handleNewDiceRoll: processGameStep ЗАВЕРШЕН');
-      console.log('🎲 [ChatBot] handleNewDiceRoll: gameResult =', JSON.stringify(gameResult, null, 2));
-
-      if (!gameResult) {
-        console.error('🎲 [ChatBot] handleNewDiceRoll: ОШИБКА - gameResult пустой');
-        throw new Error('Не удалось обработать игровой шаг');
-      }
-
-      console.log('🎲 [ChatBot] handleNewDiceRoll: Показываем результат броска...');
-      // Показываем результат броска
-      addGameMessage('showGameResult', {
-        roll: roll,
-        fromPlan: gameResult.gameStep.previous_loka,
-        toPlan: gameResult.gameStep.loka,
-        direction: gameResult.direction,
-        message: gameResult.message
-      });
-      console.log('🎲 [ChatBot] handleNewDiceRoll: addGameMessage выполнен');
-
-      // КРИТИЧЕСКИ ВАЖНО: Определяем, нужен ли отчет
-      // Отчет нужен ВСЕГДА когда позиция изменилась (кроме случая завершения игры на 68)
-      const positionChanged = gameResult.gameStep.loka !== gameResult.gameStep.previous_loka;
-      const gameFinished = gameResult.gameStep.is_finished;
-      const reachedVictory = gameResult.gameStep.loka === 68 && gameFinished;
+      // ✨ НОВАЯ АРХИТЕКТУРА: Отправляем событие в Inngest вместо прямого вызова
+      const result = await InngestEventService.sendDiceRoll(userId, roll);
       
-      // Отчет нужен если позиция изменилась И это не победа на 68
-      const needsReportAfterMove = positionChanged && !reachedVictory;
-
-      console.log('🎲 [ChatBot] handleNewDiceRoll: ЛОГИКА ОТЧЕТА:');
-      console.log('🎲 [ChatBot] handleNewDiceRoll: positionChanged =', positionChanged);
-      console.log('🎲 [ChatBot] handleNewDiceRoll: gameFinished =', gameFinished);
-      console.log('🎲 [ChatBot] handleNewDiceRoll: reachedVictory =', reachedVictory);
-      console.log('🎲 [ChatBot] handleNewDiceRoll: needsReportAfterMove =', needsReportAfterMove);
-
-      console.log('🎲 [ChatBot] handleNewDiceRoll: Обновляем состояние игрока...');
-      // Обновляем состояние игрока
-      await updatePlayerState({
-        plan: gameResult.gameStep.loka,
-        previous_plan: gameResult.gameStep.previous_loka,
-        consecutiveSixes: gameResult.gameStep.consecutive_sixes,
-        positionBeforeThreeSixes: gameResult.gameStep.position_before_three_sixes,
-        isFinished: gameResult.gameStep.is_finished,
-        needsReport: needsReportAfterMove, // Устанавливаем флаг необходимости отчета
-        message: gameResult.message
-      });
-      console.log('🎲 [ChatBot] handleNewDiceRoll: updatePlayerState ЗАВЕРШЕН');
-
-      // Если нужен отчет, показываем инструкции
-      if (needsReportAfterMove) {
-        console.log('🎲 [ChatBot] handleNewDiceRoll: НУЖЕН ОТЧЕТ, показываем инструкции');
-        const planInfo = getPlanInfo(gameResult.gameStep.loka);
-        
-        const reportInstructions = `🎯 **Вы попали на план ${gameResult.gameStep.loka}: "${planInfo.name}"**\n\n${planInfo.element} **Описание плана:**\n${planInfo.description}\n\n📝 **ОБЯЗАТЕЛЬНЫЙ ОТЧЕТ**\n${getPlanPrompt(gameResult.gameStep.loka)}\n\n🚫 **Кубик заблокирован до написания отчета!**\nНапишите ваш отчет в чате. После этого я дам духовный комментарий и разблокирую кубик для следующего хода.`;
-        
-        console.log('🎲 [ChatBot] handleNewDiceRoll: Добавляем сообщение с инструкциями отчета');
-        addSimpleMessage(reportInstructions);
-      } else if (reachedVictory) {
-        console.log('🎲 [ChatBot] handleNewDiceRoll: ПОБЕДА! Показываем сообщение о победе');
-        addSimpleMessage('🎉 **ПОБЕДА!** Вы достигли космического сознания! Поздравляю с завершением духовного путешествия! 🕉️');
-      } else {
-        console.log('🎲 [ChatBot] handleNewDiceRoll: Позиция не изменилась, кубик остается разблокированным');
-        // Если позиция не изменилась, кубик остается разблокированным
-        addSimpleMessage('Позиция не изменилась. Можете бросать кубик снова.');
-        
-        // ДОБАВЛЯЕМ НОВЫЙ КУБИК сразу для повторного броска
-        setTimeout(() => {
-          addGameMessage('showDiceButton', {
-            message: '🎲 Бросить кубик еще раз?',
-            disabled: false
-          }, 'Попробуйте еще раз:');
-        }, 500);
+      if (!result.success) {
+        throw new Error(`Ошибка отправки события: ${result.error}`);
       }
 
-      console.log('🎲 [ChatBot] handleNewDiceRoll: Игрок успешно перемещен на план', gameResult.gameStep.loka);
+      console.log('🎲 [EventDriven] Событие отправлено успешно, eventId =', result.eventId);
+      
+      // Показываем пользователю, что бросок обрабатывается
+      addSimpleMessage(`🎲 Бросок ${roll}! Обрабатываю результат...`);
+      
+      // Состояние будет обновлено автоматически через Apollo при получении события game.player.state.update
 
     } catch (error) {
-      console.error('🎲 [ChatBot] handleNewDiceRoll: КРИТИЧЕСКАЯ ОШИБКА:', error);
-      console.error('🎲 [ChatBot] handleNewDiceRoll: Стек ошибки:', error instanceof Error ? error.stack : 'Нет стека');
+      console.error('🎲 [EventDriven] ОШИБКА отправки события:', error);
       addSimpleMessage('❌ Произошла ошибка при броске кубика. Попробуйте еще раз.');
     } finally {
-      console.log('🎲 [ChatBot] handleNewDiceRoll: Устанавливаем isLoading = false');
       setIsLoading(false);
-      console.log('🎲 [ChatBot] handleNewDiceRoll: ================ ЗАВЕРШЕНИЕ ================');
+      console.log('🎲 [EventDriven] ================ ЗАВЕРШЕНИЕ ================');
     }
   };
 
