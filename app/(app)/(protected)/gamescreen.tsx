@@ -9,7 +9,7 @@ import { BlurView } from "expo-blur";
 import { Ionicons } from '@expo/vector-icons';
 import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 import { ChatBot } from '@/components/chat/ChatBot';
-import { processGameStep } from '@/services/GameService';
+import { InngestEventService } from '@/services/InngestEventService';
 import { GameMessageService } from '@/services/GameMessageService';
 
 // import { useTranslation } from 'react-i18next'
@@ -133,153 +133,47 @@ const GameScreen: React.FC = () => {
 
   const layout = getLayout();
   
-  // Функция броска кубика через Apollo Drizzle и GameService
-  const rollDice = () => {
-    console.log('🎲 [GameScreen] rollDice: НАЧАЛО ФУНКЦИИ');
-    console.log('🎲 [GameScreen] rollDice: currentPlayer =', currentPlayer);
-    console.log('🎲 [GameScreen] rollDice: userData =', userData);
+  // ✨ НОВАЯ EVENT-DRIVEN АРХИТЕКТУРА: Функция броска кубика через Inngest
+  const rollDice = async () => {
+    console.log('🎲 [GameScreen-EventDriven] rollDice: Отправка события через Inngest');
     
     if (!currentPlayer) {
-      console.error('🎲 [GameScreen] rollDice: Игрок не найден - не могу бросить кубик');
+      console.error('🎲 [GameScreen-EventDriven] Игрок не найден');
+      setCurrentMessage("❌ Ошибка: игрок не найден");
       return 0;
     }
     
-    // Проверяем, нужен ли отчет перед следующим ходом
+    // Проверяем блокировку кубика
     if (currentPlayer.needsReport) {
-      console.log('🎲 [GameScreen] rollDice: Требуется отчет перед следующим ходом');
+      console.log('🎲 [GameScreen-EventDriven] Кубик заблокирован - нужен отчет');
       setCurrentMessage("📝 Сначала напишите отчет в чате о вашем текущем состоянии!");
       return 0;
     }
     
-    // Проверяем наличие userData для получения user.id
-    if (!userData?.user_id) {
-      console.log('🎲 [GameScreen] rollDice: userData.user_id не найден, используем тестового пользователя');
-      // Временное решение: используем тестового пользователя
-      const testUserId = 'test-user-demo';
-      
-      try {
-        // Генерируем случайное число от 1 до 6
-        const roll = Math.floor(Math.random() * 6) + 1;
-        console.log(`🎲 [GameScreen] rollDice: Бросок кубика: ${roll}, текущая позиция: ${currentPlayer.plan}, isFinished: ${currentPlayer.isFinished}`);
-        
-        // Вызываем функцию processGameStep для обработки хода по правилам игры
-        console.log(`🎲 [GameScreen] rollDice: Вызываем processGameStep с roll=${roll}, id=${testUserId}`);
-        
-        processGameStep(roll, testUserId)
-          .then(({ gameStep, direction, message }) => {
-            console.log(`🎲 [GameScreen] rollDice: Результат processGameStep:`, gameStep);
-            console.log(`🎲 [GameScreen] rollDice: Новая позиция: ${gameStep.loka}, направление: ${direction}, isFinished: ${gameStep.is_finished}`);
-            console.log(`🎲 [GameScreen] rollDice: Сообщение: ${message}`);
-            
-            // Обновляем сообщение
-            setCurrentMessage(message);
-            
-            // Определяем, нужен ли отчет - если позиция изменилась и игра активна
-            const needsReport = gameStep.loka !== gameStep.previous_loka && !gameStep.is_finished;
-            
-            // Обновляем локальное состояние Apollo со всеми данными из gameStep
-            const updates = {
-              plan: gameStep.loka,
-              previous_plan: gameStep.previous_loka,
-              isFinished: gameStep.is_finished,
-              consecutiveSixes: gameStep.consecutive_sixes,
-              positionBeforeThreeSixes: gameStep.position_before_three_sixes,
-              needsReport: needsReport, // Устанавливаем флаг необходимости отчета
-              message: message
-            };
-            
-            // Используем updatePlayerState для полного обновления состояния
-            updatePlayerState(updates);
-            console.log('🎲 [GameScreen] rollDice: Локальное состояние Apollo обновлено через updatePlayerState:', updates);
-            
-            // Проверяем, что состояние действительно обновилось
-            setTimeout(() => {
-              const verifyPlayer = currentPlayer;
-              console.log('🎲 [GameScreen] rollDice: ПРОВЕРКА ЧЕРЕЗ 100ms - текущее состояние:', verifyPlayer);
-            }, 100);
-            
-            // Если нужен отчет, показываем сообщение в чате
-            if (needsReport) {
-              console.log('🎲 [GameScreen] rollDice: Требуется отчет, показываем сообщение в чате');
-              setCurrentMessage("📝 Напишите отчет в чате о вашем новом состоянии!");
-            }
-          })
-          .catch(error => {
-            console.error('🎲 [GameScreen] rollDice: Ошибка при обработке хода:', error);
-            setCurrentMessage(`❌ Ошибка при обработке хода: ${error.message}`);
-          });
-        
-        return roll;
-      } catch (error) {
-        console.error('🎲 [GameScreen] rollDice: Критическая ошибка при броске кубика:', error);
-        setCurrentMessage(`❌ Критическая ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
-        return 0;
-      }
-    }
-    
-    // Основная логика для авторизованного пользователя
-    if (!userData?.user_id) {
-      console.error('🎲 [GameScreen] rollDice: userData.user_id не найден!', userData);
-      setCurrentMessage("❌ Ошибка: пользователь не авторизован");
-      return 0;
-    }
-    
     try {
-      // Генерируем случайное число от 1 до 6
+      // Генерируем бросок
       const roll = Math.floor(Math.random() * 6) + 1;
-      console.log(`🎲 [GameScreen] rollDice: Бросок кубика: ${roll}, текущая позиция: ${currentPlayer.plan}, isFinished: ${currentPlayer.isFinished}`);
+      console.log(`🎲 [GameScreen-EventDriven] Бросок: ${roll}`);
       
-      // Вызываем функцию processGameStep для обработки хода по правилам игры
-      console.log(`🎲 [GameScreen] rollDice: Вызываем processGameStep с roll=${roll}, id=${userData.user_id}`);
+      // Определяем userId
+      const userId = userData?.user_id || 'test-user-demo';
       
-      processGameStep(roll, userData.user_id)
-        .then(({ gameStep, direction, message }) => {
-          console.log(`🎲 [GameScreen] rollDice: Результат processGameStep:`, gameStep);
-          console.log(`🎲 [GameScreen] rollDice: Новая позиция: ${gameStep.loka}, направление: ${direction}, isFinished: ${gameStep.is_finished}`);
-          console.log(`🎲 [GameScreen] rollDice: Сообщение: ${message}`);
-          
-          // Обновляем сообщение
-          setCurrentMessage(message);
-          
-          // Определяем, нужен ли отчет - если позиция изменилась и игра активна
-          const needsReport = gameStep.loka !== gameStep.previous_loka && !gameStep.is_finished;
-          
-          // Обновляем локальное состояние Apollo со всеми данными из gameStep
-          const updates = {
-            plan: gameStep.loka,
-            previous_plan: gameStep.previous_loka,
-            isFinished: gameStep.is_finished,
-            consecutiveSixes: gameStep.consecutive_sixes,
-            positionBeforeThreeSixes: gameStep.position_before_three_sixes,
-            needsReport: needsReport, // Устанавливаем флаг необходимости отчета
-            message: message
-          };
-          
-          // Используем updatePlayerState для полного обновления состояния
-          updatePlayerState(updates);
-          console.log('🎲 [GameScreen] rollDice: Локальное состояние Apollo обновлено через updatePlayerState:', updates);
-          
-          // Проверяем, что состояние действительно обновилось
-          setTimeout(() => {
-            const verifyPlayer = currentPlayer;
-            console.log('🎲 [GameScreen] rollDice: ПРОВЕРКА ЧЕРЕЗ 100ms - текущее состояние:', verifyPlayer);
-          }, 100);
-          
-          // Если нужен отчет, показываем сообщение в чате
-          if (needsReport) {
-            console.log('🎲 [GameScreen] rollDice: Требуется отчет, показываем сообщение в чате');
-            setCurrentMessage("📝 Напишите отчет в чате о вашем новом состоянии!");
-          }
-        })
-        .catch(error => {
-          console.error('🎲 [GameScreen] rollDice: Ошибка при обработке хода:', error);
-          setCurrentMessage(`❌ Ошибка при обработке хода: ${error.message}`);
-        });
+      // ✨ ОТПРАВЛЯЕМ СОБЫТИЕ В INNGEST
+      const result = await InngestEventService.sendDiceRoll(userId, roll);
       
+      if (!result.success) {
+        throw new Error(`Ошибка отправки события: ${result.error}`);
+      }
+      
+      console.log('🎲 [GameScreen-EventDriven] Событие отправлено успешно:', result.eventId);
+      setCurrentMessage(`🎲 Бросок ${roll}! Обрабатываю результат...`);
+      
+      // Состояние обновится автоматически через Apollo при получении события
       return roll;
+      
     } catch (error) {
-      console.error('🎲 [GameScreen] rollDice: Критическая ошибка при броске кубика:', error);
-      setCurrentMessage(`❌ Критическая ошибка: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+      console.error('🎲 [GameScreen-EventDriven] Ошибка:', error);
+      setCurrentMessage(`❌ Ошибка при броске кубика: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
       return 0;
     }
   };

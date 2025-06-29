@@ -5,7 +5,6 @@ import { PlanCard } from './PlanCard';
 import { DiceInChat } from './DiceInChat';
 import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 import { InngestEventService } from '@/services/InngestEventService';
-import { markReportCompleted } from '@/lib/apollo-drizzle-client';
 import { supabase } from '@/lib/supabase';
 import { useSupabase } from '@/context/supabase-provider';
 
@@ -428,15 +427,9 @@ export const ChatBot = () => {
       console.log('📝 [GAME_FLOW] handleSubmitCore: user.id =', user.id);
       console.log('📝 [GAME_FLOW] handleSubmitCore: Длина отчета:', userInput.length, 'символов');
       
-      // Сначала отмечаем отчет как завершенный (это быстрая локальная операция)
-      console.log('🔄 [GAME_FLOW] handleSubmitCore: Вызываем markReportCompleted...');
-      try {
-        await markReportCompleted(user.id);
-        console.log('✅ [GAME_FLOW] handleSubmitCore: markReportCompleted ВЫПОЛНЕНА УСПЕШНО');
-        
-      } catch (markError) {
-        console.error('⚠️ [GAME_FLOW] handleSubmitCore: ОШИБКА markReportCompleted:', markError);
-      }
+      // ✨ НОВАЯ АРХИТЕКТУРА: markReportCompleted теперь выполняется в Inngest
+      // при обработке события game.report.submit - флаг needsReport будет сброшен автоматически
+      console.log('✅ [EventDriven] handleSubmitCore: Отчет будет обработан в Inngest - флаг needsReport сбросится автоматически');
 
       console.log('📝 [GAME_FLOW] ================ ЭТАП 5: ГЕНЕРАЦИЯ ДУХОВНОГО КОММЕНТАРИЯ ================');
       // Создаем духовный комментарий Лилы к отчету
@@ -460,7 +453,7 @@ export const ChatBot = () => {
       const userId = user?.id || userData?.user_id || 'test-user-demo';
       InngestEventService.sendPlayerReport(userId, userInput, currentPlanForReport);
 
-      // Флаг needsReport уже сброшен через markReportCompleted выше
+      // Флаг needsReport будет сброшен автоматически в Inngest при обработке события
 
       console.log('🔄 [GAME_FLOW] ================ ЭТАП 6: РАЗБЛОКИРОВКА КУБИКА ================');
       // УБИРАЕМ автоматический бросок кубика - игрок должен сам решить, когда готов продолжить
