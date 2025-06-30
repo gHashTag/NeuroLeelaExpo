@@ -33,7 +33,7 @@ export function Modal({ visible, onClose, title, description, actions }: ModalPr
 
           <View className="flex-row justify-end gap-2">
             {actions.map((action, index) => (
-              <Button key={index} variant={action.variant || "default"} onPress={action.onPress}>
+              <Button key={`modal-action-${action.label}-${index}`} variant={action.variant || "default"} onPress={action.onPress}>
                 <Text className={action.variant === "outline" ? "text-primary" : "text-white"}>
                   {action.label}
                 </Text>

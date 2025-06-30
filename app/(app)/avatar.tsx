@@ -241,7 +241,7 @@ export default function Avatar() {
               <View className="bg-muted p-4 rounded-lg">
                 {logs.map((log, index) => (
                   <Text 
-                    key={index} 
+                    key={`log-${index}-${Date.now()}-${log.substring(0, 10)}`} 
                     className="text-xs mb-1"
                     style={{
                       color: log.includes('❌') ? 'red' : log.includes('✅') ? 'green' : 'gray'

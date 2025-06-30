@@ -51,8 +51,8 @@ export default function AIChat() {
   const sendMessage = async () => {
     if (!inputText.trim()) return;
 
-    // Создаем ID для сообщения
-    const userMessageId = Date.now().toString();
+    // Создаем уникальный ID для сообщения
+    const userMessageId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Добавляем сообщение пользователя
     const userMessage: Message = {
@@ -71,7 +71,7 @@ export default function AIChat() {
       // Имитация задержки ответа от сервера
       setTimeout(() => {
         const aiResponse: Message = {
-          id: (Date.now() + 1).toString(),
+          id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           content:
             "Я помогу вам достичь космического сознания через игру Лила. Задавайте любые вопросы о вашем духовном пути.",
           isUser: false,
@@ -111,7 +111,7 @@ export default function AIChat() {
 
       // Добавляем сообщение об ошибке
       const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: `error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         content: "Извините, произошла ошибка при обработке вашего запроса.",
         isUser: false,
         timestamp: new Date(),

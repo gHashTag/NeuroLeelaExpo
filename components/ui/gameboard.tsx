@@ -123,12 +123,12 @@ function GameBoard({ players, customScale }: GameBoardProps & { customScale?: nu
         
         <View style={[styles.boardWrapper, { transform: scale !== 1 ? [{ scale }] : [] }]}>
           {rows.map((a, i) => (
-            <View style={[styles.row, { marginVertical: rowMargin / 2 }]} key={i}>
+            <View style={[styles.row, { marginVertical: rowMargin / 2 }]} key={`row-${i}`}>
               {a.map((b, index) => {
                 const player = getPlayer(b);
                 return (
                   <View 
-                    key={index} 
+                    key={`cell-${b}-${i}-${index}`} 
                     style={[
                       styles.cell, 
                       { 
