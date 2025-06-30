@@ -346,7 +346,7 @@ export const ChatBot = () => {
   // Функция для добавления простого сообщения
   const addSimpleMessage = (content: string) => {
     const message: Message = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       role: 'assistant',
       content
     };
@@ -358,11 +358,11 @@ export const ChatBot = () => {
     const content = customContent || getGameMessageContent(toolName, data);
     
     const message: Message = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       role: 'assistant',
       content,
       toolInvocations: [{
-        toolCallId: `${toolName}-${Date.now()}`,
+        toolCallId: `${toolName}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         toolName,
         state: 'result',
         result: data
@@ -388,7 +388,7 @@ export const ChatBot = () => {
     if (!input.trim() || isLoading) return;
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       role: 'user',
       content: input.trim()
     };
@@ -441,7 +441,7 @@ export const ChatBot = () => {
       console.log('💬 [GAME_FLOW] handleSubmitCore: Генерируем ответ Лилы на отчет');
 
       const responseMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         role: 'assistant',
         content: spiritualCommentary
       };
@@ -518,7 +518,7 @@ export const ChatBot = () => {
       // Создаем мок tool invocation для карточки плана
       const planInfo = getPlanInfo(planNumber);
       toolInvocations = [{
-        toolCallId: `mock-${Date.now()}`,
+        toolCallId: `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         toolName: 'createPlanCard',
         state: 'result',
         result: {
@@ -548,7 +548,7 @@ export const ChatBot = () => {
       
       // Добавляем кубик к toolInvocations
       toolInvocations.push({
-        toolCallId: `dice-${Date.now()}`,
+        toolCallId: `dice-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         toolName: 'showDiceButton',
         state: 'result',
         result: {
@@ -565,7 +565,7 @@ export const ChatBot = () => {
     }
     
     return {
-      id: (Date.now() + 1).toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       role: 'assistant',
       content,
       toolInvocations: toolInvocations.length > 0 ? toolInvocations : undefined
@@ -1071,7 +1071,11 @@ export const ChatBot = () => {
             {/* Отображение tool invocations */}
             {msg.toolInvocations && (
               <View className="mb-3">
-                {msg.toolInvocations.map(renderToolInvocation)}
+                {msg.toolInvocations.map((toolInvocation, index) => (
+                  <View key={`${toolInvocation.toolCallId}-${index}`}>
+                    {renderToolInvocation(toolInvocation)}
+                  </View>
+                ))}
               </View>
             )}
           </View>
