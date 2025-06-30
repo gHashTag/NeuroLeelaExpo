@@ -32,9 +32,8 @@ export function ApolloStatus() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Apollo Status</Text>
       <Text style={styles.status}>
-        Position: {position}, Loading: {loading ? 'Yes' : 'No'}
+        📍 {position} {loading ? '⏳' : '✅'}
       </Text>
     </View>
   );
@@ -42,17 +41,16 @@ export function ApolloStatus() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 8,
-    margin: 6,
+    padding: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.7)',
+    borderColor: 'rgba(226, 232, 240, 0.8)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 1,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
   },
   title: {
     fontWeight: '500',

@@ -1,7 +1,6 @@
 import React, { memo } from "react";
-
+import { Platform } from "react-native";
 import { View } from "react-native";
-
 import { s } from "react-native-size-matters";
 
 interface SpaceT {
@@ -15,7 +14,7 @@ const Space = memo<SpaceT>(({ height, width, backgroundColor }) => {
     <View
       testID="space-component"
       style={{
-        backgroundColor,
+        backgroundColor: Platform.OS === 'web' ? (backgroundColor || 'transparent') : backgroundColor,
         height: s(Number(height)) || 0,
         width: s(Number(width)) || 0,
       }}

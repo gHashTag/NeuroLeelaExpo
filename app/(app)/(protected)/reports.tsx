@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, ScrollView, ImageBackground, TouchableOpacity, RefreshControl, Image, ActivityIndicator } from "react-native";
+import { View, ScrollView, ImageBackground, TouchableOpacity, RefreshControl, Image, ActivityIndicator, Platform } from "react-native";
 import { Header } from "@/components/layout/Header";
 import { ReportPost } from "@/components/reports/ReportPost";
 import { Text } from "@/components/ui/text";
@@ -163,7 +163,7 @@ export default function Reports() {
         <Header title="Отчеты о планах" onInfoPress={() => setIsRulesVisible(!isRulesVisible)} onBookPress={() => {}} />
 
         {/* Введение и описание */}
-        <View className="bg-white bg-opacity-80 mx-4 mt-4 p-4 rounded-lg shadow-sm">
+        <View className={Platform.OS === 'web' ? 'mx-4 mt-4 p-4 rounded-lg shadow-sm' : 'bg-white bg-opacity-80 mx-4 mt-4 p-4 rounded-lg shadow-sm'}>
           <View className="flex-row items-center mb-2">
             <Icon name="book-open-variant" size={22} color="#6A0DAD" className="mr-2" />
             <Text className="text-lg font-bold text-purple-900">Дневник духовного пути</Text>

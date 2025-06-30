@@ -160,6 +160,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 2,
+    backgroundColor: Platform.OS === 'web' ? 'transparent' : undefined,
   },
   bgImage: {
     height: '100%',
@@ -177,7 +178,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    backgroundColor: 'transparent',
+    backgroundColor: Platform.OS === 'web' ? 'transparent' : 'transparent',
     borderRadius: 0,
     overflow: 'visible',
     shadowColor: 'transparent',
@@ -190,7 +191,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 2,
-    backgroundColor: 'transparent',
+    backgroundColor: Platform.OS === 'web' ? 'transparent' : 'transparent',
     borderRadius: 0,
   },
   row: {

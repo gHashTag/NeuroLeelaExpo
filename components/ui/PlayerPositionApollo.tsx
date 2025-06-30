@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { 
   useCurrentPlayerPositionDirect,
   useLoadingStateDirect 
@@ -111,7 +111,7 @@ export const PlayerPositionApollo: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     padding: 15,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Platform.OS === 'web' ? 'transparent' : '#f5f5f5',
     borderRadius: 10,
     margin: 10,
   },

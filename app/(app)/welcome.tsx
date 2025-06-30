@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 
 export default function WelcomeScreen() {
   return (
@@ -14,7 +14,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0', // Light gray background for visibility
+    backgroundColor: Platform.OS === 'web' ? 'transparent' : '#f0f0f0', // Прозрачный для web
   },
   text: {
     fontSize: 20,

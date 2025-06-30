@@ -60,98 +60,54 @@ export const PlanCard: React.FC<PlanCardProps> = ({
     return colorMap[color as keyof typeof colorMap] || 'text-gray-800';
   };
 
-  const getElementColors = (color: string) => {
-    const colorMap = {
-      green: 'text-emerald-600',
-      purple: 'text-purple-600',
-      blue: 'text-blue-600',
-      gold: 'text-amber-500',
-      violet: 'text-violet-600',
-      red: 'text-rose-600',
-      brown: 'text-amber-700',
-      gray: 'text-slate-600',
-      pink: 'text-pink-600',
-      orange: 'text-orange-600',
-      yellow: 'text-yellow-600',
-      black: 'text-gray-800',
-      white: 'text-gray-100',
-      clear: 'text-cyan-600'
-    };
-    return colorMap[color as keyof typeof colorMap] || 'text-gray-600';
-  };
-
-  const getAccentGradient = (color: string) => {
-    const gradientMap = {
-      green: 'from-emerald-400/20 to-emerald-600/20',
-      purple: 'from-purple-400/20 to-purple-600/20',
-      blue: 'from-blue-400/20 to-blue-600/20',
-      gold: 'from-amber-400/20 to-amber-600/20',
-      violet: 'from-violet-400/20 to-violet-600/20',
-      red: 'from-rose-400/20 to-rose-600/20',
-      brown: 'from-amber-500/20 to-amber-700/20',
-      gray: 'from-slate-400/20 to-slate-600/20',
-      pink: 'from-pink-400/20 to-pink-600/20',
-      orange: 'from-orange-400/20 to-orange-600/20',
-      yellow: 'from-yellow-400/20 to-yellow-600/20',
-      black: 'from-gray-600/20 to-gray-800/20',
-      white: 'from-gray-100/20 to-gray-300/20',
-      clear: 'from-cyan-400/20 to-cyan-600/20'
-    };
-    return gradientMap[color as keyof typeof gradientMap] || 'from-gray-400/20 to-gray-600/20';
-  };
-
   return (
     <View className={`
-      glass-card rounded-3xl p-6 m-3 shadow-pearl
-      ${isCurrentPosition ? 'pearl-glow ring-2 ring-purple-400/50' : ''}
-      animate-fade-in
+      rounded-xl p-4 m-2 border-2 shadow-lg
+      ${getColorClasses(planInfo.color)}
+      ${isCurrentPosition ? 'ring-2 ring-orange-400 ring-opacity-75' : ''}
     `}>
-      {/* Заголовок карточки с элементом */}
-      <View className="flex-row items-center justify-between mb-4">
+      {/* Заголовок карточки */}
+      <View className="flex-row items-center justify-between mb-3">
         <View className="flex-row items-center">
-          <View className={`
-            w-16 h-16 rounded-2xl glass-message items-center justify-center mr-4
-            bg-gradient-to-br ${getAccentGradient(planInfo.color)}
-            animate-pearl-float
-          `}>
-            <Text className="text-3xl">{planInfo.element}</Text>
-          </View>
-          <View>
-            <Text className="text-lg font-bold text-gray-800">
-              План {planNumber}
-            </Text>
-            <Text className={`text-sm font-medium ${getElementColors(planInfo.color)}`}>
-              {planInfo.color === 'gold' ? 'Божественный' : 
-               planInfo.color === 'violet' ? 'Высший' :
-               planInfo.color === 'blue' ? 'Мудрость' :
-               planInfo.color === 'green' ? 'Рост' :
-               planInfo.color === 'red' ? 'Сила' : 'Духовный'}
-            </Text>
-          </View>
+          <Text className="text-2xl mr-2">{planInfo.element}</Text>
+          <Text className={`text-lg font-bold ${getTextColorClasses(planInfo.color)}`}>
+            План {planNumber}
+          </Text>
         </View>
         {isCurrentPosition && (
-          <View className="glass-button rounded-full px-4 py-2 pearl-glow">
-            <Text className="text-purple-800 text-xs font-bold">✨ Вы здесь</Text>
+          <View className="bg-orange-400 rounded-full px-2 py-1">
+            <Text className="text-white text-xs font-bold">Вы здесь</Text>
           </View>
         )}
       </View>
 
       {/* Название плана */}
-      <Text className="text-xl font-bold mb-3 text-gray-800 leading-tight">
+      <Text className={`text-xl font-semibold mb-2 ${getTextColorClasses(planInfo.color)}`}>
         {planInfo.name}
       </Text>
 
       {/* Описание */}
-      <Text className="text-base leading-relaxed text-gray-700 font-medium mb-4">
+      <Text className={`text-sm leading-relaxed ${getTextColorClasses(planInfo.color)} opacity-80`}>
         {planInfo.description}
       </Text>
 
-      {/* Декоративная полоса с градиентом */}
-      <View className={`
-        h-2 rounded-full glass-message
-        bg-gradient-to-r ${getAccentGradient(planInfo.color)}
-        shadow-pearl
-      `} />
+      {/* Декоративная линия */}
+      <View className={`h-1 rounded-full mt-3 ${
+        planInfo.color === 'green' ? 'bg-green-300' :
+        planInfo.color === 'purple' ? 'bg-purple-300' :
+        planInfo.color === 'blue' ? 'bg-blue-300' :
+        planInfo.color === 'gold' ? 'bg-yellow-300' :
+        planInfo.color === 'violet' ? 'bg-violet-300' :
+        planInfo.color === 'red' ? 'bg-red-300' :
+        planInfo.color === 'brown' ? 'bg-amber-300' :
+        planInfo.color === 'gray' ? 'bg-gray-300' :
+        planInfo.color === 'pink' ? 'bg-pink-300' :
+        planInfo.color === 'orange' ? 'bg-orange-300' :
+        planInfo.color === 'yellow' ? 'bg-yellow-300' :
+        planInfo.color === 'black' ? 'bg-gray-600' :
+        planInfo.color === 'white' ? 'bg-gray-200' :
+        planInfo.color === 'clear' ? 'bg-blue-200' : 'bg-gray-300'
+      }`} />
     </View>
   );
 }; 

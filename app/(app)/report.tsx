@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, StyleSheet } from "react-native";
+import { View, Text, TextInput, StyleSheet, Platform } from "react-native";
 
 import { H1, Muted } from "@/components/ui/typography";
 import { MarkdownText } from "@/components/ui";
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "background",
+    backgroundColor: Platform.OS === 'web' ? 'transparent' : "background",
     padding: 4,
     gap: 4,
     paddingBottom: 20,

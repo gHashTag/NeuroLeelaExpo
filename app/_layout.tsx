@@ -1,6 +1,6 @@
 import '../global.css';
 import { Slot } from "expo-router";
-import { View, Platform, StyleSheet, ImageBackground } from "react-native";
+import { Platform, StyleSheet, View, ImageBackground } from "react-native";
 // Removed SplashScreen and useEffect imports
 // import { useEffect } from "react";
 // import { SplashScreen } from "expo-router";
@@ -20,105 +20,36 @@ export { ErrorBoundary } from "expo-router";
 // Removed unstable_settings
 // Removed SplashScreen.preventAutoHideAsync()
 
-// Импортируем изображение листа
+// Импортируем изображение листа - простой подход
 const leafImage = require('../assets/Green_small_one_palm_leaf_on_white_background.png');
 
-export default function AppLayout() {
-  // Removed useEffect hook
-
-  // Add special styling for web platform
-  const isWeb = Platform.OS === 'web';
-
-  // Компонент для фонового изображения
-  const BackgroundWrapper = ({ children }: { children: React.ReactNode }) => {
-    if (isWeb) {
-      // Для веб - используем ImageBackground с листом
-      return (
-        <ImageBackground 
-          source={leafImage}
-          style={styles.webBackground}
-          resizeMode="cover"
-        >
-          <View style={styles.webOverlay}>
-            <View style={styles.webContent}>
-              {children}
-            </View>
-          </View>
-        </ImageBackground>
-      );
-    } else {
-      // Для мобильного - используем ImageBackground
-      return (
-        <ImageBackground 
-          source={leafImage}
-          style={styles.mobileBackground}
-          resizeMode="cover"
-        >
-          <View style={styles.mobileOverlay}>
-            {children}
-          </View>
-        </ImageBackground>
-      );
-    }
-  };
-
-  // Используем try-catch для отлова ошибок при инициализации
-  try {
-    return (
-      // Используем наш новый Apollo клиент с Drizzle
-      <ApolloProvider client={apolloClient}>
-        <SupabaseProvider>
-          <GameStateProvider>
-            <BackgroundWrapper>
-              <Slot />
-            </BackgroundWrapper>
-          </GameStateProvider>
-        </SupabaseProvider>
-      </ApolloProvider>
-    );
-  } catch (error) {
-    // Fallback при любой ошибке - отображаем приложение без Apollo Provider
-    console.error('Ошибка инициализации Apollo Provider:', error);
-    return (
-      <SupabaseProvider>
-        <GameStateProvider>
-          <BackgroundWrapper>
-            <Slot />
-          </BackgroundWrapper>
-        </GameStateProvider>
-      </SupabaseProvider>
-    );
+export default function RootLayout() {
+  if (Platform.OS === 'web') {
+    return <Slot />;
   }
+  // Для мобильных платформ
+  return (
+    <ImageBackground
+      source={require('../assets/Green_small_one_palm_leaf_on_white_background.png')}
+      style={{ flex: 1 }}
+      resizeMode="cover"
+    >
+      <Slot />
+    </ImageBackground>
+  );
 }
 
 const styles = StyleSheet.create({
-  webContainer: {
+  container: {
     flex: 1,
-    height: Platform.OS === 'web' ? '100vh' as unknown as number : '100%', 
   },
-  webBackground: {
-    flex: 1,
-    width: '100%',
-    height: Platform.OS === 'web' ? '100vh' as unknown as number : '100%',
-  },
-  webOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(248, 255, 252, 0.25)', // Легкий зеленоватый overlay для лучшей читаемости веб-версии
-  },
-  webContent: {
-    flex: 1,
-    maxWidth: 1200,
-    marginLeft: 'auto',
-    marginRight: 'auto',
-    width: '100%',
-  },
-  mobileBackground: {
+  backgroundImage: {
     flex: 1,
     width: '100%',
     height: '100%',
   },
-  mobileOverlay: {
+  overlay: {
     flex: 1,
-    backgroundColor: 'rgba(248, 255, 252, 0.25)', // Легкий зеленоватый overlay для лучшей читаемости
-  }
+    backgroundColor: 'rgba(248, 255, 252, 0.05)', // Очень легкий overlay для максимальной видимости листа
+  },
 });

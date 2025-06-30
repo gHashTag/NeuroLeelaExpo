@@ -1,5 +1,5 @@
 import * as React from "react";
-import { View, ViewProps } from "react-native";
+import { View, ViewProps, Platform } from "react-native";
 import { cn } from "@/lib/utils";
 
 const Card = React.forwardRef<View, ViewProps & { className?: string }>(
@@ -7,9 +7,10 @@ const Card = React.forwardRef<View, ViewProps & { className?: string }>(
     <View
       ref={ref}
       className={cn(
-        "bg-white border border-border rounded-2xl shadow-sm p-6",
+        Platform.OS === 'web' ? "glass border border-border rounded-2xl shadow-sm p-6" : "bg-white border border-border rounded-2xl shadow-sm p-6",
         className
       )}
+      style={Platform.OS === 'web' ? { backgroundColor: 'transparent' } : {}}
       {...props}
     />
   )

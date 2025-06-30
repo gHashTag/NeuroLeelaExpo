@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, ViewStyle } from 'react-native';
 import { cn } from '@/lib/utils';
+import { Platform } from 'react-native';
 
-type CardVariant = 'default' | 'elevated' | 'outlined' | 'glass' | 'glass-pearl' | 'glass-message' | 'glass-button' | 'glass-leaf';
+type CardVariant = 'default' | 'elevated' | 'outlined' | 'glass';
 type CardSize = 'sm' | 'md' | 'lg';
 
 interface CardProps {
@@ -16,14 +17,10 @@ interface CardProps {
 }
 
 const cardVariants = {
-  default: 'bg-white border border-gray-200',
-  elevated: 'bg-white shadow-xl border border-gray-100',
-  outlined: 'bg-white border-2 border-purple-200',
+  default: Platform.OS === 'web' ? 'glass border border-gray-200' : 'bg-white border border-gray-200',
+  elevated: Platform.OS === 'web' ? 'glass shadow-xl border border-gray-100' : 'bg-white shadow-xl border border-gray-100',
+  outlined: Platform.OS === 'web' ? 'glass border-2 border-purple-200' : 'bg-white border-2 border-purple-200',
   glass: 'glass shadow-pearl',
-  'glass-pearl': 'glass-pearl shadow-pearl pearl-glow',
-  'glass-message': 'glass-message shadow-pearl',
-  'glass-button': 'glass-button shadow-pearl',
-  'glass-leaf': 'glass-leaf shadow-pearl animate-fade-in'
 };
 
 const cardSizes = {
@@ -33,7 +30,7 @@ const cardSizes = {
 };
 
 export function Card({
-  variant = 'default',
+  variant = Platform.OS === 'web' ? 'glass' : 'default',
   size = 'md',
   children,
   className,
@@ -46,7 +43,9 @@ export function Card({
       cardVariants[variant],
       cardSizes[size],
       className
-    )}>
+    )}
+    style={Platform.OS === 'web' ? {} : {}}
+    >
       {(title || subtitle || headerAction) && (
         <View className="mb-4">
           <View className="flex-row items-center justify-between mb-2">
@@ -78,7 +77,7 @@ export function GameCard({
 }: CardProps & { glowing?: boolean }) {
   return (
     <Card
-      variant="glass-leaf"
+      variant="glass"
       className={cn(
         'rounded-3xl animate-fade-in',
         glowing && 'pearl-glow animate-pearl-float',
@@ -100,7 +99,7 @@ export function LeafCard({
 }: CardProps & { floating?: boolean }) {
   return (
     <Card
-      variant="glass-leaf"
+      variant="glass"
       className={cn(
         'rounded-3xl',
         floating && 'animate-pearl-float',

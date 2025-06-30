@@ -14,7 +14,10 @@ const Background: React.FC<BackgroundProps> = ({
   isScrollView = false,
   isFlatList = false,
 }) => {
-  const backgroundStyle = useGlobalBackground();
+  // Для web всегда прозрачный фон, чтобы не перекрывать body
+  const backgroundStyle = Platform.OS === 'web'
+    ? [{ backgroundColor: '#00ff00' }] // Ярко-зелёный для диагностики
+    : useGlobalBackground();
   const isWeb = Platform.OS === 'web';
 
   if (isScrollView) {

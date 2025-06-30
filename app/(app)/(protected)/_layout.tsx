@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import React from "react";
-import { View, Platform, StyleSheet, Image, useWindowDimensions } from "react-native";
+import { View, Platform, StyleSheet, useWindowDimensions } from "react-native";
 
 import { colors } from "@/constants/colors";
 import { useColorScheme } from "@core/useColorScheme";
@@ -17,15 +17,6 @@ export default function ProtectedLayout() {
 
   return (
     <View style={styles.container}>
-      {/* Фоновое изображение помещаем в отдельный View в самом низу стека */}
-      <View style={styles.backgroundContainer}>
-        <Image 
-          source={require("@/assets/icons/BG.png")}
-          style={styles.backgroundImage}
-          resizeMode="cover"
-        />
-      </View>
-      
       <Tabs
         initialRouteName="gamescreen"
         screenOptions={{
@@ -68,21 +59,6 @@ export default function ProtectedLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    position: 'relative',
-    backgroundColor: '#f0f0f5', // Чуть более насыщенный фон
+    backgroundColor: 'transparent', // Прозрачный фон, чтобы показать листочек из основного layout
   },
-  backgroundContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: -1, // Отрицательный z-index, чтобы быть позади ВСЕХ элементов
-  },
-  backgroundImage: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    opacity: 0.95, // Почти непрозрачный фон
-  }
 });

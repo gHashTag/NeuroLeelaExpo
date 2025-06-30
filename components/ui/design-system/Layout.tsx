@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { View, useWindowDimensions, Platform } from 'react-native';
 import { cn } from '@/lib/utils';
 
 interface ContainerProps {
@@ -25,12 +25,16 @@ export function Container({
   };
 
   return (
-    <View className={cn(
-      'mx-auto w-full',
-      maxWidths[maxWidth],
-      padding && 'px-4 sm:px-6 lg:px-8',
-      className
-    )}>
+    <View
+      className={cn(
+        'mx-auto w-full',
+        maxWidths[maxWidth],
+        padding && 'px-4 sm:px-6 lg:px-8',
+        Platform.OS === 'web' ? 'glass' : '',
+        className
+      )}
+      style={Platform.OS === 'web' ? { backgroundColor: 'transparent' } : {}}
+    >
       {children}
     </View>
   );
@@ -102,8 +106,11 @@ export function ResponsiveLayout({
     <View className={cn(
       'flex-1',
       isMobile ? 'p-2' : isTablet ? 'p-4' : 'p-6',
+      Platform.OS === 'web' ? 'glass' : '',
       className
-    )}>
+    )}
+    style={Platform.OS === 'web' ? { backgroundColor: 'transparent' } : {}}
+    >
       {children}
     </View>
   );

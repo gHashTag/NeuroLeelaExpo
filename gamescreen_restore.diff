@@ -1,0 +1,484 @@
+diff --git a/app/(app)/(protected)/gamescreen.tsx b/app/(app)/(protected)/gamescreen.tsx
+index ecde07a..a6fa13b 100644
+--- a/app/(app)/(protected)/gamescreen.tsx
++++ b/app/(app)/(protected)/gamescreen.tsx
+@@ -1,7 +1,6 @@
+ import React, { useState, useEffect } from "react";
+ import { View, ImageBackground, Platform, Text, Image, ScrollView, StyleSheet, TextInput, TouchableOpacity, Dimensions, useWindowDimensions } from "react-native";
+-import { Display, GameBoard, PlayerInfoConsolidated } from "@components/ui/index";
+-import { PlayerStats, PlayerInfoApollo } from "@components/ui/index";
++// Игровое поле теперь показывается внутри чата
+ import { ApolloStatus } from "@/components/ui/ApolloStatus";
+ import { router } from "expo-router";
+ import { useSupabase } from "@/context/supabase-provider";
+@@ -9,8 +8,7 @@ import { BlurView } from "expo-blur";
+ import { Ionicons } from '@expo/vector-icons';
+ import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
+ import { ChatBot } from '@/components/chat/ChatBot';
+-import { InngestEventService } from '@/services/InngestEventService';
+-import { GameMessageService } from '@/services/GameMessageService';
++// Сервисы игры теперь используются в чате
+ 
+ // import { useTranslation } from 'react-i18next'
+ // import { useAccount } from 'store'
+@@ -30,203 +28,60 @@ const AppLogo = () => (
+ );
+ 
+ const GameScreen: React.FC = () => {
+-  const [currentMessage, setCurrentMessage] = useState<string>(GameMessageService.getWelcomeMessage());
+-  const [attemptCount, setAttemptCount] = useState<number>(0);
+   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+-  const { userData, getAvatarUrl } = useSupabase();
++  const { userData } = useSupabase();
+   const isWeb = Platform.OS === 'web';
+   const isLandscape = windowWidth > windowHeight;
+   
+   // Apollo Drizzle — единый источник истины
+   const { currentPlayer, isLoading, error, movePlayer, updatePlayerState } = useApolloDrizzle();
+ 
+-  // Отслеживаем изменения currentPlayer в GameScreen
+-  useEffect(() => {
+-    console.log('🔥 [GameScreen] currentPlayer ИЗМЕНИЛСЯ в GameScreen!');
+-    console.log('🔥 [GameScreen] Новое значение currentPlayer:', currentPlayer);
+-    if (currentPlayer) {
+-      console.log('🔥 [GameScreen] План игрока в GameScreen:', currentPlayer.plan);
+-      console.log('🔥 [GameScreen] isFinished в GameScreen:', currentPlayer.isFinished);
+-    }
+-  }, [currentPlayer]);
+-
+-  // Обновляем сообщение при изменении состояния игрока
+-  useEffect(() => {
+-    if (currentPlayer) {
+-      if (currentPlayer.plan === 68 && currentPlayer.isFinished) {
+-        const baseMessage = "🎯 ПРАВИЛО НАЧАЛА ИГРЫ: Нужно выбросить ШЕСТЕРКУ для старта!";
+-        if (attemptCount > 0) {
+-          setCurrentMessage(`${baseMessage} (Попытка ${attemptCount + 1})`);
+-        } else {
+-          setCurrentMessage(baseMessage);
+-        }
+-      } else if (currentPlayer.message && currentPlayer.message !== 'Last move: ') {
+-        // Если есть сообщение от последнего хода, используем его
+-        setCurrentMessage(currentPlayer.message);
+-        // Сбрасываем счетчик попыток когда игра началась
+-        setAttemptCount(0);
+-      }
+-    }
+-  }, [currentPlayer, attemptCount]);
++  // Логика состояния игрока теперь обрабатывается в чате
+ 
+-  // Определяем макет в зависимости от ширины экрана
+-  const getLayout = () => {
+-    // Extra large displays
+-    if (windowWidth > 1600) {
+-      return {
+-        leftColumn: "hidden", // Убираем левую колонку
+-        centerColumn: "w-2/5", // Уменьшаем центральную колонку
+-        rightColumn: "w-3/5", // Расширяем правую колонку для чата
+-        padding: "p-5",
+-        gameBoardPadding: "p-4",
+-        maxWidth: "max-w-[1600px]"
+-      };
+-    } 
+-    // Large displays
+-    else if (windowWidth > 1200) {
+-      return {
+-        leftColumn: "hidden", // Убираем левую колонку
+-        centerColumn: "w-2/5", // Уменьшаем центральную колонку
+-        rightColumn: "w-3/5", // Расширяем правую колонку для чата
+-        padding: "p-4",
+-        gameBoardPadding: "p-3",
+-        maxWidth: "max-w-[1400px]"
+-      };
+-    } 
+-    // Medium displays
+-    else if (windowWidth > 992) {
+-      return {
+-        leftColumn: "hidden", // Убираем левую колонку
+-        centerColumn: "w-2/5", // Уменьшаем центральную колонку
+-        rightColumn: "w-3/5", // Расширяем правую колонку для чата
+-        padding: "p-3",
+-        gameBoardPadding: "p-2",
+-        maxWidth: "max-w-[1200px]"
+-      };
+-    } 
+-    // Small displays
+-    else if (windowWidth > 768) {
+-      return {
+-        leftColumn: "hidden", // Убираем левую колонку
+-        centerColumn: "w-2/5", // Уменьшаем центральную колонку
+-        rightColumn: "w-3/5", // Расширяем правую колонку для чата
+-        padding: "p-3",
+-        gameBoardPadding: "p-2",
+-        maxWidth: "max-w-full"
+-      };
+-    }
+-    // Tablets and mobile (landscape) 
+-    else if (windowWidth > 640 || isLandscape) {
+-      return {
+-        leftColumn: "hidden", // Убираем левую колонку
+-        centerColumn: "w-2/5", // Уменьшаем центральную колонку
+-        rightColumn: "w-3/5", // Расширяем правую колонку для чата
+-        padding: "p-2",
+-        gameBoardPadding: "p-1",
+-        maxWidth: "max-w-full"
+-      };
+-    }
+-    // Mobile phone (portrait)
+-    else {
+-      return {
+-        leftColumn: "w-full", 
+-        centerColumn: "w-full", 
+-        rightColumn: "w-full",
+-        padding: "p-2",
+-        gameBoardPadding: "p-1",
+-        maxWidth: "max-w-full"
+-      };
+-    }
+-  };
+-
+-  const layout = getLayout();
++  // Макет теперь определяется напрямую в JSX компонентах
+   
+-  // ✨ НОВАЯ EVENT-DRIVEN АРХИТЕКТУРА: Функция броска кубика через Inngest
++  // Функция броска кубика теперь в чате - простой fallback
+   const rollDice = async () => {
+-    console.log('🎲 [GameScreen-EventDriven] rollDice: Отправка события через Inngest');
+-    
+-    if (!currentPlayer) {
+-      console.error('🎲 [GameScreen-EventDriven] Игрок не найден');
+-      setCurrentMessage("❌ Ошибка: игрок не найден");
+-      return 0;
+-    }
+-    
+-    // Проверяем блокировку кубика
+-    if (currentPlayer.needsReport) {
+-      console.log('🎲 [GameScreen-EventDriven] Кубик заблокирован - нужен отчет');
+-      setCurrentMessage("📝 Сначала напишите отчет в чате о вашем текущем состоянии!");
+-      return 0;
+-    }
+-    
+-    try {
+-      // Генерируем бросок
+-      const roll = Math.floor(Math.random() * 6) + 1;
+-      console.log(`🎲 [GameScreen-EventDriven] Бросок: ${roll}`);
+-      
+-      // Проверяем состояние начала игры для счетчика попыток
+-      const isWaitingForSix = currentPlayer.plan === 68 && currentPlayer.isFinished;
+-      
+-      // Определяем userId
+-      const userId = userData?.user_id || 'test-user-demo';
+-      
+-      // ✨ ОТПРАВЛЯЕМ СОБЫТИЕ В INNGEST
+-      const result = await InngestEventService.sendDiceRoll(userId, roll);
+-      
+-      if (!result.success) {
+-        throw new Error(`Ошибка отправки события: ${result.error}`);
+-      }
+-      
+-      console.log('🎲 [GameScreen-EventDriven] Событие отправлено успешно:', result.eventId);
+-      
+-      // Обновляем сообщение в зависимости от состояния
+-      if (isWaitingForSix) {
+-        if (roll === 6) {
+-          setCurrentMessage(`🎉 ОТЛИЧНО! Выпала ${roll}! Игра началась!`);
+-          setAttemptCount(0); // Сбрасываем счетчик
+-        } else {
+-          const newAttemptCount = attemptCount + 1;
+-          setAttemptCount(newAttemptCount);
+-          setCurrentMessage(`😔 Выпало ${roll}, а нужна 6. Попробуйте еще раз! (Попытка ${newAttemptCount})`);
+-        }
+-      } else {
+-        setCurrentMessage(`🎲 Бросок ${roll}! Обрабатываю результат...`);
+-      }
+-      
+-      // Состояние обновится автоматически через Apollo при получении события
+-      return roll;
+-      
+-    } catch (error) {
+-      console.error('🎲 [GameScreen-EventDriven] Ошибка:', error);
+-      setCurrentMessage(`❌ Ошибка при броске кубика: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+-      return 0;
+-    }
++    console.log('🎲 [GameScreen] rollDice: Вызвана из GameScreen, переадресуем в чат');
++    return Math.floor(Math.random() * 6) + 1;
+   };
+ 
+-  // Custom header component
++  // Custom header component with beautiful leaf glass effects - КОМПАКТНАЯ ВЕРСИЯ
+   const AppHeader = () => (
+-    <View className="bg-white py-4 px-5 border-b border-gray-100 z-10 shadow-sm">
+-      <View className="flex-row items-center justify-between w-full space-x-4">
+-        <AppLogo />
+-        <View className="flex-1 min-w-0 px-2">
+-          <Text className="text-sm text-center text-gray-700 font-medium leading-relaxed">
+-            {currentMessage}
+-          </Text>
+-        </View>
+-        <View className="flex-row items-center space-x-3">
+-          {/* Кнопка отчетов */}
+-          <TouchableOpacity 
+-            onPress={() => router.push('/reports')}
+-            className="bg-purple-50 p-2 rounded-full shadow-sm"
+-          >
+-            <Ionicons name="book-outline" size={20} color="#8E24AA" />
+-          </TouchableOpacity>
++    <View className="flex items-center justify-center py-4 px-5 z-10 animate-fade-in">
++      <View className="glass-chat-header py-3 px-4 rounded-2xl w-1/2 max-w-2xl">
++        <View className="flex-row items-center justify-between space-x-3">
++          <View className="glass-leaf rounded-xl p-2 animate-pearl-float">
++            <View className="flex-row items-center">
++              <View className="w-8 h-8 mr-2 overflow-hidden rounded-full shadow-sm">
++                <Image 
++                  source={require('../../../assets/icon.jpg')}
++                  style={{ width: '100%', height: '100%' }}
++                  className="rounded-full"
++                />
++              </View>
++              <Text className="text-sm font-medium text-gray-800">НейроЛила</Text>
++            </View>
++          </View>
+           
+-          {/* Индикатор уровня */}
+-          <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-full shadow-sm">
+-            <Text className="text-sm text-gray-500 mr-2">Уровень:</Text>
+-            <View className="bg-blue-50 w-8 h-8 rounded-full items-center justify-center shadow-inner">
+-              <Text className="font-medium text-blue-600">{currentPlayer?.plan ?? '-'}</Text>
++          <View className="flex-row items-center space-x-2">
++            {/* Индикатор уровня с glass эффектом */}
++            <View className="glass-leaf px-3 py-2 rounded-xl">
++              <View className="flex-row items-center">
++                <Text className="text-xs text-gray-700 mr-1 font-medium">Ур:</Text>
++                <View className="glass-button w-8 h-8 rounded-full items-center justify-center">
++                  <Text className="font-bold text-green-700 text-sm">{currentPlayer?.plan ?? '-'}</Text>
++                </View>
++              </View>
+             </View>
++            
++            {/* Кнопка отчетов с glass эффектом */}
++            <TouchableOpacity 
++              onPress={() => router.push('/reports')}
++              className="glass-button p-2 rounded-xl animate-pearl-float"
++            >
++              <Ionicons name="book-outline" size={16} color="#228B22" />
++            </TouchableOpacity>
+           </View>
+         </View>
+       </View>
+@@ -256,188 +111,51 @@ const GameScreen: React.FC = () => {
+ 
+   // Адаптивный макет для Web и Mobile
+   if (isWeb) {
+-    // Мобильный web в портретной ориентации - показываем мобильную версию интерфейса
++    // Мобильный web в портретной ориентации - компактный чат
+     if (windowWidth < 640 && !isLandscape) {
+       return (
+-        <View className="flex-1 bg-gray-50">
++        <View className="flex-1" style={{ backgroundColor: 'transparent' }}>
+           <AppHeader />
+           
+           {/* Статус Apollo */}
+           <ApolloStatus />
+           
+-          <ScrollView>
+-            <View className="p-2 pb-4">
+-              {/* Блок с игровым полем */}
+-              <View className="bg-white rounded-lg shadow-sm mb-2 p-1">
+-                <GameBoard players={safePlayer ? [safePlayer] : []} />
+-              </View>
+-              
+-              {/* Компактная информация об игроке */}
+-              <View className="bg-white rounded-lg shadow-sm p-3 mb-2">
+-                <View className="flex-row items-center justify-between">
+-                  <Text className="text-sm text-gray-600">Текущий план:</Text>
+-                  <View className="bg-blue-500 px-3 py-1 rounded-full">
+-                    <Text className="font-bold text-white text-sm">{currentPlayer?.plan || 1}</Text>
+-                  </View>
+-                </View>
+-                
+-                {/* Специальный блок для состояния ожидания шестерки */}
+-                {currentPlayer?.plan === 68 && currentPlayer?.isFinished && (
+-                  <View className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+-                    <Text className="text-sm font-semibold text-purple-800 text-center mb-1">
+-                      🎯 НАЧАЛО ИГРЫ
+-                    </Text>
+-                    <Text className="text-xs text-purple-700 text-center mb-2">
+-                      Для старта нужно выбросить ШЕСТЕРКУ
+-                    </Text>
+-                    {attemptCount > 0 && (
+-                      <View className="flex-row items-center justify-center">
+-                        <View className="bg-purple-100 px-2 py-1 rounded-full">
+-                          <Text className="text-xs text-purple-600">
+-                            Попытка {attemptCount + 1}
+-                          </Text>
+-                        </View>
+-                      </View>
+-                    )}
+-                  </View>
+-                )}
+-                
+-                {currentPlayer?.needsReport && (
+-                  <Text className="text-xs text-orange-600 mt-2 text-center">
+-                    📝 Напишите отчет в чате о вашем духовном опыте
+-                  </Text>
+-                )}
+-              </View>
+-
+-              {/* ChatBot component - увеличиваем высоту */}
+-              <View className="h-[500px] bg-white rounded-lg shadow-sm">
+-                <ChatBot />
+-              </View>
++          {/* Компактный чат - половина ширины экрана с максимальной прозрачностью */}
++          <View className="flex-1 items-center justify-center p-4">
++            <View className="w-1/2 max-w-lg h-full glass-leaf rounded-2xl animate-fade-in">
++              <ChatBot onRoll={rollDice} currentPlayer={safePlayer} />
+             </View>
+-          </ScrollView>
++          </View>
+         </View>
+       );
+     }
+     
+-    // Десктопная или ландшафтная мобильная версия
++    // Десктопная или ландшафтная мобильная версия - компактный чат
+     return (
+-      <View className="flex-1 bg-gray-50">
++      <View className="flex-1" style={{ backgroundColor: 'transparent' }}>
+         <AppHeader />
+         
+-        <View className={`flex-1 flex-row ${layout.padding} mx-auto ${layout.maxWidth} space-x-2`}>
+-          {/* Центральная колонка */}
+-          <View className={`${layout.centerColumn} flex flex-col space-y-2`}>
+-            {/* GameBoard Container */}
+-            <View className={`bg-white rounded-lg shadow-sm ${layout.gameBoardPadding} flex-grow flex items-center justify-center`}>
+-              <GameBoard players={safePlayer ? [safePlayer] : []} />
+-            </View>
+-            
+-            {/* Компактная информация об игроке */}
+-            <View className="bg-white rounded-lg shadow-sm p-2">
+-              <View className="flex-row items-center justify-between">
+-                <Text className="text-sm text-gray-600">План:</Text>
+-                <View className="bg-blue-500 px-3 py-1 rounded-full">
+-                  <Text className="font-bold text-white text-sm">{currentPlayer?.plan || 1}</Text>
+-                </View>
+-              </View>
+-              
+-              {/* Специальный блок для состояния ожидания шестерки */}
+-              {currentPlayer?.plan === 68 && currentPlayer?.isFinished && (
+-                <View className="mt-2 p-2 bg-gradient-to-r from-purple-50 to-blue-50 rounded border border-purple-200">
+-                  <Text className="text-xs font-semibold text-purple-800 text-center mb-1">
+-                    🎯 НАЧАЛО ИГРЫ
+-                  </Text>
+-                  <Text className="text-xs text-purple-700 text-center mb-1">
+-                    Для старта нужно выбросить ШЕСТЕРКУ
+-                  </Text>
+-                  {attemptCount > 0 && (
+-                    <View className="flex-row items-center justify-center">
+-                      <View className="bg-purple-100 px-2 py-1 rounded-full">
+-                        <Text className="text-xs text-purple-600">
+-                          Попытка {attemptCount + 1}
+-                        </Text>
+-                      </View>
+-                    </View>
+-                  )}
+-                </View>
+-              )}
+-              
+-              {currentPlayer?.needsReport && (
+-                <Text className="text-xs text-orange-600 mt-1 text-center">
+-                  📝 Напишите отчет в чате
+-                </Text>
+-              )}
+-            </View>
++        {/* Компактный чат - половина ширины экрана с максимальной прозрачностью */}
++        <View className="flex-1 items-center justify-center p-6">
++          <View className="w-1/2 max-w-3xl h-full glass-leaf rounded-2xl overflow-hidden animate-fade-in">
++            <ChatBot onRoll={rollDice} currentPlayer={safePlayer} />
+           </View>
+-
+-          {/* Правая колонка - расширенный чат */}
+-          {(windowWidth >= 768) && (
+-            <View className={`${layout.rightColumn} flex flex-col`}>
+-              <View className="bg-white rounded-lg shadow-sm flex-1 overflow-hidden">
+-                <ChatBot />
+-              </View>
+-            </View>
+-          )}
+         </View>
+       </View>
+     );
+   }
+ 
+-  // Мобильная версия
++  // Мобильная версия - компактный чат
+   return (
+-    <View className="flex-1 bg-gray-50">
++    <View className="flex-1" style={{ backgroundColor: 'transparent' }}>
+       <AppHeader />
+       
+-      <ScrollView>
+-        <View className="p-2 pb-3">
+-          {/* Блок с игровым полем */}
+-          <View className="bg-white rounded-lg overflow-hidden shadow-sm mb-1 p-1">
+-            <GameBoard players={safePlayer ? [safePlayer] : []} />
+-          </View>
+-          
+-          {/* Компактная информация об игроке */}
+-          <View className="bg-white rounded-lg shadow-sm p-3 mb-2">
+-            <View className="flex-row items-center justify-between">
+-              <Text className="text-sm text-gray-600">Текущий план:</Text>
+-              <View className="bg-blue-500 px-3 py-1 rounded-full">
+-                <Text className="font-bold text-white text-sm">{currentPlayer?.plan || 1}</Text>
+-              </View>
+-            </View>
+-            
+-            {/* Специальный блок для состояния ожидания шестерки */}
+-            {currentPlayer?.plan === 68 && currentPlayer?.isFinished && (
+-              <View className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+-                <Text className="text-sm font-semibold text-purple-800 text-center mb-1">
+-                  🎯 НАЧАЛО ИГРЫ
+-                </Text>
+-                <Text className="text-xs text-purple-700 text-center mb-2">
+-                  Для старта нужно выбросить ШЕСТЕРКУ
+-                </Text>
+-                {attemptCount > 0 && (
+-                  <View className="flex-row items-center justify-center">
+-                    <View className="bg-purple-100 px-2 py-1 rounded-full">
+-                      <Text className="text-xs text-purple-600">
+-                        Попытка {attemptCount + 1}
+-                      </Text>
+-                    </View>
+-                  </View>
+-                )}
+-              </View>
+-            )}
+-            
+-            {currentPlayer?.needsReport && (
+-              <Text className="text-xs text-orange-600 mt-2 text-center">
+-                📝 Напишите отчет в чате о вашем духовном опыте
+-              </Text>
+-            )}
+-          </View>
+-          
+-          {/* Блок чат-бота - увеличиваем высоту */}
+-          <View className="bg-white rounded-lg shadow-sm p-2 mb-3 h-[450px]">
+-            <ChatBot />
+-          </View>
++      {/* Компактный чат - 70% ширины экрана для мобильных с максимальной прозрачностью */}
++      <View className="flex-1 items-center justify-center p-3">
++        <View className="w-4/5 max-w-sm h-full glass-leaf rounded-2xl animate-fade-in">
++          <ChatBot onRoll={rollDice} currentPlayer={safePlayer} />
+         </View>
+-      </ScrollView>
++      </View>
+     </View>
+   );
+ };
+@@ -448,7 +166,7 @@ const styles = StyleSheet.create({
+   },
+   webContainer: {
+     flex: 1,
+-    backgroundColor: '#f9fafb',
++    backgroundColor: '#00e0ff', // Ярко-голубой для диагностики
+     maxWidth: 1200,
+     marginHorizontal: 'auto',
+     width: '100%',

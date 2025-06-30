@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ViewStyle, StyleSheet } from "react-native";
+import { View, ViewStyle, StyleSheet, Platform } from "react-native";
 import { useTheme } from "@react-navigation/native";
 import { black, lightGray } from "@constants/colors";
 
@@ -17,7 +17,7 @@ const NeomorphFlexView: React.FC<NeomorphFlexViewProps> = ({
   marginHorizontal = 40,
 }) => {
   const { dark } = useTheme();
-  const backgroundColor = dark ? black : lightGray;
+  const backgroundColor = Platform.OS === 'web' ? 'transparent' : (dark ? black : lightGray);
 
   return (
     <View
