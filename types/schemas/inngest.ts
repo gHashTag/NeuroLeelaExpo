@@ -15,7 +15,7 @@ export const DiceRollEventDataSchema = z.object({
 // 📋 Report Submit Event Data Schema
 export const ReportSubmitEventDataSchema = z.object({
   userId: z.string().min(1, 'User ID обязателен'),
-  report: z.string().min(10, 'Отчет должен содержать минимум 10 символов').max(2000, 'Отчет не может превышать 2000 символов'),
+  report: z.string().min(3, 'Отчет должен содержать минимум 3 символа').max(2000, 'Отчет не может превышать 2000 символов'),
   planNumber: PositionSchema
 });
 

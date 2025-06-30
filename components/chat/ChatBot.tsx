@@ -266,45 +266,69 @@ export const ChatBot: React.FC<ChatBotProps> = ({ onRoll }) => {
 
   // Инициализация чата при загрузке
   useEffect(() => {
-    if (!historyLoaded && currentPlayer) {
-      console.log('🔄 [ChatBot] Инициализация чата...');
-      
-      // Загружаем историю чата
-      loadChatHistory();
-      
-      // Показываем приветственное сообщение
-      const welcomeMessage: Message = {
-        id: 'welcome',
-        role: 'assistant',
-        content: 'Намасте! 🙏 Я - Лила, богиня игры самопознания. Добро пожаловать на путь духовного развития!'
-      };
-      
-      setMessages(prev => {
-        // Проверяем, есть ли уже приветственное сообщение
-        if (prev.some(msg => msg.id === 'welcome')) {
-          return prev;
-        }
-        return [welcomeMessage, ...prev];
-      });
+    const initializeChat = async () => {
+      const userId = user?.id || userData?.user_id || 'test-user-demo';
+      const userEmail = user?.email || 'demo@neuroleela.com';
 
-      // Если игрок готов к игре, показываем кнопку броска
-      if (currentPlayer && !currentPlayer.needsReport) {
-        setTimeout(() => {
-          startGameTurn();
-        }, 1000);
-      } else if (currentPlayer?.needsReport) {
-        // Если нужен отчет, показываем кнопку отчета
-        setTimeout(() => {
-          addGameMessage('showReportButton', {
-            planNumber: currentPlayer.plan,
-            disabled: false
-          });
-        }, 1000);
+      // Автоматическая инициализация игрока если не найден
+      if (!currentPlayer && !historyLoaded && userId) {
+        console.log('🚀 [ChatBot] Автоматическая инициализация игрока:', userId);
+        try {
+          const result = await InngestEventService.sendPlayerInit(userId, userEmail);
+          if (result.success) {
+            console.log('✅ [ChatBot] Игрок инициализирован:', result.eventId);
+            // Ждем несколько секунд для загрузки данных игрока перед продолжением
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          } else {
+            console.error('❌ [ChatBot] Ошибка инициализации:', result.error);
+          }
+        } catch (error) {
+          console.error('❌ [ChatBot] Критическая ошибка инициализации:', error);
+        }
       }
       
-      setHistoryLoaded(true);
-    }
-  }, [currentPlayer, historyLoaded]);
+      if (!historyLoaded && (currentPlayer || userId === 'test-user-demo')) {
+        console.log('🔄 [ChatBot] Инициализация чата...');
+        
+        // Загружаем историю чата
+        loadChatHistory();
+        
+        // Показываем приветственное сообщение
+        const welcomeMessage: Message = {
+          id: 'welcome',
+          role: 'assistant',
+          content: 'Намасте! 🙏 Я - Лила, богиня игры самопознания. Добро пожаловать на путь духовного развития!'
+        };
+        
+        setMessages(prev => {
+          // Проверяем, есть ли уже приветственное сообщение
+          if (prev.some(msg => msg.id === 'welcome')) {
+            return prev;
+          }
+          return [welcomeMessage, ...prev];
+        });
+
+        // Если игрок готов к игре, показываем кнопку броска
+        if (currentPlayer && !currentPlayer.needsReport) {
+          setTimeout(() => {
+            startGameTurn();
+          }, 1000);
+        } else if (currentPlayer?.needsReport) {
+          // Если нужен отчет, показываем кнопку отчета
+          setTimeout(() => {
+            addGameMessage('showReportButton', {
+              planNumber: currentPlayer.plan,
+              disabled: false
+            });
+          }, 1000);
+        }
+        
+        setHistoryLoaded(true);
+      }
+    };
+    
+    initializeChat();
+  }, [currentPlayer, historyLoaded, user, userData]);
 
   // Добавляем игровые сообщения при изменении состояния игрока
   useEffect(() => {
@@ -679,47 +703,52 @@ export const ChatBot: React.FC<ChatBotProps> = ({ onRoll }) => {
 
   // Новая функция для обработки броска кубика
   const handleNewDiceRoll = async (): Promise<void> => {
-    console.log('🎲 [EventDriven] ================ ОТПРАВКА СОБЫТИЯ БРОСКА КУБИКА ================');
-    console.log('🎲 [EventDriven] handleNewDiceRoll: НАЧАЛО');
-    console.log('🎲 [EventDriven] handleNewDiceRoll: onRoll prop =', typeof onRoll);
+    console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] ================ ОТПРАВКА СОБЫТИЯ БРОСКА КУБИКА ================');
+    console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] handleNewDiceRoll: НАЧАЛО');
+    console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] handleNewDiceRoll: onRoll prop =', typeof onRoll, onRoll);
+    console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] handleNewDiceRoll: currentPlayer =', currentPlayer);
+    console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] handleNewDiceRoll: needsReport =', needsReport);
     
     if (!currentPlayer) {
-      console.error('🎲 [EventDriven] ОШИБКА - нет currentPlayer');
+      console.error('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] ОШИБКА - нет currentPlayer');
       addSimpleMessage('❌ ОШИБКА: Игрок не найден. Попробуйте перезагрузить страницу.');
       return;
     }
 
     // Проверяем блокировку кубика
     if (needsReport) {
-      console.log('🎲 [EventDriven] КУБИК ЗАБЛОКИРОВАН! needsReport =', needsReport);
+      console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] КУБИК ЗАБЛОКИРОВАН! needsReport =', needsReport);
       addSimpleMessage('🚫 Кубик заблокирован! Сначала напишите отчет о вашем текущем плане в чате!');
       return;
     }
 
     try {
+      console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] Устанавливаем isLoading = true');
       setIsLoading(true);
       
       // 🔥 ПРИОРИТЕТ: Если передан внешний onRoll, используем его
       if (onRoll && typeof onRoll === 'function') {
-        console.log('🎲 [EventDriven] Используем ВНЕШНИЙ onRoll из gamescreen.tsx');
+        console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] Используем ВНЕШНИЙ onRoll из gamescreen.tsx');
+        console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] Вызываем внешний onRoll()...');
         const roll = await onRoll();
-        console.log('🎲 [EventDriven] Внешний onRoll вернул roll =', roll);
+        console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] Внешний onRoll вернул roll =', roll);
         setLastRoll(roll);
         addSimpleMessage(`🎲 Бросок ${roll}! Обрабатываю результат...`);
+        console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] Возвращаемся из внешнего onRoll branch');
         return;
       }
       
       // Fallback: внутренняя логика если внешний onRoll не передан
-      console.log('🎲 [EventDriven] Используем ВНУТРЕННЮЮ логику (fallback)');
+      console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] onRoll отсутствует - используем ВНУТРЕННЮЮ логику (fallback)');
       
       // Генерируем случайное число от 1 до 6
       const roll = Math.floor(Math.random() * 6) + 1;
-      console.log('🎲 [EventDriven] Сгенерированный бросок =', roll);
+      console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] Сгенерированный внутренний бросок =', roll);
       setLastRoll(roll);
       
       // Определяем userId
       const userId = user?.id || userData?.user_id || 'test-user-demo';
-      console.log('🎲 [EventDriven] Отправляем событие в Inngest: userId =', userId, 'roll =', roll);
+      console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] Отправляем событие в Inngest: userId =', userId, 'roll =', roll);
 
       // ✨ НОВАЯ АРХИТЕКТУРА: Отправляем событие в Inngest вместо прямого вызова
       const result = await InngestEventService.sendDiceRoll(userId, roll);
@@ -728,7 +757,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ onRoll }) => {
         throw new Error(`Ошибка отправки события: ${result.error}`);
       }
 
-      console.log('🎲 [EventDriven] Событие отправлено успешно, eventId =', result.eventId);
+      console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] Событие отправлено успешно, eventId =', result.eventId);
       
       // Показываем пользователю, что бросок обрабатывается
       addSimpleMessage(`🎲 Бросок ${roll}! Обрабатываю результат...`);
@@ -736,11 +765,13 @@ export const ChatBot: React.FC<ChatBotProps> = ({ onRoll }) => {
       // Состояние будет обновлено автоматически через Apollo при получении события game.player.state.update
       
     } catch (error) {
-      console.error('🎲 [EventDriven] ОШИБКА отправки события:', error);
+      console.error('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] КРИТИЧЕСКАЯ ОШИБКА отправки события:', error);
+      console.error('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] Стек ошибки:', error instanceof Error ? error.stack : 'Нет стека');
       addSimpleMessage('❌ Произошла ошибка при броске кубика. Попробуйте еще раз.');
     } finally {
+      console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] Устанавливаем isLoading = false');
       setIsLoading(false);
-      console.log('🎲 [EventDriven] ================ ЗАВЕРШЕНИЕ ================');
+      console.log('🎲🎲🎲 [handleNewDiceRoll-ДИАГНОСТИКА] ================ ЗАВЕРШЕНИЕ ================');
     }
   };
 
@@ -916,40 +947,45 @@ export const ChatBot: React.FC<ChatBotProps> = ({ onRoll }) => {
     disabled = false, 
     message = "🎲 Готовы бросить кубик?" 
   }) => {
-    console.log('🎲 [DiceButton] ================ КОМПОНЕНТ DiceButton РЕНДЕРИТСЯ ================');
-    console.log('🎲 [DiceButton] Параметры компонента:');
-    console.log('🎲 [DiceButton] - onRoll =', typeof onRoll, '(функция существует)');
-    console.log('🎲 [DiceButton] - disabled =', disabled);
-    console.log('🎲 [DiceButton] - message =', message);
-    console.log('🎲 [DiceButton] - isLoading =', isLoading);
-    console.log('🎲 [DiceButton] - needsReport =', needsReport);
+    console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] ================ КОМПОНЕНТ DiceButton РЕНДЕРИТСЯ ================');
+    console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] Параметры компонента:');
+    console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] - onRoll =', typeof onRoll, '(функция существует)', onRoll);
+    console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] - disabled =', disabled);
+    console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] - message =', message);
+    console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] - isLoading =', isLoading);
+    console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] - needsReport =', needsReport);
+    console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] - currentPlayer =', currentPlayer);
+    console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] - currentPlayer?.needsReport =', currentPlayer?.needsReport);
 
     const handleRoll = async () => {
-      console.log('🎲 [DiceButton] ================ handleRoll: НАЧАЛО ================');
-      console.log('🎲 [DiceButton] handleRoll: Кнопка кубика нажата!');
-      console.log('🎲 [DiceButton] handleRoll: disabled =', disabled);
-      console.log('🎲 [DiceButton] handleRoll: isLoading =', isLoading);
-      console.log('🎲 [DiceButton] handleRoll: needsReport =', needsReport);
-      console.log('🎲 [DiceButton] handleRoll: onRoll =', typeof onRoll);
+      console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] ================ handleRoll: НАЧАЛО ================');
+      console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: КНОПКА КУБИКА НАЖАТА!!!');
+      console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: disabled =', disabled);
+      console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: isLoading =', isLoading);
+      console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: needsReport =', needsReport);
+      console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: onRoll =', typeof onRoll, onRoll);
+      console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: currentPlayer =', currentPlayer);
       
       if (disabled || isLoading || needsReport) {
-        console.log('🎲 [DiceButton] handleRoll: БЛОКИРОВКА - кнопка заблокирована');
-        console.log('🎲 [DiceButton] handleRoll: - disabled =', disabled);
-        console.log('🎲 [DiceButton] handleRoll: - isLoading =', isLoading);
-        console.log('🎲 [DiceButton] handleRoll: - needsReport =', needsReport);
+        console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: БЛОКИРОВКА - кнопка заблокирована');
+        console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: - disabled =', disabled);
+        console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: - isLoading =', isLoading);
+        console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: - needsReport =', needsReport);
+        console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: ВЫХОДИМ ИЗ-ЗА БЛОКИРОВКИ!');
         return;
       }
 
       try {
-        console.log('🎲 [DiceButton] handleRoll: Вызываем onRoll()...');
-        await onRoll();
-        console.log('🎲 [DiceButton] handleRoll: onRoll() успешно выполнен');
+        console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: Вызываем onRoll()...');
+        console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: onRoll function =', onRoll.toString());
+        const result = await onRoll();
+        console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: onRoll() УСПЕШНО ВЫПОЛНЕН! result =', result);
       } catch (error) {
-        console.error('🎲 [DiceButton] handleRoll: ОШИБКА при выполнении onRoll:', error);
-        console.error('🎲 [DiceButton] handleRoll: Стек ошибки:', error instanceof Error ? error.stack : 'Нет стека');
+        console.error('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: КРИТИЧЕСКАЯ ОШИБКА при выполнении onRoll:', error);
+        console.error('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: Стек ошибки:', error instanceof Error ? error.stack : 'Нет стека');
       }
       
-      console.log('🎲 [DiceButton] handleRoll: ================ ЗАВЕРШЕНИЕ ================');
+      console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] handleRoll: ================ ЗАВЕРШЕНИЕ ================');
     };
 
     const buttonMessage = needsReport 
@@ -958,22 +994,28 @@ export const ChatBot: React.FC<ChatBotProps> = ({ onRoll }) => {
 
     const isButtonDisabled = disabled || isLoading || needsReport;
 
-    console.log('🎲 [DiceButton] Рендеринг с параметрами:');
-    console.log('🎲 [DiceButton] - buttonMessage =', buttonMessage);
-    console.log('🎲 [DiceButton] - isButtonDisabled =', isButtonDisabled);
-    console.log('🎲 [DiceButton] - onPress = handleRoll (функция)');
+    console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] Рендеринг с параметрами:');
+    console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] - buttonMessage =', buttonMessage);
+    console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] - isButtonDisabled =', isButtonDisabled);
+    console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] - onPress = handleRoll (функция существует)');
+    console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] - TouchableOpacity disabled =', isButtonDisabled);
 
     return (
-      <View className="glass-effect glass-button m-2 p-4 border-2 border-purple-400">
-        <Text className="text-black text-center mb-3 font-medium">{buttonMessage}</Text>
+      <View className="glass-card m-3 p-6 rounded-3xl shadow-pearl pearl-glow animate-fade-in">
+        <Text className="text-gray-800 text-center mb-4 font-bold text-lg">
+          {buttonMessage}
+        </Text>
         <TouchableOpacity
-          onPress={handleRoll}
+          onPress={() => {
+            console.log('🎲🎲🎲 [DiceButton-ДИАГНОСТИКА] TouchableOpacity onPress СРАБОТАЛ!!!');
+            handleRoll();
+          }}
           disabled={isButtonDisabled}
-          className={`glass-effect rounded-lg py-3 px-6 border border-purple-300 ${
-            isButtonDisabled ? 'opacity-50' : ''
+          className={`glass-button rounded-2xl py-4 px-8 shadow-pearl ${
+            isButtonDisabled ? 'opacity-50' : 'pearl-glow animate-pearl-float'
           }`}
         >
-          <Text className="text-black text-center font-semibold">
+          <Text className="text-purple-800 text-center font-bold text-lg">
             {isLoading ? '🎲 Бросаю...' : needsReport ? '🔒 Заблокировано' : '🎲 Бросить кубик'}
           </Text>
         </TouchableOpacity>
@@ -990,17 +1032,17 @@ export const ChatBot: React.FC<ChatBotProps> = ({ onRoll }) => {
     message: string;
   }> = ({ roll, fromPlan, toPlan, direction, message }) => {
     return (
-      <View className="glass-effect glass-card m-2 p-4 border-2 border-green-400">
-        <Text className="text-lg font-bold text-black text-center mb-2">
+      <View className="glass-card m-3 p-6 rounded-3xl shadow-pearl pearl-glow animate-slide-up">
+        <Text className="text-2xl font-bold text-purple-800 text-center mb-3">
           🎲 Выпало: {roll}
         </Text>
-        <Text className="text-black text-center mb-2 font-medium">
+        <Text className="text-gray-800 text-center mb-3 font-bold text-lg">
           Переход: План {fromPlan} → План {toPlan}
         </Text>
-        <Text className="text-black text-center text-sm mb-2">
+        <Text className="text-gray-700 text-center text-base mb-3 font-medium">
           Направление: {direction}
         </Text>
-        <Text className="text-black text-center">
+        <Text className="text-gray-800 text-center font-medium leading-relaxed">
           {message}
         </Text>
       </View>
@@ -1014,18 +1056,18 @@ export const ChatBot: React.FC<ChatBotProps> = ({ onRoll }) => {
     disabled = false 
   }) => {
     return (
-      <View className="glass-effect glass-card m-2 p-4 border-2 border-orange-400">
-        <Text className="text-black text-center mb-3 font-medium">
+      <View className="glass-card m-3 p-6 rounded-3xl shadow-pearl pearl-glow animate-fade-in">
+        <Text className="text-gray-800 text-center mb-4 font-bold text-lg">
           📝 Время для отчета о плане {planNumber}
         </Text>
         <TouchableOpacity
           onPress={onReport}
           disabled={disabled}
-          className={`glass-effect rounded-lg py-3 px-6 border border-orange-300 ${
-            disabled ? 'opacity-50' : ''
+          className={`glass-button rounded-2xl py-4 px-8 shadow-pearl ${
+            disabled ? 'opacity-50' : 'pearl-glow animate-pearl-float'
           }`}
         >
-          <Text className="text-black text-center font-semibold">
+          <Text className="text-purple-800 text-center font-bold text-lg">
             📝 Написать отчет
           </Text>
         </TouchableOpacity>
@@ -1034,13 +1076,16 @@ export const ChatBot: React.FC<ChatBotProps> = ({ onRoll }) => {
   };
 
   return (
-    <View className="flex-1 bg-white flex flex-col overflow-hidden">
-      <View className="bg-gradient-to-r from-purple-50 to-blue-50 p-3 border-b border-gray-100">
+    <View className="flex-1 pearl-bg flex flex-col overflow-hidden animate-fade-in">
+      {/* Заголовок чата с glass эффектом */}
+      <View className="glass-chat-header p-4 rounded-t-3xl">
         <View className="flex-row justify-between items-center">
           <View className="flex-1">
-            <Text className="text-base font-medium text-gray-700">🕉️ Лила - Духовный проводник</Text>
+            <Text className="text-lg font-bold text-gray-800 text-gradient">
+              🕉️ Лила - Духовный проводник
+            </Text>
             {currentPlayer && (
-              <Text className="text-xs text-gray-500 mt-1">
+              <Text className="text-sm text-gray-600 mt-1 font-medium">
                 {needsReport 
                   ? `📝 Напишите отчет о плане ${currentPlanForReport}` 
                   : `🎲 План ${currentPlayer.plan} • Готов к следующему ходу`
@@ -1050,47 +1095,61 @@ export const ChatBot: React.FC<ChatBotProps> = ({ onRoll }) => {
           </View>
           <TouchableOpacity 
             onPress={clearChatHistory}
-            className="bg-purple-100 rounded-full p-2"
+            className="glass-button rounded-full p-3 pearl-glow animate-pearl-float"
           >
-            <Ionicons name="refresh" size={16} color="#6A0DAD" />
+            <Ionicons name="refresh" size={18} color="#6366F1" />
           </TouchableOpacity>
         </View>
       </View>
       
-      <ScrollView className="flex-1 p-3" ref={scrollViewRef}>
+      {/* Область сообщений с жемчужным фоном */}
+      <ScrollView 
+        className="flex-1 p-4" 
+        ref={scrollViewRef}
+        style={{
+          backgroundColor: 'transparent'
+        }}
+      >
         {isLoading && (
-          <View className="items-start flex flex-row mb-3">
-            <View className="bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg px-4 py-2 shadow-sm">
-              <Text className="text-gray-600">Лила размышляет... 🤔</Text>
+          <View className="items-start flex flex-row mb-4 animate-slide-up">
+            <View className="glass-message rounded-2xl px-6 py-4 shadow-pearl">
+              <Text className="text-gray-700 font-medium">
+                🤔 Лила размышляет...
+              </Text>
             </View>
           </View>
         )}
         
-        {messages.map((msg) => (
-          <View key={msg.id}>
-          <View 
-              className={`mb-3 ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-row`}
-          >
+        {messages.map((msg, index) => (
+          <View key={msg.id} className="animate-slide-up" style={{ animationDelay: `${index * 50}ms` }}>
             <View 
-              className={`rounded-lg px-4 py-2 max-w-[85%] ${
-                  msg.role === 'user' 
-                  ? 'bg-blue-500 ml-auto shadow-sm' 
-                    : 'bg-gradient-to-r from-purple-100 to-blue-100 shadow-sm'
-              }`}
+              className={`mb-4 ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-row`}
             >
-              <Text 
-                  className={msg.role === 'user' ? 'text-white' : 'text-gray-800'}
+              <View 
+                className={`rounded-2xl px-6 py-4 max-w-[85%] shadow-pearl ${
+                  msg.role === 'user' 
+                    ? 'glass-button ml-auto' 
+                    : 'glass-message'
+                }`}
               >
+                <Text 
+                  className={`font-medium ${
+                    msg.role === 'user' ? 'text-purple-800' : 'text-gray-800'
+                  }`}
+                >
                   {msg.content}
-              </Text>
+                </Text>
               </View>
             </View>
 
-            {/* Отображение tool invocations */}
+            {/* Отображение tool invocations с glass эффектами */}
             {msg.toolInvocations && (
-              <View className="mb-3">
-                {msg.toolInvocations.map((toolInvocation, index) => (
-                  <View key={`${toolInvocation.toolCallId}-${index}`}>
+              <View className="mb-4">
+                {msg.toolInvocations.map((toolInvocation, toolIndex) => (
+                  <View 
+                    key={`${toolInvocation.toolCallId}-${toolIndex}`}
+                    className="glass-card rounded-2xl mx-2 shadow-pearl animate-fade-in"
+                  >
                     {renderToolInvocation(toolInvocation)}
                   </View>
                 ))}
@@ -1100,9 +1159,10 @@ export const ChatBot: React.FC<ChatBotProps> = ({ onRoll }) => {
         ))}
       </ScrollView>
       
-      <View className="border-t border-gray-100 p-3">
+      {/* Поле ввода с glass эффектом */}
+      <View className="glass-chat-header p-4 rounded-b-3xl">
         <View className="flex-row items-center">
-        <TextInput
+          <TextInput
             value={input}
             onChangeText={setInput}
             placeholder={
@@ -1110,24 +1170,28 @@ export const ChatBot: React.FC<ChatBotProps> = ({ onRoll }) => {
                 ? "Напишите ваш отчет о духовном опыте..."
                 : "Спросите о плане или поделитесь мыслями..."
             }
-          placeholderTextColor="rgba(107,114,128,0.5)"
-          className="flex-1 bg-gray-50 rounded-full px-4 py-2 mr-2 text-gray-700"
+            placeholderTextColor="rgba(107,114,128,0.6)"
+            className="flex-1 glass-input rounded-full px-6 py-4 mr-3 text-gray-800 font-medium"
             editable={!isLoading}
             onSubmitEditing={handleSubmit}
-        />
-        <TouchableOpacity 
+            style={{
+              fontSize: 16,
+              lineHeight: 20
+            }}
+          />
+          <TouchableOpacity 
             onPress={handleSubmit} 
             disabled={isLoading}
-            className={`rounded-full p-2 shadow-sm ${
-              isLoading ? 'bg-gray-300' : 'bg-gradient-to-r from-purple-500 to-blue-500'
+            className={`glass-button rounded-full p-4 shadow-pearl ${
+              isLoading ? 'opacity-50' : 'pearl-glow animate-pearl-float'
             }`}
           >
             <Ionicons 
               name={isLoading ? "hourglass" : "send"} 
-              size={16} 
-              color="white" 
+              size={18} 
+              color="#6366F1" 
             />
-        </TouchableOpacity>
+          </TouchableOpacity>
         </View>
       </View>
     </View>

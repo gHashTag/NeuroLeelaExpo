@@ -45,7 +45,7 @@ export const ReportSchema = z.object({
   id: z.number().int().positive(),
   user_id: z.string().min(1, 'User ID обязателен'),
   plan_number: z.number().int().min(1).max(72),
-  content: z.string().min(10, 'Отчет должен содержать минимум 10 символов').max(2000, 'Отчет не может превышать 2000 символов'),
+  content: z.string().min(3, 'Отчет должен содержать минимум 3 символа').max(2000, 'Отчет не может превышать 2000 символов'),
   likes: z.number().int().min(0).default(0),
   comments: z.number().int().min(0).default(0),
   created_at: z.union([z.date(), z.string()]).nullable().optional(),
@@ -55,7 +55,7 @@ export const ReportSchema = z.object({
 export const NewReportSchema = z.object({
   user_id: z.string().min(1, 'User ID обязателен'),
   plan_number: z.number().int().min(1).max(72),
-  content: z.string().min(10, 'Отчет должен содержать минимум 10 символов').max(2000, 'Отчет не может превышать 2000 символов'),
+  content: z.string().min(3, 'Отчет должен содержать минимум 3 символа').max(2000, 'Отчет не может превышать 2000 символов'),
   likes: z.number().int().min(0).default(0),
   comments: z.number().int().min(0).default(0)
 });

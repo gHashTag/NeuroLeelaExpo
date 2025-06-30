@@ -16,7 +16,7 @@ export const ApiDiceRollRequestSchema = z.object({
 export const ApiReportSubmitRequestSchema = z.object({
   userId: z.string().min(1, 'User ID обязателен'),
   planNumber: PositionSchema,
-  content: z.string().min(10, 'Отчет должен содержать минимум 10 символов').max(2000, 'Отчет не может превышать 2000 символов')
+  content: z.string().min(3, 'Отчет должен содержать минимум 3 символа').max(2000, 'Отчет не может превышать 2000 символов')
 });
 
 // 👤 API Player Init Request Schema

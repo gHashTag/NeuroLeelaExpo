@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ViewStyle } from 'react-native';
 import { cn } from '@/lib/utils';
 
-type CardVariant = 'default' | 'elevated' | 'outlined' | 'glass';
+type CardVariant = 'default' | 'elevated' | 'outlined' | 'glass' | 'glass-pearl' | 'glass-message' | 'glass-button' | 'glass-leaf';
 type CardSize = 'sm' | 'md' | 'lg';
 
 interface CardProps {
@@ -19,7 +19,11 @@ const cardVariants = {
   default: 'bg-white border border-gray-200',
   elevated: 'bg-white shadow-xl border border-gray-100',
   outlined: 'bg-white border-2 border-purple-200',
-  glass: 'bg-white/80 backdrop-blur-md border border-white/30'
+  glass: 'glass shadow-pearl',
+  'glass-pearl': 'glass-pearl shadow-pearl pearl-glow',
+  'glass-message': 'glass-message shadow-pearl',
+  'glass-button': 'glass-button shadow-pearl',
+  'glass-leaf': 'glass-leaf shadow-pearl animate-fade-in'
 };
 
 const cardSizes = {
@@ -74,10 +78,32 @@ export function GameCard({
 }: CardProps & { glowing?: boolean }) {
   return (
     <Card
-      variant="glass"
+      variant="glass-leaf"
       className={cn(
-        'bg-gradient-to-br from-white/95 to-white/80',
-        glowing && 'shadow-purple-200/50 shadow-2xl border-purple-300/50',
+        'rounded-3xl animate-fade-in',
+        glowing && 'pearl-glow animate-pearl-float',
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </Card>
+  );
+}
+
+// Новая карточка специально для работы с листом
+export function LeafCard({
+  children,
+  className,
+  floating = false,
+  ...props
+}: CardProps & { floating?: boolean }) {
+  return (
+    <Card
+      variant="glass-leaf"
+      className={cn(
+        'rounded-3xl',
+        floating && 'animate-pearl-float',
         className
       )}
       {...props}

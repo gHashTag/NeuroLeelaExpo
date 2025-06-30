@@ -143,89 +143,116 @@ const GameScreen: React.FC = () => {
   
   // ✨ НОВАЯ EVENT-DRIVEN АРХИТЕКТУРА: Функция броска кубика через Inngest
   const rollDice = async () => {
-    console.log('🎲 [GameScreen-EventDriven] rollDice: Отправка события через Inngest');
+    console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] ================== rollDice НАЧАЛО ==================');
+    console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: Функция вызвана!');
+    console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: currentPlayer =', JSON.stringify(currentPlayer, null, 2));
+    console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: userData =', userData ? { user_id: userData.user_id } : 'null');
+    console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: attemptCount =', attemptCount);
+    console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: currentMessage =', currentMessage);
     
     if (!currentPlayer) {
-      console.error('🎲 [GameScreen-EventDriven] Игрок не найден');
+      console.error('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] ОШИБКА: Игрок не найден');
       setCurrentMessage("❌ Ошибка: игрок не найден");
       return 0;
     }
     
     // Проверяем блокировку кубика
     if (currentPlayer.needsReport) {
-      console.log('🎲 [GameScreen-EventDriven] Кубик заблокирован - нужен отчет');
+      console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] БЛОКИРОВКА: Кубик заблокирован - нужен отчет');
+      console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] БЛОКИРОВКА: currentPlayer.needsReport =', currentPlayer.needsReport);
       setCurrentMessage("📝 Сначала напишите отчет в чате о вашем текущем состоянии!");
       return 0;
     }
     
     try {
+      console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: Начинаем бросок кубика...');
+      
       // Генерируем бросок
       const roll = Math.floor(Math.random() * 6) + 1;
-      console.log(`🎲 [GameScreen-EventDriven] Бросок: ${roll}`);
+      console.log(`🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: Сгенерированный бросок = ${roll}`);
       
       // Проверяем состояние начала игры для счетчика попыток
       const isWaitingForSix = currentPlayer.plan === 68 && currentPlayer.isFinished;
+      console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: isWaitingForSix =', isWaitingForSix);
+      console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: currentPlayer.plan =', currentPlayer.plan);
+      console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: currentPlayer.isFinished =', currentPlayer.isFinished);
       
       // Определяем userId
       const userId = userData?.user_id || 'test-user-demo';
+      console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: userId =', userId);
       
       // ✨ ОТПРАВЛЯЕМ СОБЫТИЕ В INNGEST
+      console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: Отправляем событие в Inngest...');
       const result = await InngestEventService.sendDiceRoll(userId, roll);
+      console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: Результат отправки =', result);
       
       if (!result.success) {
         throw new Error(`Ошибка отправки события: ${result.error}`);
       }
       
-      console.log('🎲 [GameScreen-EventDriven] Событие отправлено успешно:', result.eventId);
+      console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: Событие отправлено успешно! eventId =', result.eventId);
       
       // Обновляем сообщение в зависимости от состояния
       if (isWaitingForSix) {
         if (roll === 6) {
+          console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: УСПЕХ! Выпала 6, игра началась!');
           setCurrentMessage(`🎉 ОТЛИЧНО! Выпала ${roll}! Игра началась!`);
           setAttemptCount(0); // Сбрасываем счетчик
         } else {
           const newAttemptCount = attemptCount + 1;
+          console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: Не выпала 6, счетчик попыток:', newAttemptCount);
           setAttemptCount(newAttemptCount);
           setCurrentMessage(`😔 Выпало ${roll}, а нужна 6. Попробуйте еще раз! (Попытка ${newAttemptCount})`);
         }
       } else {
+        console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: Обычный ход в игре');
         setCurrentMessage(`🎲 Бросок ${roll}! Обрабатываю результат...`);
       }
       
+      console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] rollDice: Возвращаем roll =', roll);
       // Состояние обновится автоматически через Apollo при получении события
       return roll;
       
     } catch (error) {
-      console.error('🎲 [GameScreen-EventDriven] Ошибка:', error);
+      console.error('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] КРИТИЧЕСКАЯ ОШИБКА в rollDice:', error);
+      console.error('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] Стек ошибки:', error instanceof Error ? error.stack : 'Нет стека');
       setCurrentMessage(`❌ Ошибка при броске кубика: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
       return 0;
+    } finally {
+      console.log('🎲🎲🎲 [GameScreen-ДИАГНОСТИКА] ================== rollDice ЗАВЕРШЕНИЕ ==================');
     }
   };
 
-  // Custom header component
+  // Custom header component with beautiful leaf glass effects
   const AppHeader = () => (
-    <View className="bg-white py-4 px-5 border-b border-gray-100 z-10 shadow-sm">
+    <View className="glass-chat-header py-4 px-5 z-10 animate-fade-in">
       <View className="flex-row items-center justify-between w-full space-x-4">
-        <AppLogo />
+        <View className="glass-leaf rounded-2xl p-3 animate-pearl-float">
+          <AppLogo />
+        </View>
         <View className="flex-1 min-w-0 px-2">
-          <Text className="text-sm text-center text-gray-700 font-medium leading-relaxed">
-            {currentMessage}
-          </Text>
+          <View className="glass-message rounded-2xl p-3">
+            <Text className="text-sm text-center text-gray-800 font-medium leading-relaxed">
+              {currentMessage}
+            </Text>
+          </View>
         </View>
         <View className="flex-row items-center space-x-3">
-          {/* Кнопка отчетов */}
+          {/* Кнопка отчетов с glass эффектом */}
           <TouchableOpacity 
             onPress={() => router.push('/reports')}
-            className="bg-purple-50 p-2 rounded-full shadow-sm"
+            className="glass-button p-3 rounded-2xl animate-pearl-float"
           >
-            <Ionicons name="book-outline" size={20} color="#8E24AA" />
+            <Ionicons name="book-outline" size={20} color="#228B22" />
           </TouchableOpacity>
           
-          {/* Индикатор уровня */}
-          <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-full shadow-sm">
-            <Text className="text-sm text-gray-500 mr-2">Уровень:</Text>
-            <View className="bg-blue-50 w-8 h-8 rounded-full items-center justify-center shadow-inner">
-              <Text className="font-medium text-blue-600">{currentPlayer?.plan ?? '-'}</Text>
+          {/* Индикатор уровня с glass эффектом */}
+          <View className="glass-leaf px-4 py-3 rounded-2xl">
+            <View className="flex-row items-center">
+              <Text className="text-sm text-gray-700 mr-2 font-medium">Уровень:</Text>
+              <View className="glass-button w-10 h-10 rounded-full items-center justify-center">
+                <Text className="font-bold text-green-700 text-lg">{currentPlayer?.plan ?? '-'}</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -267,33 +294,33 @@ const GameScreen: React.FC = () => {
           
           <ScrollView>
             <View className="p-2 pb-4">
-              {/* Блок с игровым полем */}
-              <View className="bg-white rounded-lg shadow-sm mb-2 p-1">
+              {/* Блок с игровым полем с glass эффектом */}
+              <View className="glass-leaf rounded-2xl mb-3 p-3 animate-fade-in">
                 <GameBoard players={safePlayer ? [safePlayer] : []} />
               </View>
               
-              {/* Компактная информация об игроке */}
-              <View className="bg-white rounded-lg shadow-sm p-3 mb-2">
+              {/* Компактная информация об игроке с glass эффектами */}
+              <View className="glass-pearl rounded-2xl p-4 mb-3 animate-fade-in">
                 <View className="flex-row items-center justify-between">
-                  <Text className="text-sm text-gray-600">Текущий план:</Text>
-                  <View className="bg-blue-500 px-3 py-1 rounded-full">
-                    <Text className="font-bold text-white text-sm">{currentPlayer?.plan || 1}</Text>
+                  <Text className="text-sm text-gray-700 font-medium">Текущий план:</Text>
+                  <View className="glass-button px-4 py-2 rounded-full">
+                    <Text className="font-bold text-green-700 text-sm">{currentPlayer?.plan || 1}</Text>
                   </View>
                 </View>
                 
                 {/* Специальный блок для состояния ожидания шестерки */}
                 {currentPlayer?.plan === 68 && currentPlayer?.isFinished && (
-                  <View className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
-                    <Text className="text-sm font-semibold text-purple-800 text-center mb-1">
+                  <View className="mt-4 glass-leaf p-4 rounded-2xl animate-pearl-float">
+                    <Text className="text-sm font-semibold text-green-800 text-center mb-2">
                       🎯 НАЧАЛО ИГРЫ
                     </Text>
-                    <Text className="text-xs text-purple-700 text-center mb-2">
+                    <Text className="text-xs text-green-700 text-center mb-3">
                       Для старта нужно выбросить ШЕСТЕРКУ
                     </Text>
                     {attemptCount > 0 && (
                       <View className="flex-row items-center justify-center">
-                        <View className="bg-purple-100 px-2 py-1 rounded-full">
-                          <Text className="text-xs text-purple-600">
+                        <View className="glass-button px-3 py-2 rounded-full">
+                          <Text className="text-xs text-green-600 font-medium">
                             Попытка {attemptCount + 1}
                           </Text>
                         </View>
@@ -309,8 +336,8 @@ const GameScreen: React.FC = () => {
                 )}
               </View>
 
-              {/* ChatBot component - увеличиваем высоту */}
-              <View className="h-[500px] bg-white rounded-lg shadow-sm">
+              {/* ChatBot component с glass эффектом */}
+              <View className="h-[500px] glass-pearl rounded-2xl animate-fade-in">
                 <ChatBot onRoll={rollDice} />
               </View>
             </View>
@@ -327,33 +354,33 @@ const GameScreen: React.FC = () => {
         <View className={`flex-1 flex-row ${layout.padding} mx-auto ${layout.maxWidth} space-x-2`}>
           {/* Центральная колонка */}
           <View className={`${layout.centerColumn} flex flex-col space-y-2`}>
-            {/* GameBoard Container */}
-            <View className={`bg-white rounded-lg shadow-sm ${layout.gameBoardPadding} flex-grow flex items-center justify-center`}>
+            {/* GameBoard Container с glass эффектом */}
+            <View className={`glass-leaf rounded-2xl ${layout.gameBoardPadding} flex-grow flex items-center justify-center animate-fade-in`}>
               <GameBoard players={safePlayer ? [safePlayer] : []} />
             </View>
             
-            {/* Компактная информация об игроке */}
-            <View className="bg-white rounded-lg shadow-sm p-2">
+            {/* Компактная информация об игроке с glass эффектом */}
+            <View className="glass-pearl rounded-2xl p-3 animate-fade-in">
               <View className="flex-row items-center justify-between">
-                <Text className="text-sm text-gray-600">План:</Text>
-                <View className="bg-blue-500 px-3 py-1 rounded-full">
-                  <Text className="font-bold text-white text-sm">{currentPlayer?.plan || 1}</Text>
+                <Text className="text-sm text-gray-700 font-medium">План:</Text>
+                <View className="glass-button px-4 py-2 rounded-full">
+                  <Text className="font-bold text-green-700 text-sm">{currentPlayer?.plan || 1}</Text>
                 </View>
               </View>
               
               {/* Специальный блок для состояния ожидания шестерки */}
               {currentPlayer?.plan === 68 && currentPlayer?.isFinished && (
-                <View className="mt-2 p-2 bg-gradient-to-r from-purple-50 to-blue-50 rounded border border-purple-200">
-                  <Text className="text-xs font-semibold text-purple-800 text-center mb-1">
+                <View className="mt-3 glass-leaf p-3 rounded-2xl animate-pearl-float">
+                  <Text className="text-xs font-semibold text-green-800 text-center mb-1">
                     🎯 НАЧАЛО ИГРЫ
                   </Text>
-                  <Text className="text-xs text-purple-700 text-center mb-1">
+                  <Text className="text-xs text-green-700 text-center mb-2">
                     Для старта нужно выбросить ШЕСТЕРКУ
                   </Text>
                   {attemptCount > 0 && (
                     <View className="flex-row items-center justify-center">
-                      <View className="bg-purple-100 px-2 py-1 rounded-full">
-                        <Text className="text-xs text-purple-600">
+                      <View className="glass-button px-2 py-1 rounded-full">
+                        <Text className="text-xs text-green-600 font-medium">
                           Попытка {attemptCount + 1}
                         </Text>
                       </View>
@@ -370,10 +397,10 @@ const GameScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Правая колонка - расширенный чат */}
+          {/* Правая колонка - расширенный чат с glass эффектом */}
           {(windowWidth >= 768) && (
             <View className={`${layout.rightColumn} flex flex-col`}>
-              <View className="bg-white rounded-lg shadow-sm flex-1 overflow-hidden">
+              <View className="glass-pearl rounded-2xl flex-1 overflow-hidden animate-fade-in">
                 <ChatBot onRoll={rollDice} />
               </View>
             </View>

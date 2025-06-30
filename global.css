@@ -11,13 +11,32 @@
   --border: 214.3 31.8% 91.4%;
   --input: 214.3 31.8% 91.4%;
   --ring: 222.2 84% 4.9%;
+  
+  /* Жемчужно-перламутровая палитра с добавлением зеленых оттенков листа */
+  --pearl-gradient: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.95) 0%, 
+    rgba(249, 255, 245, 0.9) 25%, 
+    rgba(236, 255, 254, 0.85) 50%, 
+    rgba(245, 255, 243, 0.9) 75%, 
+    rgba(255, 250, 250, 0.95) 100%);
+    
+  --pearl-surface: radial-gradient(circle at 50% 50%, 
+    rgba(255, 255, 255, 0.8) 0%, 
+    rgba(248, 255, 252, 0.6) 50%, 
+    rgba(241, 255, 249, 0.4) 100%);
+    
+  /* Фоновое изображение листа теперь управляется через ImageBackground в React Native */
 }
 
 body {
   font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
+  min-height: 100vh;
+  position: relative;
 }
+
+/* Overlay теперь управляется через React Native стили в _layout.tsx */
 
 @tailwind base;
 @tailwind components;
@@ -69,21 +88,191 @@ body {
   }
 }
 
-/* Custom utilities for NeuroLeela */
+  /* Custom utilities for NeuroLeela */
 @layer utilities {
   .text-gradient {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #228B22 0%, #32CD32 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   
-  .glass {
+  /* Новые utility классы для работы с листом */
+  .bg-leaf-blur {
+    backdrop-filter: blur(30px) saturate(200%);
     background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
   }
   
+  .bg-leaf-glass {
+    @apply glass-leaf;
+  }
+  
+  .bg-leaf-pearl {
+    @apply glass-pearl;
+  }
+  
+  /* Жемчужный фон - основа всего дизайна */
+  .pearl-bg {
+    background: var(--pearl-gradient);
+    position: relative;
+  }
+  
+  .pearl-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--pearl-surface);
+    border-radius: inherit;
+    z-index: -1;
+  }
+  
+  /* Основной glass эффект с учетом листа */
+  .glass {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(15px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 16px rgba(34, 139, 34, 0.1);
+  }
+  
+  /* Продвинутые glass эффекты с гармонией с листом */
+  .glass-pearl {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.3) 0%, 
+      rgba(248, 255, 252, 0.2) 50%, 
+      rgba(245, 255, 245, 0.25) 100%);
+    backdrop-filter: blur(25px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 
+      0 8px 32px rgba(34, 139, 34, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      inset 0 -1px 0 rgba(245, 255, 245, 0.3);
+  }
+  
+  /* Новый класс для максимальной прозрачности с листом */
+  .glass-leaf {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.12) 0%, 
+      rgba(248, 255, 248, 0.08) 50%, 
+      rgba(240, 255, 240, 0.1) 100%);
+    backdrop-filter: blur(30px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 
+      0 12px 40px rgba(34, 139, 34, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+  
+  .glass-message {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.4) 0%, 
+      rgba(255, 255, 255, 0.2) 100%);
+    backdrop-filter: blur(15px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 
+      0 4px 16px rgba(31, 38, 135, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+  
+  .glass-chat-header {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.3) 0%, 
+      rgba(248, 250, 252, 0.25) 100%);
+    backdrop-filter: blur(25px) saturate(150%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 
+      0 2px 8px rgba(31, 38, 135, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+  
+  .glass-input {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.4) 0%, 
+      rgba(248, 250, 252, 0.35) 50%,
+      rgba(236, 254, 255, 0.3) 100%);
+    backdrop-filter: blur(20px) saturate(200%);
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 
+      0 6px 20px rgba(31, 38, 135, 0.08),
+      0 2px 8px rgba(139, 92, 246, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.5),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.2);
+  }
+  
+  .glass-input:focus {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.45) 0%, 
+      rgba(248, 255, 252, 0.4) 50%,
+      rgba(240, 255, 240, 0.35) 100%);
+    border-color: rgba(34, 139, 34, 0.3);
+    box-shadow: 
+      0 8px 25px rgba(34, 139, 34, 0.12),
+      0 4px 12px rgba(34, 139, 34, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      inset 0 -1px 0 rgba(245, 255, 245, 0.3);
+    outline: none;
+  }
+  
+  .glass-button {
+    background: linear-gradient(135deg, 
+      rgba(34, 139, 34, 0.15) 0%, 
+      rgba(46, 125, 50, 0.1) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(34, 139, 34, 0.2);
+    box-shadow: 
+      0 6px 20px rgba(34, 139, 34, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+  }
+  
+  .glass-button:hover {
+    background: linear-gradient(135deg, 
+      rgba(34, 139, 34, 0.2) 0%, 
+      rgba(46, 125, 50, 0.15) 100%);
+    transform: translateY(-1px);
+    box-shadow: 
+      0 8px 25px rgba(34, 139, 34, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+  
+  .glass-card {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.3) 0%, 
+      rgba(248, 250, 252, 0.2) 50%, 
+      rgba(241, 245, 249, 0.25) 100%);
+    backdrop-filter: blur(22px) saturate(170%);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow: 
+      0 12px 40px rgba(31, 38, 135, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+  }
+  
+  /* Магические эффекты свечения */
+  .pearl-glow {
+    position: relative;
+  }
+  
+  .pearl-glow::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, 
+      rgba(139, 92, 246, 0.3) 0%, 
+      rgba(168, 85, 247, 0.2) 25%, 
+      rgba(236, 254, 255, 0.3) 50%, 
+      rgba(168, 85, 247, 0.2) 75%, 
+      rgba(139, 92, 246, 0.3) 100%);
+    border-radius: inherit;
+    z-index: -1;
+    filter: blur(8px);
+  }
+  
+  /* Градиенты в стиле перламутра */
   .gradient-purple {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   }
@@ -92,8 +281,24 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
   }
   
+  .gradient-pearl {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.9) 0%, 
+      rgba(249, 245, 255, 0.8) 25%, 
+      rgba(236, 254, 255, 0.75) 50%, 
+      rgba(245, 243, 255, 0.8) 75%, 
+      rgba(255, 250, 250, 0.9) 100%);
+  }
+  
   .shadow-glow {
     box-shadow: 0 0 30px rgba(102, 126, 234, 0.3);
+  }
+  
+  .shadow-pearl {
+    box-shadow: 
+      0 10px 30px rgba(139, 92, 246, 0.1),
+      0 4px 12px rgba(168, 85, 247, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
   }
   
   /* Safe area utilities for React Native */
@@ -122,6 +327,10 @@ body {
     animation: slideUp 0.4s ease-out;
   }
   
+  .animate-pearl-float {
+    animation: pearlFloat 6s ease-in-out infinite;
+  }
+  
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -135,6 +344,25 @@ body {
     to { 
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+  
+  @keyframes pearlFloat {
+    0%, 100% { 
+      transform: translateY(0px) rotate(0deg);
+      filter: hue-rotate(0deg);
+    }
+    25% { 
+      transform: translateY(-8px) rotate(1deg);
+      filter: hue-rotate(90deg);
+    }
+    50% { 
+      transform: translateY(-4px) rotate(0deg);
+      filter: hue-rotate(180deg);
+    }
+    75% { 
+      transform: translateY(-12px) rotate(-1deg);
+      filter: hue-rotate(270deg);
     }
   }
 }
