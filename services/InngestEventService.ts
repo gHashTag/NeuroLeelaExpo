@@ -56,14 +56,14 @@ export class InngestEventService {
   }
 
   /**
-   * Отправка события создания игрока
+   * Отправка события инициализации игрока
    */
-  static async sendPlayerCreate(userId: string, email?: string) {
-    console.log(`[InngestEventService] Создание игрока: userId=${userId}, email=${email}`);
+  static async sendPlayerInit(userId: string, email?: string) {
+    console.log(`[InngestEventService] Инициализация игрока: userId=${userId}, email=${email}`);
     
     try {
       const result = await inngest.send({
-        name: 'game.player.create',
+        name: 'game.player.init',
         data: {
           userId,
           email,
@@ -71,10 +71,34 @@ export class InngestEventService {
         }
       });
       
-      console.log(`[InngestEventService] Событие создания игрока отправлено:`, result);
+      console.log(`[InngestEventService] Событие инициализации игрока отправлено:`, result);
       return { success: true, eventId: result.ids[0] };
     } catch (error) {
-      console.error(`[InngestEventService] Ошибка создания игрока:`, error);
+      console.error(`[InngestEventService] Ошибка инициализации игрока:`, error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  }
+
+  /**
+   * Отправка события обновления состояния игрока
+   */
+  static async sendPlayerStateUpdate(userId: string, updates: any) {
+    console.log(`[InngestEventService] Обновление состояния игрока: userId=${userId}`);
+    
+    try {
+      const result = await inngest.send({
+        name: 'game.player.state.update',
+        data: {
+          userId,
+          updates,
+          timestamp: Date.now()
+        }
+      });
+      
+      console.log(`[InngestEventService] Событие обновления состояния отправлено:`, result);
+      return { success: true, eventId: result.ids[0] };
+    } catch (error) {
+      console.error(`[InngestEventService] Ошибка обновления состояния:`, error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }

@@ -31,6 +31,7 @@ const AppLogo = () => (
 
 const GameScreen: React.FC = () => {
   const [currentMessage, setCurrentMessage] = useState<string>(GameMessageService.getWelcomeMessage());
+  const [attemptCount, setAttemptCount] = useState<number>(0);
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const { userData, getAvatarUrl } = useSupabase();
   const isWeb = Platform.OS === 'web';
@@ -53,13 +54,20 @@ const GameScreen: React.FC = () => {
   useEffect(() => {
     if (currentPlayer) {
       if (currentPlayer.plan === 68 && currentPlayer.isFinished) {
-        setCurrentMessage("🎲 Бросьте 6, чтобы начать путь самопознания!");
+        const baseMessage = "🎯 ПРАВИЛО НАЧАЛА ИГРЫ: Нужно выбросить ШЕСТЕРКУ для старта!";
+        if (attemptCount > 0) {
+          setCurrentMessage(`${baseMessage} (Попытка ${attemptCount + 1})`);
+        } else {
+          setCurrentMessage(baseMessage);
+        }
       } else if (currentPlayer.message && currentPlayer.message !== 'Last move: ') {
         // Если есть сообщение от последнего хода, используем его
         setCurrentMessage(currentPlayer.message);
+        // Сбрасываем счетчик попыток когда игра началась
+        setAttemptCount(0);
       }
     }
-  }, [currentPlayer]);
+  }, [currentPlayer, attemptCount]);
 
   // Определяем макет в зависимости от ширины экрана
   const getLayout = () => {
@@ -155,6 +163,9 @@ const GameScreen: React.FC = () => {
       const roll = Math.floor(Math.random() * 6) + 1;
       console.log(`🎲 [GameScreen-EventDriven] Бросок: ${roll}`);
       
+      // Проверяем состояние начала игры для счетчика попыток
+      const isWaitingForSix = currentPlayer.plan === 68 && currentPlayer.isFinished;
+      
       // Определяем userId
       const userId = userData?.user_id || 'test-user-demo';
       
@@ -166,7 +177,20 @@ const GameScreen: React.FC = () => {
       }
       
       console.log('🎲 [GameScreen-EventDriven] Событие отправлено успешно:', result.eventId);
-      setCurrentMessage(`🎲 Бросок ${roll}! Обрабатываю результат...`);
+      
+      // Обновляем сообщение в зависимости от состояния
+      if (isWaitingForSix) {
+        if (roll === 6) {
+          setCurrentMessage(`🎉 ОТЛИЧНО! Выпала ${roll}! Игра началась!`);
+          setAttemptCount(0); // Сбрасываем счетчик
+        } else {
+          const newAttemptCount = attemptCount + 1;
+          setAttemptCount(newAttemptCount);
+          setCurrentMessage(`😔 Выпало ${roll}, а нужна 6. Попробуйте еще раз! (Попытка ${newAttemptCount})`);
+        }
+      } else {
+        setCurrentMessage(`🎲 Бросок ${roll}! Обрабатываю результат...`);
+      }
       
       // Состояние обновится автоматически через Apollo при получении события
       return roll;
@@ -256,6 +280,28 @@ const GameScreen: React.FC = () => {
                     <Text className="font-bold text-white text-sm">{currentPlayer?.plan || 1}</Text>
                   </View>
                 </View>
+                
+                {/* Специальный блок для состояния ожидания шестерки */}
+                {currentPlayer?.plan === 68 && currentPlayer?.isFinished && (
+                  <View className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                    <Text className="text-sm font-semibold text-purple-800 text-center mb-1">
+                      🎯 НАЧАЛО ИГРЫ
+                    </Text>
+                    <Text className="text-xs text-purple-700 text-center mb-2">
+                      Для старта нужно выбросить ШЕСТЕРКУ
+                    </Text>
+                    {attemptCount > 0 && (
+                      <View className="flex-row items-center justify-center">
+                        <View className="bg-purple-100 px-2 py-1 rounded-full">
+                          <Text className="text-xs text-purple-600">
+                            Попытка {attemptCount + 1}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                )}
+                
                 {currentPlayer?.needsReport && (
                   <Text className="text-xs text-orange-600 mt-2 text-center">
                     📝 Напишите отчет в чате о вашем духовном опыте
@@ -294,6 +340,28 @@ const GameScreen: React.FC = () => {
                   <Text className="font-bold text-white text-sm">{currentPlayer?.plan || 1}</Text>
                 </View>
               </View>
+              
+              {/* Специальный блок для состояния ожидания шестерки */}
+              {currentPlayer?.plan === 68 && currentPlayer?.isFinished && (
+                <View className="mt-2 p-2 bg-gradient-to-r from-purple-50 to-blue-50 rounded border border-purple-200">
+                  <Text className="text-xs font-semibold text-purple-800 text-center mb-1">
+                    🎯 НАЧАЛО ИГРЫ
+                  </Text>
+                  <Text className="text-xs text-purple-700 text-center mb-1">
+                    Для старта нужно выбросить ШЕСТЕРКУ
+                  </Text>
+                  {attemptCount > 0 && (
+                    <View className="flex-row items-center justify-center">
+                      <View className="bg-purple-100 px-2 py-1 rounded-full">
+                        <Text className="text-xs text-purple-600">
+                          Попытка {attemptCount + 1}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              )}
+              
               {currentPlayer?.needsReport && (
                 <Text className="text-xs text-orange-600 mt-1 text-center">
                   📝 Напишите отчет в чате
@@ -335,6 +403,28 @@ const GameScreen: React.FC = () => {
                 <Text className="font-bold text-white text-sm">{currentPlayer?.plan || 1}</Text>
               </View>
             </View>
+            
+            {/* Специальный блок для состояния ожидания шестерки */}
+            {currentPlayer?.plan === 68 && currentPlayer?.isFinished && (
+              <View className="mt-3 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                <Text className="text-sm font-semibold text-purple-800 text-center mb-1">
+                  🎯 НАЧАЛО ИГРЫ
+                </Text>
+                <Text className="text-xs text-purple-700 text-center mb-2">
+                  Для старта нужно выбросить ШЕСТЕРКУ
+                </Text>
+                {attemptCount > 0 && (
+                  <View className="flex-row items-center justify-center">
+                    <View className="bg-purple-100 px-2 py-1 rounded-full">
+                      <Text className="text-xs text-purple-600">
+                        Попытка {attemptCount + 1}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            )}
+            
             {currentPlayer?.needsReport && (
               <Text className="text-xs text-orange-600 mt-2 text-center">
                 📝 Напишите отчет в чате о вашем духовном опыте

@@ -1,27 +1,211 @@
-# Expo Supabase Starter
+# 🕉️ НейроЛила - Игра Самопознания
 
-![social-preview-dark](https://github.com/user-attachments/assets/bcee6db2-6dd0-435f-8255-3f4b36b4cfdc)
+> *"Путь к просветлению начинается с одной команды"* ✨
 
-## Introduction
+![НейроЛила Game](https://via.placeholder.com/800x400/9C27B0/FFFFFF?text=🕉️+НейроЛила+Game)
 
-This repository serves as a comprehensive starter project for developing React Native and Expo applications with Supabase as the backend. It integrates various technologies such as Expo Router for navigation, Tailwind CSS for styling, React-Hook-Form for form handling, Zod for schema validation, and TypeScript for type safety. By leveraging these powerful tools, this starter template provides a robust foundation for building modern, scalable, and efficient mobile applications.
+## 🌟 **Супер-Быстрый Старт**
 
-#### Disclaimer
+### 💎 **Одна Команда - Вся Магия:**
+```bash
+bun dev
+```
 
-This is not supposed to be a template, boilerplate or a framework. It is an opinionated guide that shows how to do some things in a certain way. You are not forced to do everything exactly as it is shown here, decide what works best for you and your team and stay consistent with your style.
+**Что происходит:**
+- 🔮 Inngest сервер запускается автоматически
+- 🌐 Веб-приложение открывается в браузере  
+- 🎮 Игра готова к использованию!
 
-## Table of Contents
+---
 
-- [💻 Application Overview](docs/application-overview.md)
-- [⚙️ Project Configuration](docs/project-configuration.md)
-- [🗄️ Project Structure](docs/project-structure.md)
-- [🧱 Components And Styling](docs/components-and-styling.md)
-- [🗃️ State Management](docs/state-management.md)
+## 🎯 **Что Это?**
 
-## Contributing
+**НейроЛила** - это современная веб-версия древней индийской игры самопознания, построенная на:
 
-Contributions to this starter project are highly encouraged and welcome! If you have any suggestions, bug reports, or feature requests, please feel free to create an issue or submit a pull request. Let's work together to enhance the developer experience and make it easier for everyone to build exceptional Expo applications with Supabase.
+- **🏗️ Event-Driven Architecture** с Inngest
+- **⚡ React Native + Expo** для кроссплатформенности
+- **🔄 Apollo Client** для реактивного состояния  
+- **🗄️ Supabase** для базы данных
+- **🧪 Полное тестирование** с Vitest + @inngest/test
 
-## License
+---
 
-This repository is licensed under the MIT License. You are granted the freedom to use, modify, and distribute the code for personal or commercial purposes. For more details, please refer to the [LICENSE](https://github.com/FlemingVincent/supabase-starter/blob/main/LICENSE) file.
+## 🚀 **Команды для Всех**
+
+### **Разработка:**
+```bash
+# Всё в одной команде (рекомендуется!)
+bun dev
+
+# Только веб-приложение
+bun run web
+
+# Только Inngest сервер  
+bun run inngest:dev
+
+# Помощь по командам
+bun run help
+```
+
+### **Тестирование:**
+```bash
+# Быстрый тест Inngest
+bun test __tests__/inngest/minimal.test.ts
+
+# Все Inngest тесты
+bun run test:inngest
+
+# Тесты в watch режиме
+bun run test:inngest:watch
+```
+
+### **Мобильные платформы:**
+```bash
+# iOS симулятор
+bun run ios
+
+# Android эмулятор
+bun run android
+
+# Development client
+bun run dev:client
+```
+
+---
+
+## 🏗️ **Архитектура**
+
+```mermaid
+graph TD
+    A[UI Layer<br/>React/Expo] --> B[Event Service<br/>InngestEventService]
+    B --> C[Inngest Functions<br/>Бизнес-логика]
+    C --> D[Apollo Client<br/>Реактивное состояние]
+    D --> E[Supabase<br/>База данных]
+    C --> F[Event Updates<br/>Состояние игрока]
+    F --> D
+```
+
+### **Основные Принципы:**
+- 🎯 **UI** только отправляет события, не содержит бизнес-логику
+- ⚡ **Inngest** обрабатывает всю игровую логику асинхронно
+- 🔄 **Apollo** реактивно обновляет интерфейс
+- 🗄️ **Supabase** надежно хранит данные
+
+---
+
+## 📁 **Структура Проекта**
+
+```
+NeuroLeelaExpo/
+├── 🎨 app/                    # Expo Router + UI компоненты
+├── 🧩 components/             # Переиспользуемые компоненты  
+├── ⚡ inngest/               # Event-driven бизнес-логика
+│   ├── client.ts             # Inngest клиент и типы
+│   └── functions/            # Все игровые функции
+├── 🔧 services/              # Вспомогательные сервисы
+├── 🧪 __tests__/             # Комплексные тесты
+│   └── inngest/              # Тесты бизнес-логики
+├── 📚 DEV_GUIDE.md           # Подробный гайд разработчика
+└── 🏗️ current_task.mdc       # Текущие задачи проекта
+```
+
+---
+
+## 🎮 **Как Играть**
+
+1. **Запустите проект:** `bun dev`
+2. **Браузер откроется автоматически**
+3. **Зарегистрируйтесь или войдите**
+4. **Нажмите на кубик** для броска
+5. **Следуйте путешествию** по планам самопознания
+6. **Пишите отчеты** о своих открытиях
+
+---
+
+## 🛠️ **Установка**
+
+### **Требования:**
+- Node.js 18+
+- Bun (рекомендуется) или npm
+- Git
+
+### **Быстрая установка:**
+```bash
+# Клонировать репозиторий
+git clone <repo-url> NeuroLeelaExpo
+cd NeuroLeelaExpo
+
+# Установить зависимости
+bun install
+
+# Настроить окружение
+cp .env.example .env
+# Заполните переменные окружения
+
+# Запустить!
+bun dev
+```
+
+---
+
+## 🧪 **Тестирование**
+
+Проект покрыт комплексными тестами:
+
+- ✅ **processDiceRoll** - Логика бросков кубика
+- ✅ **processReport** - Обработка отчетов игроков
+- ✅ **playerStateHandler** - Управление состоянием
+- ✅ **Минимальные тесты** - Проверка инфраструктуры
+
+**Подробности:** См. `__tests__/inngest/README.md`
+
+---
+
+## 💝 **Для Новичков**
+
+> *"Не бойтесь кода! Это как LEGO для взрослых - всё собирается из простых блоков."* 🧱
+
+### **Если вы новичок в разработке:**
+
+1. **Установите Bun:** https://bun.sh/
+2. **Откройте терминал** (черное окошко с текстом)
+3. **Скопируйте команды** из этого README
+4. **Запустите `bun dev`** и наслаждайтесь!
+
+### **Если что-то сломалось:**
+- Нажмите `Ctrl+C` чтобы остановить всё
+- Запустите `bun dev` заново
+- Напишите в чат поддержки 💬
+
+---
+
+## 🤝 **Участие в Проекте**
+
+Приветствуем любой вклад:
+
+- 🐛 **Баг-репорты** через Issues
+- ✨ **Новые функции** через Pull Requests  
+- 📚 **Улучшения документации**
+- 🎨 **UI/UX предложения**
+
+---
+
+## 📜 **Лицензия**
+
+MIT License - используйте как хотите, просто оставьте упоминание! 🙏
+
+---
+
+## 🔗 **Полезные Ссылки**
+
+- 📚 **[Подробный DEV_GUIDE.md](DEV_GUIDE.md)** - Полное руководство
+- 🏗️ **[current_task.mdc](current_task.mdc)** - Текущий статус проекта
+- 🧪 **[Тесты](/__tests__/inngest/)** - Документация по тестированию
+- 🔮 **Inngest Dashboard:** http://localhost:8288
+- 🌐 **Веб-приложение:** http://localhost:8081
+
+---
+
+*🕉️ "В каждой строке кода - мудрость. В каждом событии - возможность. В каждом тесте - уверенность в пути."* ✨
+
+**Добро пожаловать в НейроЛила! Пусть ваш код будет чист, а баги - просветлены.** 🚀

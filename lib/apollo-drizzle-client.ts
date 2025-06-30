@@ -1,4 +1,5 @@
 import { ApolloClient, InMemoryCache, makeVar } from '@apollo/client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Player } from '@/db/schema';
 import { supabase } from '@/config/supabase';
 // import { neonAdapter } from './neon-adapter';
@@ -8,46 +9,40 @@ export const currentPlayerVar = makeVar<Player | null>(null);
 export const isLoadingVar = makeVar<boolean>(true);
 export const errorVar = makeVar<string | null>(null);
 
-// Ключ для localStorage
+// Ключ для AsyncStorage
 const PLAYER_STORAGE_KEY = 'neuroleela_player_data';
 
-// Функция для сохранения данных игрока в localStorage
-const savePlayerToStorage = (playerData: Player) => {
+// Функция для сохранения данных игрока в AsyncStorage
+const savePlayerToStorage = async (playerData: Player) => {
   try {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(playerData));
-      console.log('[Apollo] Данные игрока сохранены в localStorage');
-    }
+    await AsyncStorage.setItem(PLAYER_STORAGE_KEY, JSON.stringify(playerData));
+    console.log('[Apollo] Данные игрока сохранены в AsyncStorage');
   } catch (error) {
-    console.error('[Apollo] Ошибка при сохранении в localStorage:', error);
+    console.error('[Apollo] Ошибка при сохранении в AsyncStorage:', error);
   }
 };
 
-// Функция для загрузки данных игрока из localStorage
-const loadPlayerFromStorage = (userId: string): Player | null => {
+// Функция для загрузки данных игрока из AsyncStorage
+const loadPlayerFromStorage = async (userId: string): Promise<Player | null> => {
   try {
     console.log('[Apollo] loadPlayerFromStorage: НАЧАЛО для userId:', userId);
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(PLAYER_STORAGE_KEY);
-      console.log('[Apollo] loadPlayerFromStorage: Данные из localStorage:', stored);
-      if (stored) {
-        const playerData = JSON.parse(stored);
-        console.log('[Apollo] loadPlayerFromStorage: Распарсенные данные:', playerData);
-        console.log('[Apollo] loadPlayerFromStorage: playerData.id:', playerData.id, 'userId:', userId);
-        if (playerData.id === userId) {
-          console.log('[Apollo] Данные игрока загружены из localStorage:', playerData);
-          return playerData;
-        } else {
-          console.log('[Apollo] loadPlayerFromStorage: ID не совпадает');
-        }
+    const stored = await AsyncStorage.getItem(PLAYER_STORAGE_KEY);
+    console.log('[Apollo] loadPlayerFromStorage: Данные из AsyncStorage:', stored);
+    if (stored) {
+      const playerData = JSON.parse(stored);
+      console.log('[Apollo] loadPlayerFromStorage: Распарсенные данные:', playerData);
+      console.log('[Apollo] loadPlayerFromStorage: playerData.id:', playerData.id, 'userId:', userId);
+      if (playerData.id === userId) {
+        console.log('[Apollo] Данные игрока загружены из AsyncStorage:', playerData);
+        return playerData;
       } else {
-        console.log('[Apollo] loadPlayerFromStorage: localStorage пуст');
+        console.log('[Apollo] loadPlayerFromStorage: ID не совпадает');
       }
     } else {
-      console.log('[Apollo] loadPlayerFromStorage: window не определен');
+      console.log('[Apollo] loadPlayerFromStorage: AsyncStorage пуст');
     }
   } catch (error) {
-    console.error('[Apollo] Ошибка при загрузке из localStorage:', error);
+    console.error('[Apollo] Ошибка при загрузке из AsyncStorage:', error);
   }
   return null;
 };
@@ -61,19 +56,19 @@ export const loadPlayerData = async (userId: string) => {
     
     console.log('[Apollo] Загрузка данных игрока для userId:', userId);
     
-    // Сначала пытаемся загрузить из localStorage
-    const storedPlayer = loadPlayerFromStorage(userId);
+    // Сначала пытаемся загрузить из AsyncStorage
+    const storedPlayer = await loadPlayerFromStorage(userId);
     if (storedPlayer) {
-      console.log('[Apollo] loadPlayerData: Данные найдены в localStorage:', storedPlayer);
+      console.log('[Apollo] loadPlayerData: Данные найдены в AsyncStorage:', storedPlayer);
       currentPlayerVar(storedPlayer);
-      console.log('[Apollo] Используем данные из localStorage');
-      isLoadingVar(false); // Добавляем сброс флага загрузки
+      console.log('[Apollo] Используем данные из AsyncStorage');
+      isLoadingVar(false);
       return;
     } else {
-      console.log('[Apollo] loadPlayerData: Данные НЕ найдены в localStorage');
+      console.log('[Apollo] loadPlayerData: Данные НЕ найдены в AsyncStorage');
     }
     
-    // Если в localStorage нет данных, пытаемся загрузить из Supabase
+    // Если в AsyncStorage нет данных, пытаемся загрузить из Supabase
     try {
       const { data: playerData, error } = await supabase
         .from('players')
@@ -127,7 +122,7 @@ export const loadPlayerData = async (userId: string) => {
       }
       
       currentPlayerVar(finalPlayerData as Player);
-      savePlayerToStorage(finalPlayerData as Player);
+      await savePlayerToStorage(finalPlayerData as Player);
       
     } catch (supabaseError) {
       console.log('[Apollo] Supabase недоступен, используем начальные данные');
@@ -149,7 +144,7 @@ export const loadPlayerData = async (userId: string) => {
       };
       
       currentPlayerVar(initialPlayerData as Player);
-      savePlayerToStorage(initialPlayerData as Player);
+      await savePlayerToStorage(initialPlayerData as Player);
     }
     
   } catch (error) {
@@ -161,15 +156,15 @@ export const loadPlayerData = async (userId: string) => {
 };
 
 // Функция для обновления данных игрока
-export const updatePlayerInStorage = (updatedPlayer: Player) => {
+export const updatePlayerInStorage = async (updatedPlayer: Player) => {
   console.log('[Apollo] updatePlayerInStorage вызвана с данными:', updatedPlayer);
   currentPlayerVar(updatedPlayer);
-  savePlayerToStorage(updatedPlayer);
-  console.log('[Apollo] Состояние обновлено в Apollo и localStorage');
+  await savePlayerToStorage(updatedPlayer);
+  console.log('[Apollo] Состояние обновлено в Apollo и AsyncStorage');
 };
 
 // Централизованная функция для обновления состояния игрока
-export const updatePlayerState = (updates: Partial<Player>) => {
+export const updatePlayerState = async (updates: Partial<Player>) => {
   console.log('🔥 [Apollo] updatePlayerState: === НАЧАЛО ФУНКЦИИ ===');
   console.log('🔥 [Apollo] updatePlayerState: входящие updates =', updates);
   
@@ -198,10 +193,10 @@ export const updatePlayerState = (updates: Partial<Player>) => {
   currentPlayerVar(updatedPlayer);
   console.log('🔥 [Apollo] updatePlayerState: currentPlayerVar обновлена');
   
-  // Сохраняем в localStorage
-  console.log('🔥 [Apollo] updatePlayerState: СОХРАНЯЕМ в localStorage...');
-  savePlayerToStorage(updatedPlayer);
-  console.log('🔥 [Apollo] updatePlayerState: данные сохранены в localStorage');
+  // Сохраняем в AsyncStorage
+  console.log('🔥 [Apollo] updatePlayerState: СОХРАНЯЕМ в AsyncStorage...');
+  await savePlayerToStorage(updatedPlayer);
+  console.log('🔥 [Apollo] updatePlayerState: данные сохранены в AsyncStorage');
   
   // Проверяем, что обновление прошло успешно
   const verifyPlayer = currentPlayerVar();
@@ -223,7 +218,7 @@ export const markReportCompleted = async (userId: string) => {
     
     // Сначала обновляем локальное состояние (быстро)
     console.log('💫 [Apollo] markReportCompleted: ВЫЗЫВАЕМ updatePlayerState({ needsReport: false })...');
-    updatePlayerState({ needsReport: false });
+    await updatePlayerState({ needsReport: false });
     
     // Проверяем состояние ПОСЛЕ локального изменения
     const playerAfter = currentPlayerVar();
@@ -295,7 +290,7 @@ export const updatePlayerPosition = async (userId: string, newPosition: number) 
 };
 
 // Функция для сброса игрока с проблемной позиции (временное решение)
-export const resetPlayerFromStuckPosition = () => {
+export const resetPlayerFromStuckPosition = async () => {
   const currentPlayer = currentPlayerVar();
   if (!currentPlayer) {
     console.error('[Apollo] resetPlayerFromStuckPosition: Игрок не найден');
@@ -317,7 +312,7 @@ export const resetPlayerFromStuckPosition = () => {
   };
   
   currentPlayerVar(resetPlayer);
-  savePlayerToStorage(resetPlayer);
+  await savePlayerToStorage(resetPlayer);
   console.log('[Apollo] Игрок сброшен на начальную позицию:', resetPlayer);
 };
 

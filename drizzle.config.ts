@@ -5,12 +5,6 @@ export default {
   out: './drizzle',
   dialect: 'postgresql',
   dbCredentials: {
-    // These would normally come from environment variables
-    // This is just a placeholder - you'll need to replace with actual credentials
-    host: 'localhost',
-    port: 5432,
-    user: 'postgres',
-    password: 'postgres',
-    database: 'postgres',
+    url: process.env.EXPO_PUBLIC_DATABASE_URL!,
   },
 } satisfies Config; 

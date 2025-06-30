@@ -1,5 +1,6 @@
 import React from 'react';
 import { useEffect, useRef } from 'react';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSupabase } from '@/context/supabase-provider';
 
@@ -61,7 +62,12 @@ export default function Index() {
   }, [session, userData, initialized]);
 
   if (!initialized) {
-    return <div style={{display:'flex',justifyContent:'center',alignItems:'center',height:'100vh'}}>Загрузка...</div>;
+    return (
+      <View className="flex-1 justify-center items-center bg-white">
+        <ActivityIndicator size="large" color="#6A0DAD" />
+        <Text className="mt-4 text-gray-600">Загрузка...</Text>
+      </View>
+    );
   }
 
   return <></>;
