@@ -23,7 +23,11 @@ interface ToolInvocation {
   result?: any;
 }
 
-export const ChatBot = () => {
+interface ChatBotProps {
+  onRoll?: () => Promise<number>;
+}
+
+export const ChatBot: React.FC<ChatBotProps> = ({ onRoll }) => {
   console.log('🎯 [ChatBot] =================== КОМПОНЕНТ CHATBOT РЕНДЕРИТСЯ ===================');
   console.log('🎯 [ChatBot] Компонент ChatBot загружается...');
   
@@ -676,7 +680,8 @@ export const ChatBot = () => {
   // Новая функция для обработки броска кубика
   const handleNewDiceRoll = async (): Promise<void> => {
     console.log('🎲 [EventDriven] ================ ОТПРАВКА СОБЫТИЯ БРОСКА КУБИКА ================');
-    console.log('🎲 [EventDriven] handleNewDiceRoll: НАЧАЛО - теперь только отправка события');
+    console.log('🎲 [EventDriven] handleNewDiceRoll: НАЧАЛО');
+    console.log('🎲 [EventDriven] handleNewDiceRoll: onRoll prop =', typeof onRoll);
     
     if (!currentPlayer) {
       console.error('🎲 [EventDriven] ОШИБКА - нет currentPlayer');
@@ -693,6 +698,19 @@ export const ChatBot = () => {
 
     try {
       setIsLoading(true);
+      
+      // 🔥 ПРИОРИТЕТ: Если передан внешний onRoll, используем его
+      if (onRoll && typeof onRoll === 'function') {
+        console.log('🎲 [EventDriven] Используем ВНЕШНИЙ onRoll из gamescreen.tsx');
+        const roll = await onRoll();
+        console.log('🎲 [EventDriven] Внешний onRoll вернул roll =', roll);
+        setLastRoll(roll);
+        addSimpleMessage(`🎲 Бросок ${roll}! Обрабатываю результат...`);
+        return;
+      }
+      
+      // Fallback: внутренняя логика если внешний onRoll не передан
+      console.log('🎲 [EventDriven] Используем ВНУТРЕННЮЮ логику (fallback)');
       
       // Генерируем случайное число от 1 до 6
       const roll = Math.floor(Math.random() * 6) + 1;

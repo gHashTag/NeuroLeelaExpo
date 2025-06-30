@@ -311,7 +311,7 @@ const GameScreen: React.FC = () => {
 
               {/* ChatBot component - увеличиваем высоту */}
               <View className="h-[500px] bg-white rounded-lg shadow-sm">
-                <ChatBot />
+                <ChatBot onRoll={rollDice} />
               </View>
             </View>
           </ScrollView>
@@ -374,7 +374,7 @@ const GameScreen: React.FC = () => {
           {(windowWidth >= 768) && (
             <View className={`${layout.rightColumn} flex flex-col`}>
               <View className="bg-white rounded-lg shadow-sm flex-1 overflow-hidden">
-                <ChatBot />
+                <ChatBot onRoll={rollDice} />
               </View>
             </View>
           )}
@@ -434,7 +434,7 @@ const GameScreen: React.FC = () => {
           
           {/* Блок чат-бота - увеличиваем высоту */}
           <View className="bg-white rounded-lg shadow-sm p-2 mb-3 h-[450px]">
-            <ChatBot />
+            <ChatBot onRoll={rollDice} />
           </View>
         </View>
       </ScrollView>

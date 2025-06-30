@@ -29,36 +29,62 @@ export default function Reports() {
   const { currentPlayer, loading: gameStateLoading } = useGameState();
 
   const fetchReports = async () => {
-    if (!user) return;
+    console.log('📊 [Reports] fetchReports: НАЧАЛО');
+    console.log('📊 [Reports] fetchReports: user =', user ? { id: user.id, email: user.email } : 'null');
+    console.log('📊 [Reports] fetchReports: selectedFilter =', selectedFilter);
+    
+    if (!user) {
+      console.log('📊 [Reports] fetchReports: НЕТ ПОЛЬЗОВАТЕЛЯ - выходим');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       setIsLoading(true);
+      console.log('📊 [Reports] fetchReports: Создаем Supabase запрос...');
+      
       let query = supabase
         .from("reports")
         .select("*")
         .order("created_at", { ascending: false });
       
+      console.log('📊 [Reports] fetchReports: Базовый запрос создан');
+      
       // Применяем фильтр по диапазону планов, если он выбран
       if (selectedFilter !== "all") {
         const [min, max] = selectedFilter.split("-").map(Number);
+        console.log('📊 [Reports] fetchReports: Применяем фильтр:', { min, max });
         query = query.gte("plan_number", min).lte("plan_number", max);
       }
 
+      console.log('📊 [Reports] fetchReports: Выполняем запрос к Supabase...');
+      
       const { data, error } = await query;
 
+      console.log('📊 [Reports] fetchReports: Результат запроса:');
+      console.log('📊 [Reports] fetchReports: data =', data);
+      console.log('📊 [Reports] fetchReports: error =', error);
+
       if (error) {
-        console.error("Ошибка при загрузке отчетов:", error);
+        console.error("📊 [Reports] ОШИБКА при загрузке отчетов:", error);
+        console.error("📊 [Reports] ДЕТАЛИ ошибки:", JSON.stringify(error, null, 2));
         return;
       }
 
       if (data) {
+        console.log('📊 [Reports] fetchReports: Успех! Загружено отчетов:', data.length);
         setReportsPosts(data as Post[]);
+      } else {
+        console.log('📊 [Reports] fetchReports: Данных нет, но ошибки тоже нет');
+        setReportsPosts([]);
       }
     } catch (error) {
-      console.error("Ошибка при загрузке отчетов:", error);
+      console.error("📊 [Reports] КРИТИЧЕСКАЯ ОШИБКА при загрузке отчетов:", error);
+      console.error("📊 [Reports] Стек ошибки:", error instanceof Error ? error.stack : 'Нет стека');
     } finally {
       setIsLoading(false);
       setRefreshing(false);
+      console.log('📊 [Reports] fetchReports: ЗАВЕРШЕНИЕ');
     }
   };
 
