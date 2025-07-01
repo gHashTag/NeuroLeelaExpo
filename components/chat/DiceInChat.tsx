@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { View, Text, Animated, Easing, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Animated, Easing, Pressable, StyleSheet, Platform } from 'react-native';
 import { vs } from 'react-native-size-matters';
 
 interface DiceInChatProps {
@@ -138,35 +138,25 @@ export const DiceInChat: React.FC<DiceInChatProps> = ({
     }
   };
 
-  // Размер кубика для чата (немного меньше чем основной)
-  const diceSize = vs(55); // "small" размер
+  const diceSize = vs(55);
 
-  // УБИРАЕМ pointerEvents - это может блокировать нажатия
   console.log('🎲 [DiceInChat] ФИНАЛЬНАЯ ПРОВЕРКА disabled:', disabled);
   console.log('🎲 [DiceInChat] ФИНАЛЬНАЯ ПРОВЕРКА isAnimating:', isAnimating);
 
   return (
-    <View style={styles.container}>
+    <View style={styles.cardContainer}>
       <Text style={styles.messageText}>
         {message}
       </Text>
       
       <View style={styles.diceContainer}>
         <Pressable 
-          onPress={() => {
-            console.log('🎲 [DiceInChat] ================ Pressable onPress СРАБОТАЛ! ================');
-            console.log('🎲 [DiceInChat] Pressable onPress: disabled =', disabled);
-            console.log('🎲 [DiceInChat] Pressable onPress: isAnimating =', isAnimating);
-            console.log('🎲 [DiceInChat] Pressable onPress: Вызываем animateDice()...');
-            animateDice();
-          }} 
+          onPress={animateDice} 
           style={[
             styles.pressableArea,
             (disabled || isAnimating) && styles.pressableDisabled
           ]}
           disabled={disabled || isAnimating}
-          onPressIn={() => console.log('🎲 [DiceInChat] Pressable onPressIn - НАЧАЛО НАЖАТИЯ')}
-          onPressOut={() => console.log('🎲 [DiceInChat] Pressable onPressOut - КОНЕЦ НАЖАТИЯ')}
         >
           <Animated.Image
             style={[
@@ -175,7 +165,6 @@ export const DiceInChat: React.FC<DiceInChatProps> = ({
                 transform: [{ rotate: spin }, { scale: scaleValue }],
                 height: diceSize,
                 width: diceSize,
-                opacity: 1, // Убираем анимацию прозрачности, оставляем всегда видимым
               },
             ]}
             source={getImage(lastRoll)}
@@ -183,15 +172,9 @@ export const DiceInChat: React.FC<DiceInChatProps> = ({
         </Pressable>
       </View>
       
-      {lastRoll > 0 && (
-        <Text style={styles.lastRollText}>
-          Последний бросок: {lastRoll} (обновлено: {new Date().toLocaleTimeString()})
-        </Text>
-      )}
-      
       {disabled && (
         <Text style={styles.disabledText}>
-          📝 Сначала напишите отчет о текущем состоянии
+          📝 Сначала напишите отчет
         </Text>
       )}
     </View>
@@ -199,56 +182,45 @@ export const DiceInChat: React.FC<DiceInChatProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#f8f4ff',
-    borderRadius: 12,
-    padding: 16,
-    margin: 8,
-    borderWidth: 1,
-    borderColor: '#e0d4ff',
+  cardContainer: {
     alignItems: 'center',
+    padding: 16,
   },
   messageText: {
+    fontSize: 16,
+    color: '#333',
     textAlign: 'center',
-    color: '#374151',
-    fontSize: 14,
     marginBottom: 12,
     fontWeight: '500',
   },
   diceContainer: {
-    alignItems: "center",
-    alignSelf: "center",
-    marginTop: 5,
-    marginBottom: vs(4),
+    marginVertical: 8,
   },
   pressableArea: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 8,
-    borderRadius: 12,
-    backgroundColor: 'transparent',
-    // Добавляем минимальные размеры для лучшего нажатия
-    minWidth: 70,
-    minHeight: 70,
+    padding: 10,
   },
   pressableDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   image: {
-    borderRadius: 8,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
   },
   lastRollText: {
     textAlign: 'center',
     color: '#6b7280',
     fontSize: 12,
-    marginTop: 12,
+    marginTop: 10,
     fontWeight: '500',
   },
   disabledText: {
     textAlign: 'center',
     color: '#ea580c',
-    fontSize: 12,
+    fontSize: 13,
     marginTop: 8,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 }); 

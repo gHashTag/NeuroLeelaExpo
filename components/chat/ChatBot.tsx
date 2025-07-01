@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PlanCard } from './PlanCard';
 import { DiceInChat } from './DiceInChat';
+import { AssistantMessageBubble } from './AssistantMessageBubble';
 import { GameBoard } from '@components/ui/index';
 import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 import { InngestEventService } from '@/services/InngestEventService';
 import { supabase } from '@/lib/supabase';
 import { useSupabase } from '@/context/supabase-provider';
+import { BlurView } from 'expo-blur';
 
 interface Message {
   id: string;
@@ -1052,8 +1054,9 @@ export const ChatBot = () => {
   };
 
   return (
-    <View className="flex-1 bg-white flex flex-col overflow-hidden">
-      <View className="bg-gradient-to-r from-purple-50 to-blue-50 p-3 border-b border-gray-100">
+    <View className="flex-1 flex flex-col overflow-hidden">
+      {/* Header-like view inside ChatBot, making it transparent */}
+      <View className="p-3 border-b border-white/20">
         <View className="flex-row justify-between items-center">
           <View className="flex-1">
             <Text className="text-base font-medium text-gray-700">🕉️ Лила - Духовный проводник</Text>
@@ -1086,25 +1089,25 @@ export const ChatBot = () => {
         
         {messages.map((msg) => (
           <View key={msg.id}>
-          <View 
-              className={`mb-3 ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-row`}
-          >
-            <View 
-              className={`rounded-lg px-4 py-2 max-w-[85%] ${
-                  msg.role === 'user' 
-                  ? 'bg-blue-500 ml-auto shadow-sm' 
-                    : 'bg-gradient-to-r from-purple-100 to-blue-100 shadow-sm'
-              }`}
-            >
-              <Text 
-                  className={msg.role === 'user' ? 'text-white' : 'text-gray-800'}
-              >
-                  {msg.content}
-              </Text>
+            {msg.role === 'user' ? (
+              // User message - no blur
+              <View className="items-end flex flex-row mb-3">
+                <View className="bg-blue-500 rounded-lg px-4 py-2 max-w-[85%] ml-auto shadow-sm">
+                  <Text className="text-white">{msg.content}</Text>
+                </View>
               </View>
-            </View>
+            ) : (
+              // Assistant message - with blur
+              <View className="items-start flex flex-row mb-3">
+                <View style={styles.assistantMessageContainer}>
+                  <BlurView intensity={95} tint="light" style={styles.blurView}>
+                    <Text style={styles.assistantText}>{msg.content}</Text>
+                  </BlurView>
+                </View>
+              </View>
+            )}
 
-            {/* Отображение tool invocations */}
+            {/* Tool Invocations */}
             {msg.toolInvocations && (
               <View className="mb-3">
                 {msg.toolInvocations.map((toolInvocation, index) => (
@@ -1118,7 +1121,8 @@ export const ChatBot = () => {
         ))}
       </ScrollView>
       
-      <View className="border-t border-gray-100 p-3">
+      {/* Input area, making it transparent */}
+      <View className="border-t border-white/20 p-3">
         <View className="flex-row items-center">
         <TextInput
             value={input}
@@ -1128,8 +1132,8 @@ export const ChatBot = () => {
                 ? "Напишите ваш отчет о духовном опыте..."
                 : "Спросите о плане или поделитесь мыслями..."
             }
-          placeholderTextColor="rgba(107,114,128,0.5)"
-          className="flex-1 bg-gray-50 rounded-full px-4 py-2 mr-2 text-gray-700"
+          placeholderTextColor="rgba(229, 231, 235, 0.7)"
+          className="flex-1 bg-black/20 rounded-full px-4 py-2 mr-2 text-gray-100"
             editable={!isLoading}
             onSubmitEditing={handleSubmit}
         />
@@ -1150,4 +1154,89 @@ export const ChatBot = () => {
       </View>
     </View>
   );
-}; 
+};
+
+const styles = StyleSheet.create({
+  assistantMessageContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+    borderWidth: 1,
+    maxWidth: '85%',
+  },
+  blurView: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  assistantText: {
+    color: '#1f2937', // text-gray-800
+  },
+  messagesContentContainer: {
+    paddingBottom: 20,
+  },
+  userMessage: {
+    alignItems: 'flex-end',
+  },
+  assistantMessage: {
+    alignItems: 'flex-start',
+  },
+  message: {
+    marginBottom: 10,
+  },
+  messageContent: {
+    padding: 10,
+    borderRadius: 16,
+    overflow: 'hidden',
+    maxWidth: '85%',
+  },
+  userMessageContent: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  assistantMessageContent: {
+    // backgroundColor: 'rgba(255, 255, 255, 0.2)', // Handled by AssistantMessageBubble
+    // borderWidth: 1,
+    // borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  messageText: {
+    color: '#333',
+  },
+  avatar: {
+    marginLeft: 10,
+    marginRight: 10,
+    marginBottom: 5,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'transparent',
+  },
+  input: {
+    flex: 1,
+    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    marginRight: 10,
+    color: '#333',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  sendButton: {
+    backgroundColor: '#8E24AA',
+    borderRadius: 20,
+  },
+  chatContainer: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  messagesContainer: {
+    flex: 1,
+    padding: 10,
+    backgroundColor: 'transparent',
+  },
+}); 

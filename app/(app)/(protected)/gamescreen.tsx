@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useApolloDrizzle } from '@/hooks/useApolloDrizzle';
 import { ChatBot } from '@/components/chat/ChatBot';
 import { ApolloStatus } from '@/components/ui/ApolloStatus';
+import { GlassContainer } from '@/components/ui/GlassContainer';
 
 // Logo component for the app
 const AppLogo = () => (
@@ -31,35 +32,36 @@ const GameScreen: React.FC = () => {
 
   // Custom header component - соответствует ширине чата
   const AppHeader = () => (
-    <View className="py-4 px-2 border-b border-gray-100 z-10 items-center">
-      <View className="bg-white/90 rounded-lg shadow-lg backdrop-blur-sm border border-white/30 py-3 px-4" 
-            style={{ maxWidth: 760, width: '100%' }}>
-        <View className="flex-row items-center justify-between space-x-4">
-          <AppLogo />
-          <View className="flex-1 min-w-0 px-2">
-            <Text className="text-sm text-center text-gray-700 font-medium leading-relaxed">
-              🎮 Игра Лила - духовное путешествие в чате
-            </Text>
-          </View>
-          <View className="flex-row items-center space-x-3">
-            {/* Кнопка отчетов */}
-            <TouchableOpacity 
-              onPress={() => router.push('/reports')}
-              className="bg-purple-50 p-2 rounded-full shadow-sm"
-            >
-              <Ionicons name="book-outline" size={20} color="#8E24AA" />
-            </TouchableOpacity>
-            
-            {/* Индикатор уровня */}
-            <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-full shadow-sm">
-              <Text className="text-sm text-gray-500 mr-2">План:</Text>
-              <View className="bg-blue-50 w-8 h-8 rounded-full items-center justify-center shadow-inner">
-                <Text className="font-medium text-blue-600">{currentPlayer?.plan ?? '-'}</Text>
+    <View className="py-4 px-2 z-10 items-center">
+      <GlassContainer style={{ borderRadius: 12, overflow: 'hidden', maxWidth: 760, width: '100%' }}>
+        <View className="py-3 px-4">
+          <View className="flex-row items-center justify-between space-x-4">
+            <AppLogo />
+            <View className="flex-1 min-w-0 px-2">
+              <Text className="text-sm text-center text-gray-700 font-medium leading-relaxed">
+                🎮 Игра Лила - духовное путешествие в чате
+              </Text>
+            </View>
+            <View className="flex-row items-center space-x-3">
+              {/* Кнопка отчетов */}
+              <TouchableOpacity 
+                onPress={() => router.push('/reports')}
+                className="bg-purple-50 p-2 rounded-full shadow-sm"
+              >
+                <Ionicons name="book-outline" size={20} color="#8E24AA" />
+              </TouchableOpacity>
+              
+              {/* Индикатор уровня */}
+              <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-full shadow-sm">
+                <Text className="text-sm text-gray-500 mr-2">План:</Text>
+                <View className="bg-blue-50 w-8 h-8 rounded-full items-center justify-center shadow-inner">
+                  <Text className="font-medium text-blue-600">{currentPlayer?.plan ?? '-'}</Text>
+                </View>
               </View>
             </View>
           </View>
         </View>
-      </View>
+      </GlassContainer>
     </View>
   );
 
@@ -81,10 +83,9 @@ const GameScreen: React.FC = () => {
         
         {/* Чат по центру с ограниченной шириной */}
         <View className="flex-1 p-2 items-center">
-          <View className="flex-1 bg-white/80 rounded-lg shadow-lg overflow-hidden backdrop-blur-sm border border-white/30" 
-                style={{ maxWidth: 760, width: '100%' }}>
-                         <ChatBot />
-          </View>
+          <GlassContainer style={{ flex: 1, borderRadius: 12, overflow: 'hidden', maxWidth: 760, width: '100%' }}>
+            <ChatBot />
+          </GlassContainer>
         </View>
       </View>
     </ImageBackground>

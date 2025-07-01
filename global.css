@@ -84,6 +84,12 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.2);
   }
   
+  .glass-card {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(20px) saturate(100%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(100%) !important;
+  }
+  
   .gradient-purple {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   }
