@@ -43,14 +43,14 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   const { text: textColor, divider: dividerColor } = getColorStyle(planInfo.color);
 
   return (
-    <View>
+          <View>
       {/* Заголовок карточки */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.element}>{planInfo.element}</Text>
           <Text style={[styles.planNumberText, { color: textColor }]}>
-            План {planNumber}
-          </Text>
+              План {planNumber}
+            </Text>
         </View>
         {isCurrentPosition && (
           <View style={styles.currentPositionBadge}>
@@ -73,7 +73,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
       <View style={[styles.divider, { backgroundColor: dividerColor }]} />
     </View>
   );
-};
+}; 
 
 const styles = StyleSheet.create({
   header: {

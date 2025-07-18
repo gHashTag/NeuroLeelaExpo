@@ -36,46 +36,46 @@ const GameScreen: React.FC = () => {
       <GlassContainer style={{ borderRadius: 12, overflow: 'hidden', maxWidth: 760, width: '100%' }}>
         <View className="py-3 px-4">
           <View className="flex-row items-center justify-between space-x-4">
-            <AppLogo />
-            <View className="flex-1 min-w-0 px-2">
-              <Text className="text-sm text-center text-gray-700 font-medium leading-relaxed">
+        <AppLogo />
+        <View className="flex-1 min-w-0 px-2">
+          <Text className="text-sm text-center text-gray-700 font-medium leading-relaxed">
                 🎮 Игра Лила - духовное путешествие в чате
-              </Text>
-            </View>
-            <View className="flex-row items-center space-x-3">
-              {/* Кнопка отчетов */}
-              <TouchableOpacity 
-                onPress={() => router.push('/reports')}
-                className="bg-purple-50 p-2 rounded-full shadow-sm"
-              >
-                <Ionicons name="book-outline" size={20} color="#8E24AA" />
-              </TouchableOpacity>
-              
-              {/* Индикатор уровня */}
-              <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-full shadow-sm">
+          </Text>
+        </View>
+        <View className="flex-row items-center space-x-3">
+          {/* Кнопка отчетов */}
+          <TouchableOpacity 
+            onPress={() => router.push('/reports')}
+            className="bg-purple-50 p-2 rounded-full shadow-sm"
+          >
+            <Ionicons name="book-outline" size={20} color="#8E24AA" />
+          </TouchableOpacity>
+          
+          {/* Индикатор уровня */}
+          <View className="flex-row items-center bg-gray-50 px-3 py-2 rounded-full shadow-sm">
                 <Text className="text-sm text-gray-500 mr-2">План:</Text>
-                <View className="bg-blue-50 w-8 h-8 rounded-full items-center justify-center shadow-inner">
-                  <Text className="font-medium text-blue-600">{currentPlayer?.plan ?? '-'}</Text>
-                </View>
-              </View>
+            <View className="bg-blue-50 w-8 h-8 rounded-full items-center justify-center shadow-inner">
+              <Text className="font-medium text-blue-600">{currentPlayer?.plan ?? '-'}</Text>
             </View>
           </View>
+        </View>
+      </View>
         </View>
       </GlassContainer>
     </View>
   );
 
   // Основной интерфейс - только чат на весь экран
-  return (
+      return (
     <ImageBackground
-      source={require('../../../assets/Green_small_one_palm_leaf_on_white_background.png')}
+      source={require('../../../public/static/backImage/Green_small_one_palm_leaf_on_white_background.png')}
       style={{ flex: 1 }}
       className="bg-white"
       imageStyle={{ opacity: 1 }}
     >
       <View className="flex-1 bg-transparent">
-        <AppHeader />
-        
+          <AppHeader />
+          
         {/* Статус Apollo в правом верхнем углу */}
         <View className="absolute top-4 right-4 z-20">
           <ApolloStatus />

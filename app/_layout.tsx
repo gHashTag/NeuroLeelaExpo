@@ -1,6 +1,7 @@
 import '../global.css';
 import { Slot } from "expo-router";
 import { Platform, StyleSheet, View, ImageBackground } from "react-native";
+import { useEffect } from "react";
 // Removed SplashScreen and useEffect imports
 // import { useEffect } from "react";
 // import { SplashScreen } from "expo-router";
@@ -20,36 +21,34 @@ export { ErrorBoundary } from "expo-router";
 // Removed unstable_settings
 // Removed SplashScreen.preventAutoHideAsync()
 
-// Импортируем изображение листа - простой подход
-const leafImage = require('../assets/Green_small_one_palm_leaf_on_white_background.png');
+// Импортируем изображение для фона
+const backgroundImage = require('../public/static/backImage/Green_small_one_palm_leaf_on_white_background.png');
 
 export default function RootLayout() {
-  if (Platform.OS === 'web') {
-    return <Slot />;
-  }
-  // Для мобильных платформ
-  return (
+  // Теперь ImageBackground применяется для всех платформ
+    return (
     <ImageBackground
-      source={require('../assets/Green_small_one_palm_leaf_on_white_background.png')}
-      style={{ flex: 1 }}
+      source={backgroundImage}
+      style={styles.backgroundImage}
       resizeMode="cover"
     >
-      <Slot />
+      <SupabaseProvider>
+        <ApolloProvider client={apolloClient}>
+          <View style={styles.overlay}>
+            <Slot />
+          </View>
+        </ApolloProvider>
+      </SupabaseProvider>
     </ImageBackground>
-  );
+    );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   backgroundImage: {
     flex: 1,
-    width: '100%',
-    height: '100%',
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(248, 255, 252, 0.05)', // Очень легкий overlay для максимальной видимости листа
+    backgroundColor: 'rgba(248, 255, 252, 0.05)', 
   },
 });

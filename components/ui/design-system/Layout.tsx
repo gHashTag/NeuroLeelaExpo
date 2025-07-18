@@ -27,11 +27,11 @@ export function Container({
   return (
     <View
       className={cn(
-        'mx-auto w-full',
-        maxWidths[maxWidth],
-        padding && 'px-4 sm:px-6 lg:px-8',
+      'mx-auto w-full',
+      maxWidths[maxWidth],
+      padding && 'px-4 sm:px-6 lg:px-8',
         Platform.OS === 'web' ? 'glass' : '',
-        className
+      className
       )}
       style={Platform.OS === 'web' ? { backgroundColor: 'transparent' } : {}}
     >
