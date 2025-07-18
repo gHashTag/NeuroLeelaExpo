@@ -16,7 +16,7 @@ const Background: React.FC<BackgroundProps> = ({
 }) => {
   // Для web всегда прозрачный фон, чтобы не перекрывать body
   const backgroundStyle = Platform.OS === 'web'
-    ? [{ backgroundColor: '#00ff00' }] // Ярко-зелёный для диагностики
+    ? [{ backgroundColor: 'transparent' }] // Прозрачный фон для web
     : useGlobalBackground();
   const isWeb = Platform.OS === 'web';
 
